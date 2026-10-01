@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "product": "HuntNexus",
+  "sources": [
+    {
+      "name": "RubinOT Changelog",
+      "tier": "A",
+      "url": "https://rubinot.com.br/changelog"
+    },
+    {
+      "name": "RubinOT News",
+      "tier": "A",
+      "url": "https://rubinot.com.br/news"
+    },
+    {
+      "name": "RubinOT Wiki",
+      "tier": "A",
+      "url": "https://wiki.rubinot.com/pt-BR"
+    },
+    {
+      "name": "RubinOT Tools",
+      "tier": "A",
+      "url": "https://www.rubinottools.com"
+    },
+    {
+      "name": "TibiaWiki BR",
+      "tier": "B",
+      "url": "https://www.tibiawiki.com.br"
+    },
+    {
+      "name": "TibiaWikiApi",
+      "tier": "B",
+      "url": "https://github.com/benjaminkomen/TibiaWikiApi"
+    },
+    {
+      "name": "ByteWizards TibiaData",
+      "tier": "B",
+      "url": "https://github.com/ByteWizards-de/tibiadata"
+    },
+    {
+      "name": "TibiaMaps",
+      "tier": "B",
+      "url": "https://github.com/tibiamaps/tibia-map-data"
+    },
+    {
+      "name": "PT Finder",
+      "tier": "C",
+      "url": "https://pt-finder.com.br/"
+    },
+    {
+      "name": "OberonGG",
+      "tier": "C",
+      "url": "https://oberongg.com/"
+    },
+    {
+      "name": "Hunts.RubinOT",
+      "tier": "C",
+      "url": "https://hunts.rubinot.app/"
+    },
+    {
+      "name": "HuntAnalyser",
+      "tier": "C",
+      "url": "https://www.hunt-analyser.com/"
+    },
+    {
+      "name": "Hunt Tracker RubinOT Community",
+      "tier": "C",
+      "url": "https://hunt-tracker-rubinot.lovable.app/community"
+    },
+    {
+      "name": "Tibia Watch",
+      "tier": "C",
+      "url": "https://tibiawatch.com/respawns"
+    },
+    {
+      "name": "Tibialytics",
+      "tier": "C",
+      "url": "https://tibialytics.com.br/hunt"
+    },
+    {
+      "name": "Vigia das Estatísticas",
+      "tier": "C",
+      "url": "https://www.vigiadasestatisticas.com/"
+    },
+    {
+      "name": "Keke de Patinete",
+      "tier": "D",
+      "url": "https://kekedepatinete.com.br/"
+    },
+    {
+      "name": "Vatoz Lokoz",
+      "tier": "D",
+      "url": "https://vatozlokoz.com/ferramentas/hunts"
+    }
+  ]
+}
