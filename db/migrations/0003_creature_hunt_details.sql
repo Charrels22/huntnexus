@@ -47,5 +47,5 @@ create index if not exists idx_creature_loot_key
 create index if not exists idx_creature_detail_status
   on creature_detail_state(status);
 
-create index if not exists idx_hunting_place_creatures_monster_key
-  on hunting_place_creatures(monster_key);
+create index if not exists idx_hunting_place_creatures_monster_slug
+  on hunting_place_creatures(monster_slug);
