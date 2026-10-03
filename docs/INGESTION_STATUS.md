@@ -68,3 +68,30 @@ Prepared for next execution:
 - `0005_phase3_batch_orchestrator.sql`
 - single-call execution: `select huntnexus_phase3_batch(100, 25);`
 - returns run result, current totals and remaining counts in one database action.
+
+
+## 2026-10-03 — Phase 3 continued
+
+The Phase 3 batch orchestrator was applied and executed successfully.
+
+Current confirmed totals:
+- Creatures detailed: 1,003
+- Creature detail errors: 0
+- Hunting places detailed: 253
+- Hunting place detail errors: 0
+- Vulnerability rows: 10,000
+- Creature ability rows: 1,003
+- Creature loot rows: 8,421
+- Hunt-creature links: 2,046
+- Raw snapshots: 1,347
+
+Remaining:
+- Creatures: 1,190
+- Hunting places: 206
+
+The last attempted batch did not execute because the Lovable Free-plan MCP database action limit was reached. No ingestion/source error occurred.
+
+Resume with:
+```sql
+select huntnexus_phase3_batch(100,25);
+```
