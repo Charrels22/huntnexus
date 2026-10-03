@@ -29,3 +29,42 @@
 5. Wiki RubinOT por página;
 6. changelog completo histórico;
 7. trackers comunitários.
+
+
+## 2026-10-03 — Phase 3 progress
+
+Validated detail ingestion through direct PostgreSQL HTTP access.
+
+Confirmed successful:
+- Phase 2 catalogs: 2,193 creatures, 6,470 items, 459 hunting places.
+- Duplicate creature keys: 0.
+- Duplicate item slugs: 0.
+- Duplicate hunting-place slugs: 0.
+- Phase 3 schema `0003_creature_hunt_details.sql` applied.
+- Direct-ingestion migration `0004_direct_detail_ingestion.sql` applied.
+- HTTP extension successfully fetched TibiaData creature detail responses.
+- Initial creature detail test: 3 completed / 0 errors.
+- Initial hunting-place detail test: 3 completed / 0 errors.
+- First production creature batch: 100 completed / 0 errors.
+- First production hunt batch: 25 completed / 0 errors.
+- Second production creature batch: 100 completed / 0 errors.
+- Confirmed creature details completed so far: 203.
+- Confirmed hunting places detailed so far: 28.
+
+After the first production batch, validation showed:
+- 1,029 vulnerability rows.
+- 103 creature-ability rows.
+- 892 creature-loot rows.
+- 258 hunt↔creature links.
+- 222 raw snapshots.
+
+Those row counts predate the second 100-creature batch and must be refreshed on the next database action; do not treat them as current totals.
+
+Current blocker:
+- Lovable Free-plan MCP database action limit reached temporarily.
+- No remote-source error or ingestion error occurred.
+
+Prepared for next execution:
+- `0005_phase3_batch_orchestrator.sql`
+- single-call execution: `select huntnexus_phase3_batch(100, 25);`
+- returns run result, current totals and remaining counts in one database action.
