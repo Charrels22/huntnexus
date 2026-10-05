@@ -152,3 +152,30 @@ Phase 3 result:
 
 Next:
 - Phase 4: item-detail enrichment, prioritizing combat/equipment-relevant items before non-combat catalogue items.
+
+
+## 2026-10-05 — Phase 4 item enrichment started
+
+Phase 4 migration `0006_item_detail_enrichment.sql` was applied successfully.
+
+Validation:
+- Initial test: 3 items completed / 0 errors.
+- Additional attributes from the first 3 items: 21 rows.
+
+Current confirmed totals:
+- Combat-relevant items targeted: 1,610
+- Combat-relevant items detailed: 803
+- Item detail errors: 0
+- Remaining combat-relevant items: 807
+- Item attribute rows: 5,544
+- Raw snapshots: 3,546
+
+Execution notes:
+- Stable batch size: 100 items.
+- No source or normalization errors occurred.
+- Last attempted batch did not execute because the Lovable Free-plan MCP database action limit was reached.
+
+Resume with:
+```sql
+select huntnexus_ingest_item_details(100,true);
+```
