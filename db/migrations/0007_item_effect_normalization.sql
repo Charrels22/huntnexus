@@ -72,7 +72,7 @@ begin
   tokens as (
     select item_id,snapshot_id,source_field,trim(tok) as token
     from values_by_item,
-         lateral regexp_split_to_table(coalesce(raw_resist,''), '\\s*,\\s*') tok
+         lateral regexp_split_to_table(coalesce(raw_resist,''), '\s*,\s*') tok
     where nullif(trim(tok),'') is not null
   ),
   parsed as (
@@ -116,7 +116,7 @@ begin
       trim(tok) as token
     from tibia_items i
     join item_detail_state s on s.item_id=i.id and s.status='completed',
-         lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+         lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
     where nullif(trim(tok),'') is not null
   ),
   parsed as (
@@ -165,7 +165,7 @@ begin
     'percent','{}'::jsonb,trim(tok),'attrib',v_source,i.snapshot_id,now()
   from tibia_items i
   join item_detail_state s on s.item_id=i.id and s.status='completed',
-       lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+       lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
   where lower(trim(tok)) ~ '^life leech[[:space:]]+[+-]?[0-9.]+%$';
 
   get diagnostics v_issues = row_count;
@@ -182,7 +182,7 @@ begin
     'percent','{}'::jsonb,trim(tok),'attrib',v_source,i.snapshot_id,now()
   from tibia_items i
   join item_detail_state s on s.item_id=i.id and s.status='completed',
-       lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+       lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
   where lower(trim(tok)) ~ '^cleave[[:space:]]+[0-9.]+%$';
 
   get diagnostics v_issues = row_count;
@@ -199,7 +199,7 @@ begin
     'damage','{}'::jsonb,trim(tok),'attrib',v_source,i.snapshot_id,now()
   from tibia_items i
   join item_detail_state s on s.item_id=i.id and s.status='completed',
-       lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+       lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
   where lower(trim(tok)) ~ '^[0-9.]+[[:space:]]+damage reflection$';
 
   get diagnostics v_issues = row_count;
@@ -221,7 +221,7 @@ begin
     trim(tok),'attrib',v_source,i.snapshot_id,now()
   from tibia_items i
   join item_detail_state s on s.item_id=i.id and s.status='completed',
-       lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+       lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
   where lower(trim(tok)) ~ '^perfect shot[[:space:]]+[+-]?[0-9.]+[[:space:]]+at range[[:space:]]+[0-9.]+$';
 
   get diagnostics v_issues = row_count;
@@ -238,7 +238,7 @@ begin
     'capacity','{}'::jsonb,trim(tok),'attrib',v_source,i.snapshot_id,now()
   from tibia_items i
   join item_detail_state s on s.item_id=i.id and s.status='completed',
-       lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+       lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
   where lower(trim(tok)) ~ '^magic shield capacity[[:space:]]+[+-]?[0-9.]+[[:space:]]+and[[:space:]]+[0-9.]+%$';
 
   get diagnostics v_issues = row_count;
@@ -254,7 +254,7 @@ begin
     'percent','{}'::jsonb,trim(tok),'attrib',v_source,i.snapshot_id,now()
   from tibia_items i
   join item_detail_state s on s.item_id=i.id and s.status='completed',
-       lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+       lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
   where lower(trim(tok)) ~ '^magic shield capacity[[:space:]]+[+-]?[0-9.]+[[:space:]]+and[[:space:]]+[0-9.]+%$';
 
   get diagnostics v_issues = row_count;
@@ -271,7 +271,7 @@ begin
     1,'boolean','{}'::jsonb,trim(tok),'attrib',v_source,i.snapshot_id,now()
   from tibia_items i
   join item_detail_state s on s.item_id=i.id and s.status='completed',
-       lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+       lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
   where lower(trim(tok)) in ('faster regeneration','magic shield','invisibility','hard drinking');
 
   get diagnostics v_issues = row_count;
@@ -332,7 +332,7 @@ begin
     select i.id as item_id,trim(tok) as token
     from tibia_items i
     join item_detail_state s on s.item_id=i.id and s.status='completed',
-         lateral regexp_split_to_table(coalesce(i.attrib,''), '\\s*,\\s*') tok
+         lateral regexp_split_to_table(coalesce(i.attrib,''), '\s*,\s*') tok
     where nullif(trim(tok),'') is not null
   )
   insert into item_effect_parse_issues(item_id,source_field,raw_token,reason,observed_at)
