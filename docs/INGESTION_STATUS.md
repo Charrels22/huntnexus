@@ -304,3 +304,59 @@ Access note:
 
 Current blocker:
 - Lovable Free-plan MCP database action limit. The Phase 6 migrations are prepared but not yet applied.
+
+
+## 2026-10-05 — Phase 6 applied / Phase 7 live / Phase 8 prepared
+
+### Phase 6 — RubinOT official layer
+Applied successfully:
+- 0011_rubinot_system_mechanics.sql
+- 0012_rubinot_change_candidates.sql
+- 0013_rubinot_vip_loyalty.sql
+
+Confirmed database totals:
+- RubinOT system facts: 6
+- RubinOT modifier definitions: 14
+- Loyalty tiers: 11
+- Changelog reconciliation candidates: 9
+- Candidates pending: 4
+- Candidates needing exact values: 5
+- Applied numeric/state overrides: 0
+
+No qualitative changelog statement has been converted into a fabricated numeric override.
+
+### Phase 7 — factual analytics foundation
+Applied successfully:
+- 0014_analytics_factual_views.sql
+
+The HuntNexus Brain now exposes:
+- hunt × monster × element factual profiles;
+- hunt-level unweighted elemental summaries;
+- equipment protection catalogue;
+- equipment combat-effect catalogue;
+- `huntnexus_hunt_factual_profile(hunt_key)`.
+
+The methodology explicitly marks these profiles as:
+- not kill-weighted;
+- not final recommendations.
+
+### Phase 8 — community observations
+Research confirmed:
+- HuntAnalyser public pages are directly accessible from Supabase with HTTP 200.
+- Public catalogue currently contains thousands of sessions and exposes stable session IDs.
+- List pages expose duration, party size, XP Gain, Balance, XP/h, Raw XP/h, vocation/level and descriptions.
+- Individual public session URLs are available as `/hunt_sessions/<id>`.
+- Hunts.RubinOT public pages currently report zero public hunt locations/ranking records.
+- PT Finder web retrieval currently returned HTTP 502.
+- Hunt Tracker RubinOT Community is reachable as an SPA but indexed page content is unavailable.
+
+Prepared:
+- 0015_huntanalyser_public_smoke.sql
+- 0016_community_hunt_resolution.sql
+- docs/PHASE_8_COMMUNITY.md
+- docs/COMMUNITY_HUNT_RESOLUTION.md
+
+The HuntAnalyser smoke ingestion is capped at 5 public pages / 100 sessions per run and keeps terms review pending before any larger-scale collection.
+
+Current blocker:
+- Lovable Free-plan MCP database action limit. Migrations 0015 and 0016 are prepared but not yet applied.
