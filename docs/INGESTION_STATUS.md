@@ -124,3 +124,31 @@ Resume with:
 ```sql
 select huntnexus_phase3_batch(75,15);
 ```
+
+
+## 2026-10-05 — Phase 3 completed
+
+Phase 3 is complete.
+
+Final confirmed totals:
+- Creatures catalogued: 2,193
+- Creatures detailed: 2,193
+- Creature detail errors: 0
+- Hunting places catalogued: 459
+- Hunting places detailed: 459
+- Hunting place detail errors: 0
+- Vulnerability rows: 21,834
+- Creature ability rows: 2,193
+- Creature loot rows: 18,675
+- Hunt-creature links: 3,745
+- Raw snapshots: 2,743
+
+Phase 3 result:
+- 100% of TibiaData creatures detailed.
+- 100% of TibiaData hunting places detailed.
+- 0 ingestion errors.
+- Creature resistances, raw abilities, combat properties and loot are normalized with source provenance.
+- Hunting-place creature membership is normalized.
+
+Next:
+- Phase 4: item-detail enrichment, prioritizing combat/equipment-relevant items before non-combat catalogue items.
