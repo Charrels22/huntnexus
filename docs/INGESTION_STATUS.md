@@ -203,3 +203,52 @@ Next:
 
 Current blocker:
 - Lovable Free-plan MCP database action limit was reached immediately after Phase 4 completion.
+
+
+## 2026-10-05 — Phase 5 item effect normalization
+
+Initial normalization run:
+- Normalized effects: 888
+- Items with normalized effects: 581
+- Parse issues: 127
+- Items with parse issues: 127
+
+Investigation found the parse issues were caused primarily by a tokenization bug, not unknown source semantics:
+- comma-separated attrib values were not being split because the migration used an over-escaped regex.
+- Example affected value: `fist fighting +4, magic level +2`.
+
+Verified source semantics before the fix:
+- `resist`: 400 items.
+- `resistPercent`: 94 items.
+- 94 items contain both.
+- All 94 overlapping values are exactly identical.
+- Normalized protection therefore prefers `resistPercent` when present, otherwise `resist`, avoiding duplicate effects.
+
+Verified attrib patterns include:
+- magic level and elemental/healing magic levels;
+- sword/axe/club/distance/fist fighting;
+- shielding;
+- speed;
+- life leech;
+- cleave;
+- damage reflection;
+- perfect shot with range;
+- magic shield capacity;
+- faster regeneration;
+- magic shield;
+- invisibility.
+
+Fix committed:
+- `0007_item_effect_normalization.sql` corrected for fresh installs.
+- `0008_fix_item_effect_tokenization.sql` added for already-applied environments.
+- `0008` was applied successfully to the current database.
+
+Current blocker:
+- Lovable Free-plan MCP database action limit was reached immediately before the corrected rebuild could execute.
+
+Resume with:
+```sql
+select huntnexus_rebuild_item_effects();
+```
+
+Then inspect `item_effect_parse_issues`; remaining issues should represent genuinely unsupported source patterns rather than comma-tokenization failures.
