@@ -179,3 +179,27 @@ Resume with:
 ```sql
 select huntnexus_ingest_item_details(100,true);
 ```
+
+
+## 2026-10-05 — Phase 4 combat item enrichment completed
+
+Phase 4 priority subset is complete.
+
+Final confirmed totals:
+- Combat-relevant items targeted: 1,610
+- Combat-relevant items detailed: 1,610
+- Item detail errors: 0
+- Remaining combat-relevant items: 0
+- Item attribute rows: 11,346
+- Raw snapshots: 4,353
+
+Result:
+- 100% of the prioritized combat/equipment subset has full TibiaData detail payloads.
+- Detailed fields now include attack, defense, armor, required level, vocation, imbue slots, elemental attacks, weight, upgrade class, NPC/value fields and additional attributes where provided.
+- Full source payload and provenance snapshot are retained for every detailed item.
+
+Next:
+- Phase 5: inspect the real additional-attribute key space and normalize equipment effects such as elemental protection, skill/magic bonuses, speed and other combat modifiers without guessing field semantics.
+
+Current blocker:
+- Lovable Free-plan MCP database action limit was reached immediately after Phase 4 completion.
