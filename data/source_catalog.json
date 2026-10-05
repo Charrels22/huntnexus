@@ -67,8 +67,9 @@
       "tier": "C",
       "url": "https://www.hunt-analyser.com/",
       "access": "public list pages accessible without login",
-      "collection_status": "smoke-test prepared",
-      "terms_review_status": "pending"
+      "collection_status": "100-session public-list smoke completed; detail smoke parser installed",
+      "terms_review_status": "pending",
+      "notes": "Source explicitly supports public/private hunt sessions and unlimited public hunts on Free plan; keep bulk-collection permission review pending."
     },
     {
       "name": "Hunt Tracker RubinOT Community",
