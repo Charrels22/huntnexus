@@ -252,3 +252,55 @@ select huntnexus_rebuild_item_effects();
 ```
 
 Then inspect `item_effect_parse_issues`; remaining issues should represent genuinely unsupported source patterns rather than comma-tokenization failures.
+
+
+## 2026-10-05 — Phase 5 completed / Phase 6 prepared
+
+### Phase 5 — normalized equipment effects
+Corrected rebuild result:
+- Normalized effects: 1,658
+- Items with normalized effects: 695
+- Parse issues: 0
+- Items with parse issues: 0
+
+By effect type:
+- protection: 657
+- skill: 386
+- magic_skill: 250
+- offense: 241
+- special: 75
+- movement: 34
+- defense: 13
+- leech: 2
+
+### Hunt-creature integrity
+After explicit alias/split resolution:
+- Total hunt-creature links: 3,745
+- Resolved to canonical TibiaData creatures: 3,743
+- Unresolved: 2
+
+The two unresolved links are both Demongoblin (Oasis Tomb and Pits of Inferno). Public Tibia references confirm the creature exists; it is absent from the current TibiaData creature catalogue. No guessed canonical mapping was created.
+
+### Phase 6 — RubinOT official layer
+Prepared in GitHub:
+- 0010_source_collection_metadata.sql
+- 0011_rubinot_system_mechanics.sql
+- 0012_rubinot_change_candidates.sql
+- 0013_rubinot_vip_loyalty.sql
+
+Official mechanics prepared for structured ingestion:
+- Huntfinder capabilities
+- Equipment Preset constraints
+- Guild Ascension dynamic modifiers
+- Linked Tasks behavior
+- VIP Weapon Proficiency bonus
+- Loyalty skill tiers and vocation mapping
+
+Changelog changes are staged as reconciliation candidates rather than immediate overrides when exact numeric values are not exposed.
+
+Access note:
+- Direct PostgreSQL HTTP to rubinot.com.br is blocked by Cloudflare 403.
+- HuntNexus records browser/web collection as the permitted method and does not bypass the protection.
+
+Current blocker:
+- Lovable Free-plan MCP database action limit. The Phase 6 migrations are prepared but not yet applied.
