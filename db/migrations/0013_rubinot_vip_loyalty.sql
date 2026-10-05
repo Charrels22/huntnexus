@@ -1,5 +1,25 @@
 -- HuntNexus Brain — Phase 6.2 RubinOT VIP/Loyalty modifiers.
 
+insert into sources(name,tier,layer,url,status,collection_method,last_access_status,last_checked_at)
+values (
+  'RubinOT Website',
+  'A',
+  'rubinot_overlay',
+  'https://rubinot.com.br',
+  'active',
+  'browser/web fetch',
+  'official website; use browser/web-compatible collection where direct HTTP is blocked',
+  now()
+)
+on conflict (name) do update set
+  tier=excluded.tier,
+  layer=excluded.layer,
+  url=excluded.url,
+  status=excluded.status,
+  collection_method=excluded.collection_method,
+  last_access_status=excluded.last_access_status,
+  last_checked_at=excluded.last_checked_at;
+
 create table if not exists rubinot_loyalty_tiers (
   title_name text primary key,
   required_points int not null,
@@ -26,13 +46,24 @@ select
   now(),
   'Official VIP page states an additional 10% Weapon Proficiency experience while the VIP bonus applies.'
 from sources s
-where s.name='RubinOT Wiki' or s.name='RubinOT Changelog'
-order by case when s.name='RubinOT Changelog' then 0 else 1 end
-limit 1
+where s.name='RubinOT Website'
 on conflict (modifier_key) do update set
+  source_id=excluded.source_id,
   source_url=excluded.source_url,
   observed_at=excluded.observed_at,
   notes=excluded.notes;
+
+insert into rubinot_system_facts(
+  system_key,fact_key,value,source_id,source_url,notes
+)
+select
+  'vip','weapon_proficiency_bonus',
+  '{"value":10,"unit":"percent","target":"weapon_proficiency_xp"}'::jsonb,
+  s.id,
+  'https://rubinot.com.br/vip',
+  'Static value published on the official VIP page.'
+from sources s
+where s.name='RubinOT Website';
 
 insert into rubinot_loyalty_tiers(
   title_name,required_points,skill_bonus,source_id,source_url
@@ -53,7 +84,7 @@ cross join (
     ('Savant of RubinOT',56,9),
     ('Enlightened of RubinOT',70,10)
 ) as x(title_name,required_points,skill_bonus)
-where s.name='RubinOT Changelog'
+where s.name='RubinOT Website'
 on conflict (title_name) do update set
   required_points=excluded.required_points,
   skill_bonus=excluded.skill_bonus,
@@ -77,5 +108,4 @@ select
   'https://rubinot.com.br/vip',
   'Official Loyalty skill mapping by vocation.'
 from sources s
-where s.name='RubinOT Changelog'
-limit 1;
+where s.name='RubinOT Website';
