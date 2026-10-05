@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "product": "HuntNexus",
   "sources": [
     {
@@ -19,8 +19,9 @@
     },
     {
       "name": "RubinOT Tools",
-      "tier": "A",
-      "url": "https://www.rubinottools.com"
+      "tier": "C",
+      "url": "https://www.rubinottools.com",
+      "notes": "Third-party RubinOT tooling; not treated as an official RubinOT Tier A source unless official ownership is established."
     },
     {
       "name": "TibiaWiki BR",
@@ -45,7 +46,9 @@
     {
       "name": "PT Finder",
       "tier": "C",
-      "url": "https://pt-finder.com.br/"
+      "url": "https://pt-finder.com.br/",
+      "access": "web fetch currently returned 502",
+      "collection_status": "deferred"
     },
     {
       "name": "OberonGG",
@@ -55,17 +58,24 @@
     {
       "name": "Hunts.RubinOT",
       "tier": "C",
-      "url": "https://hunts.rubinot.app/"
+      "url": "https://hunts.rubinot.app/",
+      "access": "public pages accessible",
+      "collection_status": "currently reports 0 public hunts/locations"
     },
     {
       "name": "HuntAnalyser",
       "tier": "C",
-      "url": "https://www.hunt-analyser.com/"
+      "url": "https://www.hunt-analyser.com/",
+      "access": "public list pages accessible without login",
+      "collection_status": "smoke-test prepared",
+      "terms_review_status": "pending"
     },
     {
       "name": "Hunt Tracker RubinOT Community",
       "tier": "C",
-      "url": "https://hunt-tracker-rubinot.lovable.app/community"
+      "url": "https://hunt-tracker-rubinot.lovable.app/community",
+      "access": "SPA page reachable; indexed body unavailable",
+      "collection_status": "may require authenticated/manual inspection"
     },
     {
       "name": "Tibia Watch",
