@@ -360,3 +360,56 @@ The HuntAnalyser smoke ingestion is capped at 5 public pages / 100 sessions per 
 
 Current blocker:
 - Lovable Free-plan MCP database action limit. Migrations 0015 and 0016 are prepared but not yet applied.
+
+
+## 2026-10-05 — Phase 8 public community smoke
+
+Applied successfully:
+- 0015_huntanalyser_public_smoke.sql
+- 0016_community_hunt_resolution.sql
+- 0017_huntanalyser_public_details.sql
+
+Public list smoke result:
+- Pages fetched: 5
+- Sessions inserted: 100
+- Errors: 0
+- Player rows from list cards: 208
+- Sessions with hunt title: 100/100
+- Sessions with duration: 100/100
+- Sessions with party size: 100/100
+- Sessions with XP Gain: 100/100
+- Sessions with XP/h: 100/100
+- Sessions with Raw XP/h: 100/100
+- Sessions with Balance: 100/100
+- Sessions with at least one parsed player: 99/100
+- Exact canonical hunt matches: 13
+- Unresolved hunt labels: 87
+
+Example validated public detail page exposes:
+- Party Members table;
+- vocation and level;
+- player Damage;
+- player Healing;
+- Supplies;
+- member Balance;
+- Monster Killed table;
+- monster name and kill count;
+- richer character/build sections.
+
+Detail-parser privacy behavior:
+- public character names are SHA-256 hashed in session_players;
+- raw player names are not stored in session_players.
+
+Source-policy note:
+- HuntAnalyser's own public pages distinguish Public vs Private sessions.
+- HuntAnalyser pricing/FAQ state that public hunt sessions are a supported/unlimited Free-plan feature.
+- This confirms the public/private intent of the source, but does not by itself establish bulk-harvesting permission.
+- Keep terms_review_status=pending before any large-scale ingestion.
+
+Current blocker:
+- The 0017 parser is installed, but its first 5-session execution was blocked by the temporary Lovable Free-plan MCP database action limit.
+
+Resume with:
+```sql
+select huntnexus_ingest_huntanalyser_public_details(5);
+```
