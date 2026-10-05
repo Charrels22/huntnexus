@@ -95,3 +95,32 @@ Resume with:
 ```sql
 select huntnexus_phase3_batch(100,25);
 ```
+
+
+## 2026-10-04/05 — Phase 3 continued
+
+Latest confirmed totals:
+- Creatures detailed: 1,678
+- Creature detail errors: 0
+- Hunting places detailed: 398
+- Hunting place detail errors: 0
+- Vulnerability rows: 16,704
+- Creature ability rows: 1,678
+- Creature loot rows: 14,024
+- Hunt-creature links: 3,219
+- Raw snapshots: 2,167
+
+Remaining:
+- Creatures: 515
+- Hunting places: 61
+
+Execution notes:
+- Large batches may return HTTP 504 to the client even when PostgreSQL completes the work successfully.
+- Stable batch size during this window: 75 creatures + 15 hunting places.
+- No source/normalization errors occurred.
+- Last attempted batch did not execute because the Lovable Free-plan MCP database action limit was reached.
+
+Resume with:
+```sql
+select huntnexus_phase3_batch(75,15);
+```
