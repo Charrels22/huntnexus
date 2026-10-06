@@ -549,3 +549,68 @@ Current blocker:
 - Temporary Lovable Free-plan MCP database action limit was reached while searching additional canonical alias candidates.
 
 Resume by applying `0021_safe_community_hunt_aliases.sql`, then re-check resolved-hunt coverage before any further community scale-up.
+
+
+## 2026-10-06 — Community coverage 69/100 / Phase 10 prepared
+
+### Community hunt resolution
+Applied:
+- 0021_safe_community_hunt_aliases.sql
+- 0022_evidence_backed_community_aliases.sql
+
+Current 100-session smoke coverage:
+- Resolved sessions: 69
+- Unresolved sessions: 31
+- Resolved by strict exact name: 14
+- Resolved by explicit/evidence-backed alias: 55
+- Canonical hunts with observed performance: 25
+
+Evidence-backed resolution uses community title plus observed monster/kill composition.
+Examples include Grounds of Undeath, Salt Caves, Bulltaur Lair, Haunted Tomb,
+Falcon Bastion, Iksupan variants, Kilmaresh Catacombs, Roshamuul Prison,
+Guzzlemaw Valley, Warzone 5 and Murky Caverns.
+
+Ambiguous labels remain unresolved deliberately, including distinct Secret Library
+subareas (Energy Library / Fire Library), generic Bosses, Pirats, Terrorsleeps and
+other names that cannot be mapped uniquely without losing analytical meaning.
+
+### Phase 10 prepared
+Created:
+- 0023_normalized_community_performance.sql
+- 0024_experimental_hunt_ranking.sql
+- docs/PHASE_10_RECOMMENDATION_ENGINE.md
+
+0023 corrects profit comparability:
+- HuntAnalyser Balance is session-total value;
+- analytics now derives Balance/h from duration;
+- comparative sessions require >=15 minutes and structural quality >=0.85;
+- performance is also segmented by exact party size.
+
+0024 adds experimental ranking inputs:
+- vocation;
+- level;
+- objective (XP / profit / balanced);
+- party size.
+
+Ranking evidence includes:
+- median Raw XP/h;
+- median XP/h;
+- median Balance/h;
+- canonical minimum level;
+- observed player level;
+- kill-weighted strongest offensive element;
+- sample-size confidence;
+- structural-quality confidence.
+
+Performance score and confidence are separate. A one-session outlier can rank well
+but remains low-confidence.
+
+This ranking is explicitly not the final recommendation engine yet.
+
+Current blocker:
+- temporary Lovable Free-plan MCP database action limit.
+
+Resume by applying:
+1. 0023_normalized_community_performance.sql
+2. 0024_experimental_hunt_ranking.sql
+then test with representative EK/RP/ED/MS queries.
