@@ -449,3 +449,53 @@ Current blocker:
 - Final per-session audit (player count, monster count, total kills, creature resolution status) was blocked by the temporary Lovable Free-plan MCP database action limit immediately after the successful reprocessing.
 
 Do not scale beyond the 5-session detail smoke until that final audit is completed.
+
+
+## 2026-10-06 — HuntAnalyser detail smoke expanded to 85/100
+
+Final audit of the original 5-session detail sample passed:
+- party_size matched parsed player rows;
+- all sampled creature rows resolved to canonical TibiaData creatures;
+- damage/healing totals were rebuilt from parsed member rows;
+- no unresolved sampled creatures remained.
+
+Validated sample examples:
+- session 58781: solo, 1 player, 3 creature rows, 3,381 kills;
+- session 58776: solo, 1 player, 2 creature rows, 864 kills;
+- session 58761: solo, 1 player, 3 creature rows, 3,377 kills;
+- session 58756: x4, 4 players, 4 creature rows, 1,721 kills;
+- session 58752: x4, 4 players, 4 creature rows, 2,746 kills.
+
+The detail smoke was then expanded only inside the existing 100-session list sample.
+
+Current confirmed detail totals:
+- Sessions detailed: 85 / 100
+- Detail errors: 0
+- Player rows written across completed detail batches: 170
+- Creature rows written across completed detail batches: 327
+- Remaining sessions in the existing smoke: 15
+
+The next batch did not execute because the temporary Lovable Free-plan MCP database action limit was reached.
+
+Prepared for the next step:
+- 0020_community_analytics_views.sql
+- docs/PHASE_9_COMMUNITY_ANALYTICS.md
+
+Phase 9 will add:
+- community session structural-quality view;
+- observed hunt performance summaries;
+- observed kill mix by hunt;
+- kill-weighted elemental profiles;
+- `huntnexus_hunt_observed_profile(hunt_key)`.
+
+The kill-weighted layer remains Tier C observational evidence and is explicitly not labeled as a final recommendation.
+
+Resume detail ingestion with:
+```sql
+select huntnexus_ingest_huntanalyser_public_details(10);
+```
+then:
+```sql
+select huntnexus_ingest_huntanalyser_public_details(5);
+```
+After 100/100 completes, apply `0020_community_analytics_views.sql`.
