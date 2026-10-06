@@ -499,3 +499,53 @@ then:
 select huntnexus_ingest_huntanalyser_public_details(5);
 ```
 After 100/100 completes, apply `0020_community_analytics_views.sql`.
+
+
+## 2026-10-06 — HuntAnalyser smoke 100/100 complete / Phase 9 live
+
+### Detail ingestion complete
+- Public list sample: 100 sessions
+- Detailed sessions: 100 / 100
+- Detail errors: 0
+- Player rows: 210
+- Creature rows: 437
+- Resolved creature rows: 436
+- Unresolved creature rows: 1
+
+Audit:
+- 99/100 sessions have parsed player count matching party_size.
+- The single exception is session 57775, whose public detail page contains no Party Members table and an empty Top Damage Name; this is a source-data omission, not a parser failure.
+- The only unresolved creature is `Nomad` in session 57902. The canonical catalogue contains multiple variants (Nomad Basic / Blue / Female), so no arbitrary mapping was created.
+
+### Phase 9 analytics
+Applied successfully:
+- `0020_community_analytics_views.sql`
+
+Observed analytics now expose:
+- community-session structural quality;
+- observed performance by canonical hunt;
+- kill mix by hunt;
+- kill-weighted elemental profile;
+- `huntnexus_hunt_observed_profile(hunt_key)`.
+
+Example currently observed:
+- Cobra Bastion has 5 resolved sessions in the 100-session smoke sample.
+- Observed averages/medians are available for XP/h, Raw XP/h and Balance.
+
+### Hunt alias expansion
+Prepared but not yet applied:
+- `0021_safe_community_hunt_aliases.sql`
+
+Only high-confidence aliases are included:
+- Podzilla Quaras → Podzilla
+- Azzilon Castle party/spelling variants → Azzilon Castle
+- Gloom Pillar event variants → Gloom Pillars
+- Brain Grounds descriptive variant → Brain Grounds
+- Nimmersatt's Breeding Ground floor/party variants → canonical Nimmersatt's Breeding Ground
+
+Ambiguous subareas such as Energy Library / Fire Library remain unresolved deliberately to avoid blending distinct hunt areas.
+
+Current blocker:
+- Temporary Lovable Free-plan MCP database action limit was reached while searching additional canonical alias candidates.
+
+Resume by applying `0021_safe_community_hunt_aliases.sql`, then re-check resolved-hunt coverage before any further community scale-up.
