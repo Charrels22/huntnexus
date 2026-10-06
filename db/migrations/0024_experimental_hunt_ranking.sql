@@ -199,7 +199,7 @@ select jsonb_build_object(
         'session_count',session_count,
         'median_xp_per_hour',median_xp_per_hour,
         'median_raw_xp_per_hour',median_raw_xp_per_hour,
-        'median_balance_per_hour',round(median_balance_per_hour,0),
+        'median_balance_per_hour',round(median_balance_per_hour::numeric,0),
         'strongest_observed_element',strongest_observed_element,
         'strongest_observed_element_modifier',strongest_observed_element_modifier,
         'objective_score',round(objective_score::numeric,3),
