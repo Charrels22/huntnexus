@@ -413,3 +413,39 @@ Resume with:
 ```sql
 select huntnexus_ingest_huntanalyser_public_details(5);
 ```
+
+
+## 2026-10-05 — HuntAnalyser detail parser validated at parser level
+
+Detail smoke progression:
+- Initial 5-session run: 5 errors caused by supplies/balance regex capturing an HTML class hyphen.
+- Numeric parsing fix applied via 0018.
+- Second run completed 5/5, but audit showed undercapture (1 member + 1 creature per session).
+- Multi-row regex fix applied via 0019.
+- Same 5 sessions were reprocessed idempotently.
+
+Corrected result:
+- Sessions detailed: 5
+- Detail errors: 0
+- Player rows written: 11
+- Creature rows written: 16
+- Remaining list-smoke sessions without detail enrichment: 95
+
+The corrected row counts match the expected party composition of the selected sample, including two x4 sessions.
+
+Parser fixes:
+- 0018_fix_huntanalyser_detail_numeric_parsing.sql
+- 0019_fix_huntanalyser_detail_multirow.sql
+
+The parser now:
+- isolates Party Members and Monster Killed tables;
+- parses multiple rows correctly;
+- captures vocation, level, damage, healing, supplies and member balance;
+- captures monster name + kill count;
+- hashes public character names in session_players;
+- resolves creatures only by strict exact/explicit alias logic.
+
+Current blocker:
+- Final per-session audit (player count, monster count, total kills, creature resolution status) was blocked by the temporary Lovable Free-plan MCP database action limit immediately after the successful reprocessing.
+
+Do not scale beyond the 5-session detail smoke until that final audit is completed.
