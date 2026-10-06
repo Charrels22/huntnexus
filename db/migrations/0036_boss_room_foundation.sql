@@ -59,14 +59,14 @@ create table if not exists boss_room_spell_guidance (
   vocation text not null,
   spell_key text not null,
   guidance_type text not null check (guidance_type in ('recommended','situational','avoid','restricted')),
-  phase_key text,
+  phase_key text not null default '',
   rationale text not null,
   source_id uuid not null references sources(id),
   source_url text not null,
   patch_version text,
   observed_at timestamptz not null default now(),
   confidence numeric not null default 1.0 check (confidence>=0 and confidence<=1),
-  primary key (boss_key,vocation,spell_key,guidance_type,coalesce(phase_key,''),source_url)
+  primary key (boss_key,vocation,spell_key,guidance_type,phase_key,source_url)
 );
 
 create table if not exists boss_room_item_guidance (
