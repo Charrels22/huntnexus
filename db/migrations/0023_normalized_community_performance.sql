@@ -31,12 +31,12 @@ select
   percentile_cont(0.5) within group (order by q.raw_xp_per_hour) as median_raw_xp_per_hour,
   round(avg(q.balance_value),0) as avg_balance,
   percentile_cont(0.5) within group (order by q.balance_value) as median_balance,
-  round(avg(q.balance_per_hour),0) as avg_balance_per_hour,
-  percentile_cont(0.5) within group (order by q.balance_per_hour) as median_balance_per_hour,
   round(avg(q.total_damage),0) as avg_total_damage,
   round(avg(q.total_healing),0) as avg_total_healing,
   min(q.xp_per_hour) as min_xp_per_hour,
   max(q.xp_per_hour) as max_xp_per_hour,
+  round(avg(q.balance_per_hour),0) as avg_balance_per_hour,
+  percentile_cont(0.5) within group (order by q.balance_per_hour) as median_balance_per_hour,
   round(avg(q.structural_quality_score),3) as avg_structural_quality
 from vw_community_analysis_eligible q
 join tibia_hunting_places h on h.slug=q.hunt_key
