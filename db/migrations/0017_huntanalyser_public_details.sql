@@ -130,7 +130,7 @@ begin
           select m
           from regexp_matches(
             v_party_html,
-            '<td class="py-2">([^<]+)[[:space:]]+\((EK|ED|RP|MS|EM)[[:space:]]+([0-9]+)\)</td>[[:space:]]*<td class="py-2">[[:space:]]*([0-9,.-]+).*?</td>[[:space:]]*<td class="py-2 hidden md:table-cell">([0-9,.-]+)</td>[[:space:]]*<td class="py-2 hidden md:table-cell ha-text-danger">.*?([-0-9,]+).*?</td>[[:space:]]*<td class="py-2 ha-text-[^"]+">.*?([-0-9,]+).*?</td>',
+            '<td class="py-2">([^<]+)[[:space:]]+\((EK|ED|RP|MS|EM)[[:space:]]+([0-9]+)\)</td>[[:space:]]*<td class="py-2">[[:space:]]*([0-9,.-]+).*?</td>[[:space:]]*<td class="py-2 hidden md:table-cell">([0-9,.-]+)</td>[[:space:]]*<td class="py-2 hidden md:table-cell ha-text-danger">[[:space:]]*<i[^>]*></i>[[:space:]]*([-0-9,]+)[[:space:]]*</td>[[:space:]]*<td class="py-2 ha-text-[^"]+">[[:space:]]*<i[^>]*></i>[[:space:]]*([-0-9,]+)[[:space:]]*</td>',
             'g'
           ) m
         loop
@@ -146,10 +146,10 @@ begin
             v_member[3]::int,
             replace(v_member[4],',','')::numeric,
             replace(v_member[5],',','')::numeric,
-            replace(v_member[6],',','')::numeric,
+            nullif(replace(v_member[6],',',''),'-')::numeric,
             jsonb_build_object(
               'source_stage','public_detail',
-              'member_balance',replace(v_member[7],',','')::numeric
+              'member_balance',nullif(replace(v_member[7],',',''),'-')::numeric
             ),
             v_player_hash
           );
