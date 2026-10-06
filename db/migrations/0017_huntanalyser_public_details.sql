@@ -130,7 +130,7 @@ begin
           select m
           from regexp_matches(
             v_party_html,
-            '<td class="py-2">([^<]+)[[:space:]]+\((EK|ED|RP|MS|EM)[[:space:]]+([0-9]+)\)</td>[[:space:]]*<td class="py-2">[[:space:]]*([0-9,.-]+).*?</td>[[:space:]]*<td class="py-2 hidden md:table-cell">([0-9,.-]+)</td>[[:space:]]*<td class="py-2 hidden md:table-cell ha-text-danger">[[:space:]]*<i[^>]*></i>[[:space:]]*([-0-9,]+)[[:space:]]*</td>[[:space:]]*<td class="py-2 ha-text-[^"]+">[[:space:]]*<i[^>]*></i>[[:space:]]*([-0-9,]+)[[:space:]]*</td>',
+            '<td class="py-2">([^<]+)[[:space:]]+\((EK|ED|RP|MS|EM)[[:space:]]+([0-9]+)\)</td>[[:space:]]*<td class="py-2">[[:space:]]*([0-9,.-]+)[[:space:]]*<span[^>]*>[^<]*</span>[[:space:]]*</td>[[:space:]]*<td class="py-2 hidden md:table-cell">([0-9,.-]+)</td>[[:space:]]*<td class="py-2 hidden md:table-cell ha-text-danger">[[:space:]]*<i[^>]*></i>[[:space:]]*([-0-9,]+)[[:space:]]*</td>[[:space:]]*<td class="py-2 ha-text-[^"]+">[[:space:]]*<i[^>]*></i>[[:space:]]*([-0-9,]+)[[:space:]]*</td>',
             'g'
           ) m
         loop
@@ -170,7 +170,7 @@ begin
           select m
           from regexp_matches(
             v_monster_html,
-            '<img alt="([^"]+)"[^>]*>.*?</td>[[:space:]]*<td class="py-2">([0-9,]+)</td>',
+            '<img alt="([^"]+)"[^>]*>[^<]*</td>[[:space:]]*<td class="py-2">([0-9,]+)</td>',
             'g'
           ) m
         loop
