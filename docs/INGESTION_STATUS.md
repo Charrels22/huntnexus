@@ -614,3 +614,72 @@ Resume by applying:
 1. 0023_normalized_community_performance.sql
 2. 0024_experimental_hunt_ranking.sql
 then test with representative EK/RP/ED/MS queries.
+
+
+## 2026-10-06 — Phase 10.1/11 applied / Phase 12 prepared
+
+### Experimental ranking validation
+Migrations applied:
+- 0025_fix_community_performance_view_order.sql
+- 0026_fix_experimental_ranking_casts.sql
+- 0027_level_relevance_ranking.sql
+
+The first v1 ranking successfully returned EK/RP/ED/MS results and exposed a methodological issue:
+- canonical minimum level was respected;
+- observed median player level was not yet affecting ranking relevance.
+
+0027 fixes this by adding:
+- level_fit_score;
+- level_evidence_label;
+- evidence_fit_score;
+- ranking_score.
+
+Canonical minimum level remains the hard eligibility gate.
+Observed median player level is soft evidence only.
+
+### Incoming damage layer
+Applied:
+- 0028_huntanalyser_incoming_damage.sql
+- 0029_defensive_analytics.sql
+
+Validated parser semantics before implementation:
+- HuntAnalyser detail pages can expose Input Damage Summary per linked member tab;
+- x4 sample session 58756 contains 4 member tabs;
+- only the Lab Jba tab contains linked Input Damage data in that sample;
+- therefore input damage is member-scoped, not automatically party-wide.
+
+The new layer parses existing stored detail snapshots only and is designed to capture:
+- total received damage;
+- max DPS;
+- damage by element and share;
+- damage by monster and share;
+- linked player hash / player_id when available.
+
+No new remote collection is needed for this phase.
+
+### Phase 12 prepared
+Created but not yet applied:
+- 0030_defensive_item_candidates.sql
+- docs/PHASE_12_DEFENSIVE_EQUIPMENT.md
+
+The Phase 12 score combines:
+- observed incoming-damage weights;
+- Tier B item elemental protections;
+- vocation compatibility;
+- level eligibility;
+- equipment slot.
+
+It returns defensive item candidates per slot and explicitly does not claim to be a final set optimizer.
+
+### Current blocker
+The temporary Lovable Free-plan MCP database action limit was reached immediately after applying 0027–0029.
+
+The combined validation call did not return, so do not assume that the first incoming-damage batch executed.
+
+Resume with:
+1. validate 0027 representative rankings;
+2. run `select huntnexus_parse_huntanalyser_incoming_damage(25);`;
+3. inspect element/player resolution quality;
+4. continue remaining snapshots if clean;
+5. apply `0030_defensive_item_candidates.sql`;
+6. test defensive candidates on canonical hunts with observed incoming-damage samples.
