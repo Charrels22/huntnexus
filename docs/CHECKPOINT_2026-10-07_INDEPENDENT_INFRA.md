@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0063
+- schema/migrations aplicados até 0065
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -79,6 +79,8 @@ Applied:
 - Goshnar's Hatred key restored to goshnars-hatred.
 - Soul War guard works again.
 - 0063 resolves source slug `demongoblin` to canonical `demon-goblin` / Demon (Goblin) through `entity_aliases`; raw hunt-source rows remain unchanged.
+- 0064 records Tier A RubinOT combat-profile facts for VIP, Loyalty, Guild Ascension and Weapon Proficiency.
+- 0065 defines `character_combat_profile_contract_v1`, preferring effective client-displayed stats to avoid double-counting RubinOT bonuses.
 
 ## Product smoke in Supabase
 
@@ -120,6 +122,31 @@ API contract cleanup:
 - `api/README.md` documents Cloudflare as the production API path.
 - old Supabase Edge Function and Lovable-oriented directories are legacy references only.
 
+## Regression coverage
+
+- `tests/sql/phase20_22_regression.sql` passes with hard assertions.
+- database regression result: `status=ok`, recommendation `preview_v7`, 3.745 hunt-creature links, 0 unresolved.
+- `tests/public-api-smoke.mjs` validates the production Worker without secrets.
+- GitHub Actions workflow `HuntNexus Public Smoke` runs daily, manually and when smoke coverage changes.
+- first public smoke workflow run completed successfully.
+- Cloudflare deploy trigger remains restricted to `web/app/**`; migration/test/doc commits do not redeploy production.
+
+## Character-aware optimizer foundation
+
+Tier A RubinOT facts now preserved:
+- VIP protected imbuement behavior in protection zones.
+- VIP additional critical chance.
+- Loyalty skill tiers and vocation mapping.
+- Guild Ascension combat bonus categories: leech, critical, skill, race damage, elemental damage and elemental defense.
+- Weapon Proficiency bonus visibility in Offense Stats.
+
+`character_combat_profile_contract_v1`:
+- prefers effective client-displayed values;
+- EK precise hand comparison requires weapon family + effective weapon skill;
+- optional effective shielding, critical, life/mana leech and elemental/race modifiers are modeled in the contract;
+- Weapon Proficiency exact combat formula remains unreconciled;
+- Guild Ascension seasonal numeric perk values are intentionally not inferred.
+
 ## Security
 
 Supabase advisor:
@@ -145,8 +172,10 @@ Supabase advisor:
 ## Remaining work
 
 - manual visual/browser interaction QA of form controls
-- add automated recommendation regression checks
-- continue recommendation/final-set optimizer after factual imbuement prioritization evidence
+- wire `character_combat_profile_contract_v1` into the public recommendation request/UI
+- reconcile Weapon Proficiency exact combat contribution before converting effective skill/attack into a final damage estimate
+- continue recommendation/final-set optimizer with character-aware data
+- keep cross-type imbuement priorities explicit until enough character/rotation evidence exists
 - current RubinOT boss mechanic reconciliation
 - optional performance indexing based on real query usage
 - terms/privacy decision before expanding HuntAnalyser beyond 100-session public sample
