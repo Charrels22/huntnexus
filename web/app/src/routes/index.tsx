@@ -115,6 +115,28 @@ function SpellList({ title, spells }: { title: string; spells: any[] }) {
   );
 }
 
+function ImbueSummary({ label, data }: { label: string; data: any }) {
+  if (!data || Number(data.imbue_slots ?? 0) < 1) return null;
+  const candidates = [
+    ...arr(data.protection_candidates),
+    ...arr(data.skill_candidates),
+    ...arr(data.core_offense_sustain_candidates),
+  ];
+  const names = Array.from(new Set(candidates.map((x) => x.name).filter(Boolean)));
+  return (
+    <li className="text-sm">
+      <span className="text-muted-foreground">{label}:</span>{" "}
+      <span className="font-medium">{data.name}</span>{" "}
+      <Badge variant="outline">{data.imbue_slots} slot{Number(data.imbue_slots) === 1 ? "" : "s"}</Badge>
+      {names.length > 0 && (
+        <span className="ml-2 text-xs text-muted-foreground">
+          {names.slice(0, 5).join(", ")}{names.length > 5 ? ` +${names.length - 5}` : ""}
+        </span>
+      )}
+    </li>
+  );
+}
+
 function ErrorBox({ msg }: { msg: string }) {
   return (
     <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erro</AlertTitle><AlertDescription>{msg}</AlertDescription></Alert>
@@ -206,6 +228,12 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
   const selectedSlots = Object.entries(setPreview.selected_slots ?? {}) as Array<[string, any]>;
   const oneHand = setPreview.hand_options?.one_handed;
   const twoHand = setPreview.hand_options?.two_handed;
+  const handAnalysis = setPreview.hand_analysis ?? {};
+  const oneAnalysis = arr(handAnalysis.one_handed?.offense_options)[0] ?? {};
+  const twoAnalysis = arr(handAnalysis.two_handed?.offense_options)[0] ?? {};
+  const excludedWeapons = arr(handAnalysis.excluded_from_sustained_hunt);
+  const imbuePreview = setPreview.imbuement_preview ?? {};
+  const fixedImbues = Object.entries(imbuePreview.fixed_slots ?? {}) as Array<[string, any]>;
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -254,7 +282,13 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
               <div className="space-y-2 pt-1">
                 <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
                   Configuração de mãos
-                  {!setPreview.recommended_hand_configuration && <Badge variant="secondary">comparação pendente</Badge>}
+                  {setPreview.recommended_hand_configuration ? (
+                    <Badge variant="secondary">
+                      dominância: {setPreview.recommended_hand_configuration === "two_handed" ? "2 mãos" : "1 mão + off-hand"}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">trade-off aberto</Badge>
+                  )}
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {oneHand?.available && (
@@ -264,20 +298,72 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
                       <div className="text-xs text-muted-foreground">
                         {oneHand.off_hand?.name ? `Off-hand: ${oneHand.off_hand.name}` : "Sem off-hand candidato"}
                       </div>
+                      {oneAnalysis.weapon && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <Badge variant="outline">atk proxy {fmt(oneAnalysis.weapon.effective_attack_proxy, 2)}</Badge>
+                          <Badge variant="outline">skill +{fmt(oneAnalysis.matching_weapon_skill_bonus, 0)}</Badge>
+                          <Badge variant="outline">prot {fmt(oneAnalysis.weighted_protection, 2)}</Badge>
+                          <Badge variant="outline">{oneAnalysis.imbue_capacity ?? 0} imbue</Badge>
+                        </div>
+                      )}
                     </div>
                   )}
                   {twoHand?.available && (
                     <div className="rounded-md border px-3 py-2 text-sm">
                       <div className="text-xs text-muted-foreground">2 mãos</div>
                       <div className="font-medium">{twoHand.item?.name ?? "—"}</div>
+                      {twoAnalysis.item_key && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <Badge variant="outline">atk proxy {fmt(twoAnalysis.effective_attack_proxy, 2)}</Badge>
+                          <Badge variant="outline">skill +{fmt(twoAnalysis.weapon_skill_bonus, 0)}</Badge>
+                          <Badge variant="outline">prot {fmt(twoAnalysis.weighted_protection, 2)}</Badge>
+                          <Badge variant="outline">{twoAnalysis.imbue_capacity ?? 0} imbue</Badge>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+
                 {!setPreview.recommended_hand_configuration && (
                   <p className="text-xs text-muted-foreground">
-                    O HuntNexus ainda não força uma escolha entre as duas configurações sem um modelo factual comum para o trade-off ofensivo/defensivo.
+                    Nenhuma configuração domina a outra em ataque efetivo, skill compatível, proteção observada e capacidade de imbue; o HuntNexus mantém o trade-off explícito.
                   </p>
                 )}
+
+                {excludedWeapons.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Fora da hunt sustentada: {excludedWeapons.map((x) => `${x.name} (${x.reason})`).join(", ")}.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {imbuePreview.methodology?.stage && (
+              <div className="space-y-2 border-t pt-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="text-sm font-medium">Imbuements compatíveis (preview)</div>
+                  <Badge variant="outline">sem prioridade entre categorias</Badge>
+                </div>
+                <ul className="space-y-1">
+                  {fixedImbues.map(([slot, data]) => (
+                    <ImbueSummary key={slot} label={slot} data={data} />
+                  ))}
+                  <ImbueSummary
+                    label="1 mão"
+                    data={imbuePreview.hand_options?.one_handed?.main_hand}
+                  />
+                  <ImbueSummary
+                    label="Off-hand"
+                    data={imbuePreview.hand_options?.one_handed?.off_hand}
+                  />
+                  <ImbueSummary
+                    label="2 mãos"
+                    data={imbuePreview.hand_options?.two_handed}
+                  />
+                </ul>
+                <p className="text-xs text-muted-foreground">
+                  Compatibilidade respeita categoria e quantidade de slots. Proteções elementais são ordenadas pelo dano recebido observado; Strike, leech e skill continuam sem peso artificial entre si.
+                </p>
               </div>
             )}
           </div>
