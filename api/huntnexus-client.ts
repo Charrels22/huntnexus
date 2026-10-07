@@ -1,6 +1,11 @@
 export type HuntNexusVocation = "EK" | "RP" | "ED" | "MS" | "EM";
 export type HuntObjective = "xp" | "profit" | "balanced";
 
+export type ApiEnvelope<T> = {
+  data: T;
+  warnings?: unknown[];
+};
+
 export type RecommendInput = {
   vocation: HuntNexusVocation;
   level: number;
@@ -16,16 +21,35 @@ export type BossBuildInput = {
   level: number;
 };
 
+export type HuntLookup = {
+  hunt_key: string;
+  name: string;
+  city?: string | null;
+  vocation?: string | null;
+  level_knights?: string | null;
+  level_paladins?: string | null;
+  level_mages?: string | null;
+  observed_sessions: number;
+  has_observed_incoming_damage: boolean;
+};
+
+export type BossLookup = {
+  boss_key: string;
+  name: string;
+  encounter_type: string;
+  final_build_blocked: boolean;
+  readiness_status: string;
+  guards: unknown[];
+};
+
 export class HuntNexusApi {
   constructor(
     private readonly endpoint: string,
     private readonly anonKey?: string,
   ) {}
 
-  private async post<T>(body: unknown): Promise<T> {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
+  private async post<T>(body: unknown): Promise<ApiEnvelope<T>> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
 
     if (this.anonKey) {
       headers.apikey = this.anonKey;
@@ -44,10 +68,10 @@ export class HuntNexusApi {
       throw new Error(payload?.detail || payload?.error || "HuntNexus API request failed");
     }
 
-    return payload.data as T;
+    return payload as ApiEnvelope<T>;
   }
 
-  recommend<T = unknown>(input: RecommendInput): Promise<T> {
+  recommend<T = unknown>(input: RecommendInput) {
     return this.post<T>({
       action: "recommend",
       vocation: input.vocation,
@@ -59,12 +83,26 @@ export class HuntNexusApi {
     });
   }
 
-  bossBuild<T = unknown>(input: BossBuildInput): Promise<T> {
+  bossBuild<T = unknown>(input: BossBuildInput) {
     return this.post<T>({
       action: "boss_build",
       boss_key: input.bossKey,
       vocation: input.vocation,
       level: input.level,
     });
+  }
+
+  async searchHunts(query = "", limit = 20): Promise<HuntLookup[]> {
+    const r = await this.post<HuntLookup[]>({ action: "search_hunts", query, limit });
+    return r.data;
+  }
+
+  async searchBosses(query = "", limit = 20): Promise<BossLookup[]> {
+    const r = await this.post<BossLookup[]>({ action: "search_bosses", query, limit });
+    return r.data;
+  }
+
+  health<T = unknown>() {
+    return this.post<T>({ action: "health" });
   }
 }
