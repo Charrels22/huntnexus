@@ -55,7 +55,7 @@ eligible as (
     huntnexus_first_int(i.level_required) as level_required,
     i.armor,
     i.defense,
-    i.imbue_slots
+    huntnexus_first_int(i.imbue_slots) as imbue_slots
   from tibia_items i
   left join vw_equipment_slots s on s.item_id=i.id
   where huntnexus_item_vocation_compatible(i.vocation,(select vocation from params))
