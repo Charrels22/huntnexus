@@ -21,7 +21,7 @@ Worker: huntnexus
 - GitHub é a fonte canônica.
 - Cloudflare Builds está conectado ao repositório `Charrels22/huntnexus`, branch `main`.
 - produção usa `web/app` como root, executa `npm run build` e depois `npx wrangler deploy`.
-- `auto_build_enabled=true`; push em `main` dispara build/deploy pelo Cloudflare.
+- `auto_build_enabled=true`; push em `main` dispara build/deploy pelo Cloudflare somente quando `web/app/**` é alterado.
 - o GitHub Actions `HuntNexus Web CI` é uma validação separada de build/typecheck e não é o mecanismo de deploy.
 
 Lovable deixou de ser dependência de runtime/produção.
@@ -124,6 +124,7 @@ Supabase advisor:
 - GitHub CI do HEAD ficou verde.
 - primeiro deploy Cloudflare desse HEAD falhou apenas no upload de assets com erro transitório `10013`.
 - retry manual do mesmo commit, sem mudança de código, concluiu com sucesso.
+- trigger Cloudflare restringido de `*` para `web/app/**`, evitando rebuild/deploy por mudanças apenas em docs, migrations ou CI.
 - smoke público final após o retry:
   - health HTTP 200 / `preview_v5`
   - recommend HTTP 200 / Cobra Bastion / 0.794 / 0.920
