@@ -34,8 +34,7 @@ select case
     end
   else null
 end
-$function$
-
+$function$;
 
 revoke all on function huntnexus_canonical_equipment_slot(text,text)
   from public,anon,authenticated;
@@ -287,8 +286,7 @@ select jsonb_build_object(
     'note','Candidates use canonical equipment slots and require actual equipment evidence. Offense, defense and imbue capacity remain independent.'
   )
 );
-$function$
-
+$function$;
 
 revoke all on function huntnexus_loadout_candidate_matrix(text,text,int,int)
   from public,anon,authenticated;
