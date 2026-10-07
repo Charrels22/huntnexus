@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0057
+- schema/migrations aplicados até 0063
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -37,8 +37,8 @@ Lovable deixou de ser dependência de runtime/produção.
 - hunt details: 459/459
 - hunt detail errors: 0
 - hunt-creature links: 3.745
-- links canonical resolved: 3.743
-- unresolved: 2 ocorrências de demongoblin
+- links canonical resolved: 3.745/3.745
+- unresolved hunt-creature links: 0
 - itens: 6.470
 - combat/equipment detail subset atual: 1.600
 - item detail errors: 0
@@ -78,13 +78,22 @@ Applied:
 - hunt slug mismatches: 0
 - Goshnar's Hatred key restored to goshnars-hatred.
 - Soul War guard works again.
+- 0063 resolves source slug `demongoblin` to canonical `demon-goblin` / Demon (Goblin) through `entity_aliases`; raw hunt-source rows remain unchanged.
 
 ## Product smoke in Supabase
 
 Confirmed:
 - huntnexus_api_health() = ok
-- recommendation stage = preview_v4
+- recommendation stage = preview_v7
 - EK700 XP returns Cobra Bastion
+- loadout candidate matrix = `loadout_candidate_matrix_v5`
+- set preview = `loadout_set_preview_v3`
+- EK hand comparison = `ek_hand_options_v2`
+- imbuement compatibility = `loadout_imbuement_compatibility_v1`
+- Ice Rapier is excluded from sustained-hunt weapon choices by explicit catalog evidence
+- one-hand EK example: Grand Sanguine Blade + Shield of Corruption
+- two-hand EK example: Grand Sanguine Battleaxe
+- hand configuration remains unresolved when neither factual vector Pareto-dominates the other
 - score and confidence remain separate
 - Magma Bubble final build blocked by v13.8 guard
 - Goshnar's Hatred final build blocked by Soul War v13.7 guard
@@ -95,10 +104,12 @@ Endpoint:
 - `https://huntnexus.charr3ls22.workers.dev/api/huntnexus`
 
 Confirmed through real public HTTP requests:
-- `health`: HTTP 200, HuntNexus, v13.9 / v4.064, preview_v4
+- `health`: HTTP 200, HuntNexus, v13.9 / v4.064, preview_v7
 - `recommend`: EK 700 / XP / Solo -> Cobra Bastion, score 0.794, confidence 0.920, HTTP 200
-- recommendation stage atual: `preview_v5`
-- loadout set preview: `loadout_set_preview_v1`, sem score combinado artificial
+- recommendation stage atual: `preview_v7`
+- loadout set preview: `loadout_set_preview_v3`, sem score combinado artificial
+- EK hand tradeoff: `ek_hand_options_v2`, com Pareto dominance only
+- imbuement compatibility: `loadout_imbuement_compatibility_v1`, sem prioridade artificial entre Strike/leech/skill/proteção
 - `search_bosses`: Magma Bubble -> `magma-bubble`, guard state exposed correctly, HTTP 200
 - `boss_build`: Magma Bubble -> `final_build_blocked=true`, `final_build_available=false`, RubinOT v13.8 guard, HTTP 200
 
@@ -119,21 +130,23 @@ Supabase advisor:
 
 ## Deployment validation
 
-- frontend commit `292932473f0fad7e6fd253a0411af7818893ae1e` foi buildado e publicado com sucesso pelo Cloudflare Builds.
+- frontend commit `292932473f0fad7e6fd253a0411af7818893ae1e` introduziu o primeiro set preview e foi publicado com sucesso.
+- frontend commit `a6a974d429f39f9a73da50516f2806821c62b939` adicionou comparação factual de mãos, exclusões de hunt sustentada e compatibilidade de imbuements; Cloudflare build/deploy e GitHub CI passaram.
 - commit `7ac17de116639a37286212e5de249003b433d7eb` corrigiu o CI que referenciava um `package-lock.json` inexistente.
 - GitHub CI do HEAD ficou verde.
 - primeiro deploy Cloudflare desse HEAD falhou apenas no upload de assets com erro transitório `10013`.
 - retry manual do mesmo commit, sem mudança de código, concluiu com sucesso.
 - trigger Cloudflare restringido de `*` para `web/app/**`, evitando rebuild/deploy por mudanças apenas em docs, migrations ou CI.
 - smoke público final após o retry:
-  - health HTTP 200 / `preview_v5`
+  - health HTTP 200 / `preview_v7`
   - recommend HTTP 200 / Cobra Bastion / 0.794 / 0.920
   - boss_build HTTP 200 / Magma Bubble bloqueado / final build indisponível
 
 ## Remaining work
 
 - manual visual/browser interaction QA of form controls
-- continue recommendation/final-set optimizer
+- add automated recommendation regression checks
+- continue recommendation/final-set optimizer after factual imbuement prioritization evidence
 - current RubinOT boss mechanic reconciliation
 - optional performance indexing based on real query usage
 - terms/privacy decision before expanding HuntAnalyser beyond 100-session public sample
