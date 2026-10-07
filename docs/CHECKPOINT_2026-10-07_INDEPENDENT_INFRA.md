@@ -18,7 +18,9 @@ Worker: huntnexus
   - SUPABASE_URL
   - SUPABASE_SERVICE_ROLE_KEY
 - ChatGPT possui conexão direta via Cloudflare connector
-- GitHub continua fonte canônica e aciona deploys.
+- GitHub é a fonte canônica.
+- deploy atual é executado via Wrangler a partir de `web/app`.
+- o workflow GitHub atual faz build/typecheck; não faz deploy automático.
 
 Lovable deixou de ser dependência de runtime/produção.
 
@@ -85,6 +87,24 @@ Confirmed:
 - Magma Bubble final build blocked by v13.8 guard
 - Goshnar's Hatred final build blocked by Soul War v13.7 guard
 
+## Public Cloudflare end-to-end smoke
+
+Endpoint:
+- `https://huntnexus.charr3ls22.workers.dev/api/huntnexus`
+
+Confirmed through real public HTTP requests:
+- `health`: HTTP 200, HuntNexus, v13.9 / v4.064, preview_v4
+- `recommend`: EK 700 / XP / Solo -> Cobra Bastion, score 0.794, confidence 0.920, HTTP 200
+- `search_bosses`: Magma Bubble -> `magma-bubble`, guard state exposed correctly, HTTP 200
+- `boss_build`: Magma Bubble -> `final_build_blocked=true`, `final_build_available=false`, RubinOT v13.8 guard, HTTP 200
+
+Frontend root also resolves publicly from the same Worker.
+
+API contract cleanup:
+- `api/huntnexus-client.ts` now matches the Worker vocations exactly: EK/RP/ED/MS.
+- `api/README.md` documents Cloudflare as the production API path.
+- old Supabase Edge Function and Lovable-oriented directories are legacy references only.
+
 ## Security
 
 Supabase advisor:
@@ -95,7 +115,7 @@ Supabase advisor:
 
 ## Remaining work
 
-- external browser click-through of Cloudflare app
+- manual visual/browser interaction QA of form controls
 - continue recommendation/final-set optimizer
 - current RubinOT boss mechanic reconciliation
 - optional performance indexing based on real query usage
