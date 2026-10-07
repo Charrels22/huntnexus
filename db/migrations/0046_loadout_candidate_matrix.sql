@@ -63,6 +63,28 @@ eligible as (
       huntnexus_first_int(i.level_required) is null
       or huntnexus_first_int(i.level_required)<=(select player_level from params)
     )
+    and (
+      s.slot is not null
+      or huntnexus_first_int(i.imbue_slots)>0
+      or exists (
+        select 1
+        from item_effects ie
+        where ie.item_id=i.id
+          and (
+            ie.effect_type in ('protection','skill','magic_skill','offense','defense','special','leech')
+            or ie.effect_key in (
+              'critical_hit_chance','critical_extra_damage',
+              'attack_modifier','hit_modifier','cleave','perfect_shot'
+            )
+          )
+      )
+      or i.category in (
+        'Sword Weapons','Axe Weapons','Club Weapons','Fist Fighting Weapons',
+        'Bows','Crossbows','Throwing Weapons','Rods','Wands',
+        'Shields','Spellbooks','Helmets','Armors','Legs','Boots',
+        'Amulets','Rings','Quivers','Enchanted Items'
+      )
+    )
 ),
 defense as (
   select
