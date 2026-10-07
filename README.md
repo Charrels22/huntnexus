@@ -2,14 +2,25 @@
 
 HuntNexus é uma plataforma de inteligência e análise para Tibia/RubinOT.
 
-O projeto começa pela **HuntNexus Brain**: uma base versionada de conhecimento que combina:
+A arquitetura atual é independente do Lovable:
 
-- dados factuais do Tibia;
-- alterações específicas do RubinOT;
-- observações reais de hunts da comunidade;
-- referências editoriais separadas dos fatos.
+```text
+GitHub
+  │
+  ├─ web/app ─────────────► Cloudflare Workers
+  │                           └─ HuntNexus Web + /api/huntnexus
+  │
+  └─ db/migrations ───────► Supabase HuntNexus
+                              └─ HuntNexus Brain + Analytics
+```
 
-O site público será construído somente depois que a camada de dados estiver confiável.
+## Camadas
+
+- **HuntNexus**: produto/plataforma.
+- **HuntNexus Brain**: base versionada de conhecimento.
+- **HuntNexus Analytics**: rankings, evidências e recomendações.
+- **HuntNexus API**: contrato server-side em `/api/huntnexus`.
+- **HuntNexus Web**: frontend TanStack Start hospedado no Cloudflare Workers.
 
 ## Princípio central
 
@@ -38,19 +49,21 @@ HuntNexus Web
   - dano recebido na hunt;
   - vulnerabilidade/resistência dos monstros;
   - dano observado dos jogadores.
-- Recomendações futuras precisam ser explicáveis por evidências.
+- Recomendações precisam ser explicáveis por evidências.
+- Boss build final permanece bloqueada quando a mecânica RubinOT atual não está reconciliada.
+- GitHub é a fonte canônica do código/migrations.
+- Cloudflare e Supabase são a infraestrutura de runtime atual.
+- Lovable não é mais dependência de produção.
 
 ## Estrutura
 
 ```text
-docs/        contexto, arquitetura e regras
-collectors/  coleta por fonte
-db/          schema e migrations
-api/         contratos de leitura
-analytics/   motor analítico futuro
-web/         site futuro
-tests/       validações
-data/        catálogos e metadados
+db/migrations/   schema, ingestão e analytics PostgreSQL
+web/app/         aplicação TanStack Start + Cloudflare Workers
+api/             contratos/clientes auxiliares
+docs/            contexto, arquitetura e regras
+tests/           smoke tests e invariantes
+data/            catálogos/metadados
 ```
 
 Leia `AGENTS.md` e `docs/` antes de alterar a arquitetura.
