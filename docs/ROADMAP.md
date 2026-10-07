@@ -46,8 +46,8 @@
 - [ ] recomendações explicáveis
 
 ## Fase 6 — Produto
-- [ ] HuntNexus API
-- [ ] HuntNexus Web
+- [x] HuntNexus API — Cloudflare Worker + Supabase RPCs, smoke público aprovado
+- [x] HuntNexus Web — TanStack Start publicado no Cloudflare Worker
 - [ ] autenticação
 - [ ] páginas de hunt
 - [ ] builds
