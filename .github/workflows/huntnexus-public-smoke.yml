@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 9 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "tests/public-api-smoke.mjs"
+      - ".github/workflows/huntnexus-public-smoke.yml"
 
 permissions:
   contents: read
