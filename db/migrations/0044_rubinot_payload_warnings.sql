@@ -4,14 +4,14 @@ create or replace view vw_spell_rubinot_reconciliation as
 select
   s.spell_key,
   s.name,
-  s.vocation,
-  s.min_level,
   c.patch_version,
   c.released_on,
   c.change_kind,
   c.summary,
   c.reconciliation_status,
-  c.notes
+  c.notes,
+  s.vocation,
+  s.min_level
 from spell_definitions s
 join rubinot_change_candidates c
   on c.entity_type='spell'
