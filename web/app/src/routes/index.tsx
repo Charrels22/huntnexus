@@ -202,6 +202,10 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
   const defensive = arr(r.defensive_candidates?.candidates);
   const imbues = arr(r.imbuement_candidates?.defensive_priority);
   const sp = r.spell_candidates ?? {};
+  const setPreview = r.loadout_set_preview ?? {};
+  const selectedSlots = Object.entries(setPreview.selected_slots ?? {}) as Array<[string, any]>;
+  const oneHand = setPreview.hand_options?.one_handed;
+  const twoHand = setPreview.hand_options?.two_handed;
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -222,6 +226,62 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
           <Stat label="Balance/h (mediana)" value={fmt(k.median_balance_per_hour)} />
           <Stat label="Elemento mais forte observado" value={k.strongest_observed_element ?? "—"} />
         </div>
+
+        {selectedSlots.length > 0 && (
+          <div className="space-y-2 rounded-md border p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-medium">Set sugerido (preview)</div>
+              <Badge variant="outline">não final</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {setPreview.methodology?.objective_policy ?? "Seleção por evidência, mantendo as dimensões separadas."}
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {selectedSlots.map(([slot, item]) => (
+                <div key={slot} className="rounded-md bg-muted/40 px-3 py-2 text-sm">
+                  <div className="text-xs text-muted-foreground">{slot}</div>
+                  <div className="font-medium">{item.name}</div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {Number(item.defensive_score) > 0 && <Badge variant="outline">def {fmt(item.defensive_score, 2)}</Badge>}
+                    {Number(item.offensive_skill_total) > 0 && <Badge variant="outline">off {fmt(item.offensive_skill_total, 0)}</Badge>}
+                    {Number(item.imbue_slots) > 0 && <Badge variant="outline">{item.imbue_slots} imbue</Badge>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {(oneHand?.available || twoHand?.available) && (
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                  Configuração de mãos
+                  {!setPreview.recommended_hand_configuration && <Badge variant="secondary">comparação pendente</Badge>}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {oneHand?.available && (
+                    <div className="rounded-md border px-3 py-2 text-sm">
+                      <div className="text-xs text-muted-foreground">1 mão + off-hand</div>
+                      <div className="font-medium">{oneHand.main_hand?.name ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {oneHand.off_hand?.name ? `Off-hand: ${oneHand.off_hand.name}` : "Sem off-hand candidato"}
+                      </div>
+                    </div>
+                  )}
+                  {twoHand?.available && (
+                    <div className="rounded-md border px-3 py-2 text-sm">
+                      <div className="text-xs text-muted-foreground">2 mãos</div>
+                      <div className="font-medium">{twoHand.item?.name ?? "—"}</div>
+                    </div>
+                  )}
+                </div>
+                {!setPreview.recommended_hand_configuration && (
+                  <p className="text-xs text-muted-foreground">
+                    O HuntNexus ainda não força uma escolha entre as duas configurações sem um modelo factual comum para o trade-off ofensivo/defensivo.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {incoming.length > 0 && (
           <div className="space-y-1">
