@@ -1,558 +1,419 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- API returns untyped jsonb previews */
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Loader2, ShieldAlert } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "HuntNexus" },
-      {
-        name: "description",
-        content: "Hunt recommendations, evidence, builds and boss-room guidance.",
-      },
+      { title: "HuntNexus — Hunts e Bosses explicáveis" },
+      { name: "description", content: "Recomendações explicáveis de hunts e bosses com dados factuais, sessões observadas e regras versionadas do RubinOT." },
+      { property: "og:title", content: "HuntNexus — Hunts e Bosses explicáveis" },
+      { property: "og:description", content: "Recomendações explicáveis de hunts e bosses com dados factuais, sessões observadas e regras versionadas do RubinOT." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: HuntNexusHome,
+  component: HomePage,
 });
 
-type Vocation = "EK" | "RP" | "ED" | "MS";
-type Objective = "xp" | "profit" | "balanced";
+const VOCATIONS = [
+  { v: "EK", label: "Elite Knight (EK)" },
+  { v: "RP", label: "Royal Paladin (RP)" },
+  { v: "ED", label: "Elder Druid (ED)" },
+  { v: "MS", label: "Master Sorcerer (MS)" },
+];
+const PARTY = [
+  { v: "1", label: "Solo" }, { v: "2", label: "Duo" }, { v: "3", label: "Trio" },
+  { v: "4", label: "x4" }, { v: "5", label: "x5+" },
+];
+const BLOCKED_TEXT = "O HuntNexus não apresenta uma build final enquanto a mecânica atual da sala não estiver reconciliada.";
 
-function fmt(n: unknown) {
-  if (typeof n !== "number") return "—";
-  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(n);
+async function callApi(body: Record<string, unknown>): Promise<any> {
+  const res = await fetch("/api/huntnexus", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.detail ?? data?.error ?? `HTTP ${res.status}`);
+  return data;
 }
 
-async function callApi<T>(body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke("huntnexus-api", { body });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.detail || data.error);
-  return data as { data: T; warnings?: unknown[] };
-}
+const fmt = (n: unknown, digits = 0) =>
+  typeof n === "number" ? n.toLocaleString("pt-BR", { maximumFractionDigits: digits }) : "—";
+const arr = (x: unknown): any[] => (Array.isArray(x) ? x : []);
 
-function HuntNexusHome() {
-  const [health, setHealth] = useState<any>(null);
-  const [tab, setTab] = useState("hunts");
-
-  useEffect(() => {
-    callApi<any>({ action: "health" })
-      .then((x) => setHealth(x.data))
-      .catch(() => setHealth(null));
-  }, []);
-
+function HomePage() {
   return (
-    <main className="mx-auto min-h-screen max-w-7xl space-y-6 p-4 md:p-8">
-      <header className="flex flex-col gap-3 border-b pb-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            HuntNexus
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight">Hunt intelligence</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Recomendações explicáveis usando dados factuais, sessões observadas e regras versionadas do RubinOT.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 text-xs">
-          {health?.versions?.latest_rubinot_server && (
-            <Badge variant="secondary">RubinOT {health.versions.latest_rubinot_server}</Badge>
-          )}
-          {health?.counts?.hunts != null && (
-            <Badge variant="outline">{fmt(health.counts.hunts)} hunts</Badge>
-          )}
-          {health?.counts?.bosses != null && (
-            <Badge variant="outline">{fmt(health.counts.bosses)} bosses</Badge>
-          )}
-        </div>
+    <main className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-semibold tracking-tight">HuntNexus</h1>
+        <p className="text-muted-foreground">
+          Recomendações explicáveis usando dados factuais, sessões observadas e regras versionadas do RubinOT.
+        </p>
       </header>
-
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs defaultValue="hunts">
         <TabsList>
           <TabsTrigger value="hunts">Hunts</TabsTrigger>
           <TabsTrigger value="bosses">Bosses</TabsTrigger>
         </TabsList>
-        <TabsContent value="hunts" className="mt-6">
-          <HuntPanel />
-        </TabsContent>
-        <TabsContent value="bosses" className="mt-6">
-          <BossPanel />
-        </TabsContent>
+        <TabsContent value="hunts" className="mt-4"><HuntsTab /></TabsContent>
+        <TabsContent value="bosses" className="mt-4"><BossesTab /></TabsContent>
       </Tabs>
     </main>
   );
 }
 
-function HuntPanel() {
-  const [vocation, setVocation] = useState<Vocation>("EK");
-  const [level, setLevel] = useState(700);
-  const [objective, setObjective] = useState<Objective>("balanced");
-  const [partySize, setPartySize] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [payload, setPayload] = useState<any>(null);
-  const [warnings, setWarnings] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+}
 
-  async function run() {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await callApi<any>({
-        action: "recommend",
-        vocation,
-        level,
-        objective,
-        party_size: partySize,
-        limit: 5,
-        defensive_items_per_slot: 3,
-      });
-      setPayload(r.data);
-      setWarnings((r.warnings as any[]) ?? []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao gerar recomendação.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
+function VocationSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-      <Card className="h-fit">
-        <CardHeader>
-          <CardTitle>Encontrar hunt</CardTitle>
-          <CardDescription>Informe o perfil usado no ranking.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Field label="Vocação">
-            <Select value={vocation} onValueChange={(v) => setVocation(v as Vocation)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EK">Elite Knight</SelectItem>
-                <SelectItem value="RP">Royal Paladin</SelectItem>
-                <SelectItem value="ED">Elder Druid</SelectItem>
-                <SelectItem value="MS">Master Sorcerer</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger><SelectValue /></SelectTrigger>
+      <SelectContent>{VOCATIONS.map((o) => <SelectItem key={o.v} value={o.v}>{o.label}</SelectItem>)}</SelectContent>
+    </Select>
+  );
+}
 
-          <Field label="Level">
-            <Input
-              type="number"
-              min={1}
-              value={level}
-              onChange={(e) => setLevel(Math.max(1, Number(e.target.value) || 1))}
-            />
-          </Field>
-
-          <Field label="Objetivo">
-            <Select value={objective} onValueChange={(v) => setObjective(v as Objective)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="xp">XP</SelectItem>
-                <SelectItem value="profit">Profit</SelectItem>
-                <SelectItem value="balanced">Balanced</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field label="Party size">
-            <Select value={String(partySize)} onValueChange={(v) => setPartySize(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Solo</SelectItem>
-                <SelectItem value="2">Duo</SelectItem>
-                <SelectItem value="3">Trio</SelectItem>
-                <SelectItem value="4">x4</SelectItem>
-                <SelectItem value="5">x5+</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Button className="w-full" onClick={run} disabled={loading}>
-            {loading ? "Analisando…" : "Analisar hunts"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        {error && <ErrorAlert text={error} />}
-
-        {warnings.length > 0 && (
-          <Alert>
-            <AlertTitle>Alterações RubinOT pendentes</AlertTitle>
-            <AlertDescription>
-              Há {warnings.length} alteração(ões) recente(s) relacionada(s) à sua vocação ainda em reconciliação.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {!payload && !error && (
-          <EmptyState title="Pronto para analisar" text="Preencha seu perfil e execute uma análise." />
-        )}
-
-        {payload?.results?.map((result: any, index: number) => (
-          <HuntResult key={result.ranking?.hunt_key ?? index} result={result} rank={index + 1} />
-        ))}
-      </div>
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-md border px-3 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="font-medium tabular-nums">{value}</div>
     </div>
   );
 }
 
-function HuntResult({ result, rank }: { result: any; rank: number }) {
-  const ranking = result.ranking ?? {};
-  const observed = result.observed_profile?.performance ?? {};
-  const defenses = result.defensive_candidates?.incoming_damage ?? [];
-  const items = result.defensive_candidates?.candidates ?? [];
-  const spells = result.spell_candidates ?? {};
-  const imbuements = result.imbuement_candidates?.defensive_priority ?? [];
+function SpellList({ title, spells }: { title: string; spells: any[] }) {
+  if (!spells.length) return null;
+  return (
+    <div className="space-y-1">
+      <div className="text-sm font-medium">{title}</div>
+      <ul className="space-y-1 text-sm">
+        {spells.map((s, i) => (
+          <li key={s.spell_key ?? i} className="flex flex-wrap items-baseline gap-x-2">
+            <span>{s.name}</span>
+            {s.words && <code className="text-xs text-muted-foreground">{s.words}</code>}
+            {s.element && <Badge variant="outline">{s.element}</Badge>}
+            {s.cooldown_seconds != null && <span className="text-xs text-muted-foreground">cd {s.cooldown_seconds}s</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
-  const topItems = useMemo(() => items.slice(0, 6), [items]);
+function ErrorBox({ msg }: { msg: string }) {
+  return (
+    <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erro</AlertTitle><AlertDescription>{msg}</AlertDescription></Alert>
+  );
+}
+
+/* ---------------- HUNTS ---------------- */
+
+function HuntsTab() {
+  const [vocation, setVocation] = useState("EK");
+  const [level, setLevel] = useState("300");
+  const [objective, setObjective] = useState("balanced");
+  const [party, setParty] = useState("1");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<any>(null);
+
+  async function run() {
+    setLoading(true); setError(null);
+    try {
+      setResult(await callApi({ action: "recommend", vocation, level: Number(level), objective, party_size: Number(party) }));
+    } catch (e) { setError((e as Error).message); setResult(null); }
+    finally { setLoading(false); }
+  }
+
+  const results = arr(result?.data?.results);
+  const warnings = arr(result?.warnings);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-5">
+          <Field label="Vocação"><VocationSelect value={vocation} onChange={setVocation} /></Field>
+          <Field label="Level"><Input type="number" min={1} value={level} onChange={(e) => setLevel(e.target.value)} /></Field>
+          <Field label="Objetivo">
+            <Select value={objective} onValueChange={setObjective}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="xp">XP</SelectItem><SelectItem value="profit">Profit</SelectItem><SelectItem value="balanced">Balanced</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Party size">
+            <Select value={party} onValueChange={setParty}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{PARTY.map((p) => <SelectItem key={p.v} value={p.v}>{p.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <div className="flex items-end">
+            <Button className="w-full" onClick={run} disabled={loading || Number(level) < 1}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Analisar hunts
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {error && <ErrorBox msg={error} />}
+
+      {warnings.length > 0 && (
+        <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>Alterações RubinOT pendentes ({warnings.length})</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4">{warnings.map((w, i) => <li key={i}>{w.summary ?? w.notes ?? JSON.stringify(w)}{w.patch_version ? ` (${w.patch_version})` : ""}</li>)}</ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {result && (
+        <p className="text-xs text-muted-foreground">
+          Dados observados são evidência comunitária, não garantia.
+        </p>
+      )}
+
+      {result && results.length === 0 && (
+        <p className="text-sm text-muted-foreground">Nenhuma hunt com sessões observadas para esses filtros.</p>
+      )}
+
+      {results.map((r, i) => <HuntResult key={r.ranking?.hunt_key ?? i} rank={i + 1} r={r} />)}
+    </div>
+  );
+}
+
+function HuntResult({ rank, r }: { rank: number; r: any }) {
+  const k = r.ranking ?? {};
+  const incoming = arr(r.defensive_candidates?.incoming_damage);
+  const defensive = arr(r.defensive_candidates?.candidates);
+  const imbues = arr(r.imbuement_candidates?.defensive_priority);
+  const sp = r.spell_candidates ?? {};
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
+          <span className="text-muted-foreground">#{rank}</span>{k.hunt_name}
+        </CardTitle>
+        <CardDescription className="flex flex-wrap gap-2">
+          <Badge variant="secondary">score {fmt(k.ranking_score, 3)}</Badge>
+          <Badge variant="outline">confiança {fmt(k.confidence_score, 3)}</Badge>
+          <Badge variant="outline">{k.session_count ?? 0} sessões</Badge>
+          {k.level_evidence_label && <Badge variant="outline">{k.level_evidence_label}</Badge>}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat label="Raw XP/h (mediana)" value={fmt(k.median_raw_xp_per_hour)} />
+          <Stat label="XP/h (mediana)" value={fmt(k.median_xp_per_hour)} />
+          <Stat label="Balance/h (mediana)" value={fmt(k.median_balance_per_hour)} />
+          <Stat label="Elemento mais forte observado" value={k.strongest_observed_element ?? "—"} />
+        </div>
+
+        {incoming.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-sm font-medium">Dano recebido observado por elemento</div>
+            <div className="flex flex-wrap gap-2">
+              {incoming.map((d, i) => (
+                <Badge key={i} variant="outline">
+                  {d.element}: {typeof d.weight === "number" ? `${Math.round(d.weight * 100)}%` : fmt(d.share ?? d.damage_share ?? d.total_damage ?? d.median_damage ?? d.damage, 3)}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {defensive.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-sm font-medium">Candidatos defensivos</div>
+            <ul className="grid gap-1 text-sm sm:grid-cols-2">
+              {defensive.map((d, i) => (
+                <li key={d.item_key ?? i}><span className="text-muted-foreground">{d.slot}:</span> {d.name} <span className="text-xs text-muted-foreground">({fmt(d.weighted_protection_score, 2)})</span></li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {imbues.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-sm font-medium">Imbuements defensivos prioritários</div>
+            <div className="flex flex-wrap gap-2">{imbues.map((m, i) => <Badge key={m.imbuement_key ?? i} variant="secondary">{m.name}{m.element ? ` · ${m.element}` : ""}</Badge>)}</div>
+          </div>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SpellList title="Magias candidatas — alvo único" spells={arr(sp.single_target_attacks)} />
+          <SpellList title="Magias candidatas — múltiplos alvos" spells={arr(sp.multi_target_attacks)} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------------- BOSSES ---------------- */
+
+function BossesTab() {
+  const [query, setQuery] = useState("");
+  const [bosses, setBosses] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
+  const [vocation, setVocation] = useState("MS");
+  const [level, setLevel] = useState("300");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<any>(null);
+
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try { setBosses(arr((await callApi({ action: "search_bosses", query, limit: 20 })).data)); }
+      catch (e) { setError((e as Error).message); }
+      finally { setSearching(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  async function run() {
+    if (!selected) return;
+    setLoading(true); setError(null);
+    try { setResult(await callApi({ action: "boss_build", boss_key: selected.boss_key, vocation, level: Number(level) })); }
+    catch (e) { setError((e as Error).message); setResult(null); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <Field label="Buscar boss">
+            <Input placeholder="ex.: Magma Bubble, Soul War…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </Field>
+          <div className="max-h-56 overflow-y-auto rounded-md border">
+            {searching && <div className="p-3 text-sm text-muted-foreground">Buscando…</div>}
+            {!searching && bosses.length === 0 && <div className="p-3 text-sm text-muted-foreground">Nenhum boss encontrado.</div>}
+            {bosses.map((b) => (
+              <button
+                key={b.boss_key}
+                type="button"
+                onClick={() => { setSelected(b); setResult(null); }}
+                className={`flex w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-accent ${selected?.boss_key === b.boss_key ? "bg-accent" : ""}`}
+              >
+                <span>{b.name}</span>
+                {b.final_build_blocked && <Badge variant="destructive">bloqueado</Badge>}
+              </button>
+            ))}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Vocação"><VocationSelect value={vocation} onChange={setVocation} /></Field>
+            <Field label="Level"><Input type="number" min={1} value={level} onChange={(e) => setLevel(e.target.value)} /></Field>
+            <div className="flex items-end">
+              <Button className="w-full" onClick={run} disabled={!selected || loading || Number(level) < 1}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Analisar boss
+              </Button>
+            </div>
+          </div>
+          {selected && <p className="text-xs text-muted-foreground">Selecionado: {selected.name}</p>}
+        </CardContent>
+      </Card>
+
+      {error && <ErrorBox msg={error} />}
+      {result && <BossResult data={result.data} warnings={arr(result.warnings)} />}
+    </div>
+  );
+}
+
+function BossResult({ data, warnings }: { data: any; warnings: any[] }) {
+  const rd = data?.readiness ?? {};
+  const blocked = rd.final_build_blocked === true;
+  const finalAvailable = data?.final_build_available === true && !blocked;
+  const guards = arr(rd.guards);
+  const elements = arr(data?.boss_profile?.element_profile);
+  const sp = data?.spell_evidence ?? {};
+  const restricted = arr(sp.boss_restricted_spells);
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-xl">#{rank} {ranking.hunt_name}</CardTitle>
-            <CardDescription>
-              {ranking.session_count ?? 0} sessão(ões) usadas no ranking · confiança {ranking.confidence_score ?? "—"}
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Badge>score {ranking.ranking_score ?? "—"}</Badge>
-            {ranking.level_evidence_label && (
-              <Badge variant="outline">{ranking.level_evidence_label}</Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Raw XP/h mediano" value={fmt(ranking.median_raw_xp_per_hour)} />
-          <Metric label="XP/h mediano" value={fmt(ranking.median_xp_per_hour)} />
-          <Metric label="Balance/h mediano" value={fmt(ranking.median_balance_per_hour)} />
-          <Metric
-            label="Melhor elemento observado"
-            value={ranking.strongest_observed_element ?? "—"}
-          />
-        </div>
-
-        {defenses.length > 0 && (
-          <Block title="Dano recebido observado">
-            <div className="flex flex-wrap gap-2">
-              {defenses.slice(0, 6).map((d: any) => (
-                <Badge key={d.element} variant="secondary">
-                  {d.element}: {Math.round((d.weight ?? 0) * 100)}%
-                </Badge>
-              ))}
-            </div>
-          </Block>
-        )}
-
-        {topItems.length > 0 && (
-          <Block title="Candidatos defensivos">
-            <div className="grid gap-2 md:grid-cols-2">
-              {topItems.map((item: any) => (
-                <div key={item.item_key} className="rounded-md border p-3">
-                  <div className="font-medium">{item.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {item.slot ?? item.category} · proteção ponderada {item.weighted_protection_score ?? "—"}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Block>
-        )}
-
-        {imbuements.length > 0 && (
-          <Block title="Imbuements defensivos prioritários">
-            <div className="flex flex-wrap gap-2">
-              {imbuements.slice(0, 5).map((x: any) => (
-                <Badge key={x.imbuement_key} variant="outline">
-                  {x.name} · {x.element}
-                </Badge>
-              ))}
-            </div>
-          </Block>
-        )}
-
-        {(spells.single_target_attacks?.length > 0 || spells.multi_target_attacks?.length > 0) && (
-          <Block title="Magias candidatas">
-            <div className="grid gap-2 md:grid-cols-2">
-              {[...(spells.single_target_attacks ?? []), ...(spells.multi_target_attacks ?? [])]
-                .slice(0, 6)
-                .map((s: any) => (
-                  <div key={s.spell_key} className="rounded-md border p-3">
-                    <div className="font-medium">{s.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {s.words} · {s.element ?? "weapon"} · CD {s.cooldown_seconds ?? "—"}s
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </Block>
-        )}
-
-        {observed?.session_count != null && (
-          <p className="text-xs text-muted-foreground">
-            Métricas observadas são evidência comunitária e não garantia de performance.
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function BossPanel() {
-  const [query, setQuery] = useState("Magma Bubble");
-  const [bosses, setBosses] = useState<any[]>([]);
-  const [bossKey, setBossKey] = useState("magma-bubble");
-  const [vocation, setVocation] = useState<Vocation>("EK");
-  const [level, setLevel] = useState(700);
-  const [payload, setPayload] = useState<any>(null);
-  const [warnings, setWarnings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function search() {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await callApi<any[]>({ action: "search_bosses", query, limit: 15 });
-      setBosses(r.data ?? []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha na busca.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function build(key = bossKey) {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await callApi<any>({
-        action: "boss_build",
-        boss_key: key,
-        vocation,
-        level,
-      });
-      setBossKey(key);
-      setPayload(r.data);
-      setWarnings((r.warnings as any[]) ?? []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao analisar boss.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-      <Card className="h-fit">
-        <CardHeader>
-          <CardTitle>Boss Room</CardTitle>
-          <CardDescription>Busque um boss e consulte a prontidão da build.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Field label="Buscar boss">
-            <div className="flex gap-2">
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} />
-              <Button variant="secondary" onClick={search} disabled={loading}>Buscar</Button>
-            </div>
-          </Field>
-
-          {bosses.length > 0 && (
-            <div className="max-h-60 space-y-1 overflow-auto rounded-md border p-2">
-              {bosses.map((b) => (
-                <button
-                  key={b.boss_key}
-                  className="flex w-full items-center justify-between rounded px-2 py-2 text-left text-sm hover:bg-muted"
-                  onClick={() => build(b.boss_key)}
-                >
-                  <span>{b.name}</span>
-                  {b.final_build_blocked && <Badge variant="destructive">guard</Badge>}
-                </button>
-              ))}
-            </div>
+        <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
+          {rd.name ?? data?.boss_profile?.boss?.name}
+          {blocked && (
+            <Badge variant="destructive" className="gap-1 text-sm"><ShieldAlert className="h-4 w-4" />Build final bloqueada</Badge>
           )}
-
-          <Field label="Vocação">
-            <Select value={vocation} onValueChange={(v) => setVocation(v as Vocation)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EK">Elite Knight</SelectItem>
-                <SelectItem value="RP">Royal Paladin</SelectItem>
-                <SelectItem value="ED">Elder Druid</SelectItem>
-                <SelectItem value="MS">Master Sorcerer</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field label="Level">
-            <Input type="number" value={level} onChange={(e) => setLevel(Number(e.target.value) || 1)} />
-          </Field>
-
-          <Button className="w-full" onClick={() => build()} disabled={loading || !bossKey}>
-            {loading ? "Analisando…" : "Analisar boss"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        {error && <ErrorAlert text={error} />}
-        {!payload && !error && (
-          <EmptyState title="Boss Room" text="Busque e selecione um boss para ver evidências e guards." />
-        )}
-        {payload && <BossResult payload={payload} warnings={warnings} />}
-      </div>
-    </div>
-  );
-}
-
-function BossResult({ payload, warnings }: { payload: any; warnings: any[] }) {
-  const boss = payload.boss_profile?.boss ?? {};
-  const readiness = payload.readiness ?? {};
-  const spells = payload.spell_evidence ?? {};
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-xl">{boss.name ?? payload.query?.boss_key}</CardTitle>
-            <CardDescription>
-              {readiness.readiness_status ?? "unknown"}
-            </CardDescription>
-          </div>
-          {readiness.final_build_blocked ? (
-            <Badge variant="destructive">Build final bloqueada</Badge>
-          ) : (
-            <Badge>Base disponível</Badge>
-          )}
-        </div>
+        </CardTitle>
+        <CardDescription><Badge variant="outline">{rd.readiness_status ?? "—"}</Badge></CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5">
-        {readiness.guards?.map((g: any) => (
-          <Alert key={g.guard_key}>
-            <AlertTitle>{g.patch_version} · Reconciliação RubinOT</AlertTitle>
-            <AlertDescription>{g.reason}</AlertDescription>
+      <CardContent className="space-y-4">
+        {!finalAvailable && (
+          <Alert variant={blocked ? "destructive" : "default"}>
+            <ShieldAlert className="h-4 w-4" />
+            <AlertTitle>Sem build final</AlertTitle>
+            <AlertDescription>{BLOCKED_TEXT}</AlertDescription>
           </Alert>
-        ))}
+        )}
 
-        {warnings.length > 0 && (
-          <Alert>
-            <AlertTitle>Aviso global de boss</AlertTitle>
+        {guards.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-sm font-medium">Guards</div>
+            <ul className="space-y-1 text-sm">
+              {guards.map((g, i) => (
+                <li key={g.guard_key ?? i}><Badge variant="outline" className="mr-2">{g.patch_version ?? "—"}</Badge>{g.reason}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {elements.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-sm font-medium">Perfil elemental do boss</div>
+            <div className="flex flex-wrap gap-2">
+              {elements.map((e) => <Badge key={e.element} variant="outline">{e.element}: {fmt(e.avg_modifier_percent)}%</Badge>)}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <div className="text-xs text-muted-foreground">Evidência de magias — não é uma build nem rotação final.</div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SpellList title="Magias candidatas — alvo único" spells={arr(sp.single_target_attacks)} />
+            <SpellList title="Magias candidatas — múltiplos alvos" spells={arr(sp.multi_target_attacks)} />
+          </div>
+        </div>
+
+        {restricted.length > 0 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Magias restritas neste boss</AlertTitle>
             <AlertDescription>
-              Existem {warnings.length} alteração(ões) RubinOT de sistema de boss ainda pendentes de detalhamento.
+              <ul className="list-disc pl-4">{restricted.map((s, i) => <li key={s.spell_key ?? i}>{s.name}{s.words ? ` (${s.words})` : ""}{s.reason ? ` — ${s.reason}` : ""}</li>)}</ul>
             </AlertDescription>
           </Alert>
         )}
 
-        <Block title="Elementos do boss">
-          <div className="flex flex-wrap gap-2">
-            {(payload.boss_profile?.element_profile ?? []).slice(0, 10).map((e: any) => (
-              <Badge key={e.element} variant="secondary">
-                {e.element}: {e.avg_modifier_percent}%
-              </Badge>
-            ))}
-          </div>
-        </Block>
-
-        <Block title="Magias">
-          <div className="grid gap-2 md:grid-cols-2">
-            {[...(spells.single_target_attacks ?? []), ...(spells.multi_target_attacks ?? [])]
-              .slice(0, 8)
-              .map((s: any) => (
-                <div key={s.spell_key} className="rounded-md border p-3">
-                  <div className="font-medium">{s.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {s.words} · {s.element ?? "weapon"}
-                  </div>
-                </div>
-              ))}
-          </div>
-        </Block>
-
-        {(spells.boss_restricted_spells ?? []).length > 0 && (
-          <Block title="Restritas nesta categoria de boss">
-            <div className="flex flex-wrap gap-2">
-              {spells.boss_restricted_spells.map((s: any) => (
-                <Badge key={s.spell_key} variant="destructive">
-                  {s.name}
-                </Badge>
-              ))}
-            </div>
-          </Block>
-        )}
-
-        {!payload.final_build_available && (
-          <p className="text-xs text-muted-foreground">
-            O HuntNexus não apresenta uma build final enquanto a mecânica atual da sala não estiver reconciliada.
-          </p>
+        {warnings.length > 0 && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Avisos globais de boss do RubinOT ({warnings.length})</AlertTitle>
+            <AlertDescription>
+              <ul className="list-disc pl-4">
+                {warnings.map((w, i) => <li key={i}>{w.summary}{w.patch_version ? ` (${w.patch_version})` : ""}{w.reconciliation_status ? ` — ${w.reconciliation_status}` : ""}</li>)}
+              </ul>
+            </AlertDescription>
+          </Alert>
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 font-semibold">{value}</div>
-    </div>
-  );
-}
-
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-2">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-function EmptyState({ title, text }: { title: string; text: string }) {
-  return (
-    <Card>
-      <CardContent className="py-12 text-center">
-        <div className="font-medium">{title}</div>
-        <div className="mt-1 text-sm text-muted-foreground">{text}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ErrorAlert({ text }: { text: string }) {
-  return (
-    <Alert variant="destructive">
-      <AlertTitle>Erro</AlertTitle>
-      <AlertDescription>{text}</AlertDescription>
-    </Alert>
   );
 }
