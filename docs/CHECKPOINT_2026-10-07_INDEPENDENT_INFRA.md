@@ -19,8 +19,10 @@ Worker: huntnexus
   - SUPABASE_SERVICE_ROLE_KEY
 - ChatGPT possui conexão direta via Cloudflare connector
 - GitHub é a fonte canônica.
-- deploy atual é executado via Wrangler a partir de `web/app`.
-- o workflow GitHub atual faz build/typecheck; não faz deploy automático.
+- Cloudflare Builds está conectado ao repositório `Charrels22/huntnexus`, branch `main`.
+- produção usa `web/app` como root, executa `npm run build` e depois `npx wrangler deploy`.
+- `auto_build_enabled=true`; push em `main` dispara build/deploy pelo Cloudflare.
+- o GitHub Actions `HuntNexus Web CI` é uma validação separada de build/typecheck e não é o mecanismo de deploy.
 
 Lovable deixou de ser dependência de runtime/produção.
 
@@ -95,6 +97,8 @@ Endpoint:
 Confirmed through real public HTTP requests:
 - `health`: HTTP 200, HuntNexus, v13.9 / v4.064, preview_v4
 - `recommend`: EK 700 / XP / Solo -> Cobra Bastion, score 0.794, confidence 0.920, HTTP 200
+- recommendation stage atual: `preview_v5`
+- loadout set preview: `loadout_set_preview_v1`, sem score combinado artificial
 - `search_bosses`: Magma Bubble -> `magma-bubble`, guard state exposed correctly, HTTP 200
 - `boss_build`: Magma Bubble -> `final_build_blocked=true`, `final_build_available=false`, RubinOT v13.8 guard, HTTP 200
 
@@ -112,6 +116,18 @@ Supabase advisor:
 - remaining security lint: pg_net installed in public schema
   - accepted temporarily because pg_net is used only by service-role/internal ingestion
   - do not relocate extension until ingestion has a replacement path and a migration test
+
+## Deployment validation
+
+- frontend commit `292932473f0fad7e6fd253a0411af7818893ae1e` foi buildado e publicado com sucesso pelo Cloudflare Builds.
+- commit `7ac17de116639a37286212e5de249003b433d7eb` corrigiu o CI que referenciava um `package-lock.json` inexistente.
+- GitHub CI do HEAD ficou verde.
+- primeiro deploy Cloudflare desse HEAD falhou apenas no upload de assets com erro transitório `10013`.
+- retry manual do mesmo commit, sem mudança de código, concluiu com sucesso.
+- smoke público final após o retry:
+  - health HTTP 200 / `preview_v5`
+  - recommend HTTP 200 / Cobra Bastion / 0.794 / 0.920
+  - boss_build HTTP 200 / Magma Bubble bloqueado / final build indisponível
 
 ## Remaining work
 
