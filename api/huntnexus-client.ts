@@ -1,4 +1,4 @@
-export type HuntNexusVocation = "EK" | "RP" | "ED" | "MS" | "EM";
+export type HuntNexusVocation = "EK" | "RP" | "ED" | "MS";
 export type HuntObjective = "xp" | "profit" | "balanced";
 
 export type ApiEnvelope<T> = {
