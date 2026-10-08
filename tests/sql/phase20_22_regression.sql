@@ -1,5 +1,5 @@
 -- HuntNexus regression checks — recommendation preview v7.
--- Run after migrations through 0072.
+-- Run after migrations through 0073.
 -- These checks raise exceptions on invariant regressions.
 
 do $$
@@ -135,6 +135,41 @@ begin
       and provenance_snapshot_id is distinct from detail_snapshot_id
   ) then
     raise exception 'Provenance snapshot idempotency regression';
+  end if;
+
+  if (
+    select count(*)
+    from weapon_proficiency_trees
+    where item_key in (
+      'grand-sanguine-blade','grand-sanguine-razor',
+      'grand-sanguine-hatchet','grand-sanguine-battleaxe',
+      'grand-sanguine-cudgel','grand-sanguine-bludgeon'
+    )
+  ) <> 6 then
+    raise exception 'Grand Sanguine proficiency tree count regression';
+  end if;
+  if (
+    select count(*)
+    from weapon_proficiency_perks
+    where item_key in (
+      'grand-sanguine-blade','grand-sanguine-razor',
+      'grand-sanguine-hatchet','grand-sanguine-battleaxe',
+      'grand-sanguine-cudgel','grand-sanguine-bludgeon'
+    )
+  ) <> 90 then
+    raise exception 'Grand Sanguine proficiency perk count regression';
+  end if;
+  if exists (
+    select 1
+    from weapon_proficiency_perks
+    where item_key in (
+      'grand-sanguine-blade','grand-sanguine-razor',
+      'grand-sanguine-hatchet','grand-sanguine-battleaxe',
+      'grand-sanguine-cudgel','grand-sanguine-bludgeon'
+    )
+      and level_number is not null
+  ) then
+    raise exception 'Flattened proficiency source must not invent level assignments';
   end if;
 
   if huntnexus_resolve_creature_exact('demongoblin') <> 'demon-goblin' then
