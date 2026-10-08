@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0072
+- schema/migrations aplicados até 0073
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -213,7 +213,7 @@ Supabase advisor:
 
 ## 2026-10-08 continuation validation
 
-- migration history and repository aligned through 0072
+- migration history and repository aligned through 0073
 - SQL regression suite: status=ok
 - Web CI for Tier C imbuement UI: success
 - Cloudflare build/deploy commit `d9bec8bb3cdee851592c7413acf85349a34aa59d`: success
@@ -232,3 +232,21 @@ Supabase advisor:
 - TibiaWiki exposes those perk trees per item, including optimizer-relevant Sanguine/Grand Sanguine weapons.
 - Therefore the optimizer must model proficiency as per-weapon perks, not as one global damage formula.
 - Next bounded step: normalize proficiency trees only for weapons currently entering EK hand comparisons (Sanguine/Grand Sanguine first), validate them, then stop for checkpoint.
+
+
+## Grand Sanguine Weapon Proficiency normalization
+
+- migration 0073 adds normalized Weapon Proficiency trees/perks for six EK Grand Sanguine weapons:
+  - Grand Sanguine Blade
+  - Grand Sanguine Razor
+  - Grand Sanguine Hatchet
+  - Grand Sanguine Battleaxe
+  - Grand Sanguine Cudgel
+  - Grand Sanguine Bludgeon
+- 6 trees / 90 perks normalized, 15 perks per weapon.
+- source: TibiaWiki BR, Tier B.
+- source declares 7 proficiency levels, but rendered text flattens the tree topology; therefore all `level_number` values intentionally remain NULL.
+- `perk_order` preserves source order and normalized fields preserve effect, numeric value, unit, scope, optional spell target and source stat.
+- one-hand and two-hand differences are preserved instead of collapsed into one generic proficiency modifier.
+- no proficiency perk affects the optimizer yet; 0073 is factual normalization only.
+- SQL regression now asserts 6 trees, 90 perks and zero invented level assignments.
