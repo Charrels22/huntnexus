@@ -306,6 +306,7 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
   const incoming = arr(r.defensive_candidates?.incoming_damage);
   const defensive = arr(r.defensive_candidates?.candidates);
   const imbues = arr(r.imbuement_candidates?.defensive_priority);
+  const observedImbues = arr(r.imbuement_candidates?.community_observed_usage);
   const sp = r.spell_candidates ?? {};
   const setPreview = r.loadout_set_preview ?? {};
   const selectedSlots = Object.entries(setPreview.selected_slots ?? {}) as Array<[string, any]>;
@@ -502,6 +503,28 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
           <div className="space-y-1">
             <div className="text-sm font-medium">Imbuements defensivos prioritários</div>
             <div className="flex flex-wrap gap-2">{imbues.map((m, i) => <Badge key={m.imbuement_key ?? i} variant="secondary">{m.name}{m.element ? ` · ${m.element}` : ""}</Badge>)}</div>
+          </div>
+        )}
+
+        {observedImbues.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-medium">Uso comunitário observado</div>
+              <Badge variant="outline">Tier C · não altera prioridade</Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {observedImbues.map((m, i) => (
+                <Badge key={m.imbuement_key ?? i} variant="outline">
+                  {m.name}: {m.observed_profiles}/{m.eligible_profiles}
+                  {Number(m.avg_instances_when_observed) > 1
+                    ? ` · média ${fmt(Number(m.avg_instances_when_observed), 1)}x`
+                    : ""}
+                </Badge>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Evidência de perfis públicos do HuntAnalyser. Serve como contexto de uso real e não como regra factual do RubinOT.
+            </p>
           </div>
         )}
 
