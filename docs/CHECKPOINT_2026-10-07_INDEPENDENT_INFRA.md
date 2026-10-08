@@ -447,8 +447,7 @@ Supabase advisor:
 - top Cobra Grand Sanguine pair validation returns 15 normalized perks on each side and preserves selected active counts.
 - Public Smoke commit `177e2c64c011e30d17858fbe5ab7fbacf6a5abcc`: success.
 - Cloudflare UI build/deploy commit `81e938be49314b2b091024b2f1dcd49b7882bf18`: success.
-- GitHub Web CI run for the same UI commit:
+- GitHub Web CI commit `81e938be49314b2b091024b2f1dcd49b7882bf18`: completed successfully.
   - checkout/install: success;
   - build and typecheck: success;
-  - all post/complete steps: success;
-  - aggregate run status was still reported as `in_progress` at checkpoint time despite every job step being completed successfully.
+  - all post/complete steps: success.
