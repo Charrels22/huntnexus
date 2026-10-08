@@ -52,6 +52,12 @@ async function callApi(body: Record<string, unknown>): Promise<any> {
 const fmt = (n: unknown, digits = 0) =>
   typeof n === "number" ? n.toLocaleString("pt-BR", { maximumFractionDigits: digits }) : "—";
 const arr = (x: unknown): any[] => (Array.isArray(x) ? x : []);
+const parsePerkOrders = (value: string) =>
+  Array.from(new Set(
+    value.split(/[\s,;]+/)
+      .map((x) => Number(x))
+      .filter((x) => Number.isInteger(x) && x >= 1 && x <= 100)
+  )).slice(0, 20);
 
 function HomePage() {
   return (
@@ -154,6 +160,9 @@ function HuntsTab() {
   const [weaponFamily, setWeaponFamily] = useState("none");
   const [weaponSkill, setWeaponSkill] = useState("");
   const [shielding, setShielding] = useState("");
+  const [oneHandPerks, setOneHandPerks] = useState("");
+  const [twoHandPerks, setTwoHandPerks] = useState("");
+  const [proficiencyPreview, setProficiencyPreview] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -167,6 +176,9 @@ function HuntsTab() {
       setWeaponFamily("none");
       setWeaponSkill("");
       setShielding("");
+      setOneHandPerks("");
+      setTwoHandPerks("");
+      setProficiencyPreview(null);
     }
     return () => { active = false; };
   }, [vocation]);
@@ -181,14 +193,28 @@ function HuntsTab() {
             ...(shielding !== "" && Number(shielding) >= 0 ? { effective_shielding: Number(shielding) } : {}),
           }
         : undefined;
-      setResult(await callApi({
+      const recommendationPromise = callApi({
         action: "recommend",
         vocation,
         level: Number(level),
         objective,
         party_size: Number(party),
         ...(characterProfile ? { character_profile: characterProfile } : {}),
-      }));
+      });
+      const proficiencyPromise = characterProfile
+        ? callApi({
+            action: "proficiency_preview",
+            weapon_family: weaponFamily,
+            one_hand_active_perk_orders: parsePerkOrders(oneHandPerks),
+            two_hand_active_perk_orders: parsePerkOrders(twoHandPerks),
+          }).catch(() => null)
+        : Promise.resolve(null);
+      const [recommendation, proficiency] = await Promise.all([
+        recommendationPromise,
+        proficiencyPromise,
+      ]);
+      setResult(recommendation);
+      setProficiencyPreview(proficiency?.data ?? null);
     } catch (e) { setError((e as Error).message); setResult(null); }
     finally { setLoading(false); }
   }
@@ -267,9 +293,29 @@ function HuntsTab() {
                   />
                 </Field>
               </div>
+              {weaponFamily !== "none" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Perk orders ativos · 1 mão">
+                    <Input
+                      placeholder="ex.: 1,4,12,15"
+                      value={oneHandPerks}
+                      onChange={(e) => setOneHandPerks(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Perk orders ativos · 2 mãos">
+                    <Input
+                      placeholder="ex.: 1,3,12,15"
+                      value={twoHandPerks}
+                      onChange={(e) => setTwoHandPerks(e.target.value)}
+                    />
+                  </Field>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
                 {profileContract?.input_principle ??
                   "Use os valores efetivos mostrados pelo cliente. O perfil não é obrigatório."}
+                {weaponFamily !== "none" &&
+                  " Perk order é a ordem preservada da fonte, não o nível da proficiência; deixe vazio para referência apenas."}
               </p>
             </div>
           )}
@@ -296,12 +342,19 @@ function HuntsTab() {
         <p className="text-sm text-muted-foreground">Nenhuma hunt com sessões observadas para esses filtros.</p>
       )}
 
-      {results.map((r, i) => <HuntResult key={r.ranking?.hunt_key ?? i} rank={i + 1} r={r} />)}
+      {results.map((r, i) => (
+        <HuntResult
+          key={r.ranking?.hunt_key ?? i}
+          rank={i + 1}
+          r={r}
+          proficiency={proficiencyPreview}
+        />
+      ))}
     </div>
   );
 }
 
-function HuntResult({ rank, r }: { rank: number; r: any }) {
+function HuntResult({ rank, r, proficiency }: { rank: number; r: any; proficiency?: any }) {
   const k = r.ranking ?? {};
   const incoming = arr(r.defensive_candidates?.incoming_damage);
   const defensive = arr(r.defensive_candidates?.candidates);
@@ -320,6 +373,10 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
   const fixedImbues = Object.entries(imbuePreview.fixed_slots ?? {}) as Array<[string, any]>;
   const characterProfile = setPreview.character_profile ?? {};
   const characterProfileAnalysis = setPreview.character_profile_analysis ?? {};
+  const oneProficiency = proficiency?.one_handed ?? {};
+  const twoProficiency = proficiency?.two_handed ?? {};
+  const oneProficiencyEffects = arr(oneProficiency.active_effect_summary);
+  const twoProficiencyEffects = arr(twoProficiency.active_effect_summary);
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -441,6 +498,43 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
                     Fora da hunt sustentada: {excludedWeapons.map((x) => `${x.name} (${x.reason})`).join(", ")}.
                   </p>
                 )}
+              </div>
+            )}
+
+            {proficiency?.methodology?.stage === "ek_weapon_proficiency_comparison_v1" && (
+              <div className="space-y-2 border-t pt-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="text-sm font-medium">Weapon Proficiency (preview)</div>
+                  <Badge variant="outline">não altera ranking</Badge>
+                  <Badge variant="outline">sem nível inferido</Badge>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {[["1 mão", oneProficiency, oneProficiencyEffects], ["2 mãos", twoProficiency, twoProficiencyEffects]].map(([label, data, effects]: any) => (
+                    <div key={label} className="rounded-md border px-3 py-2 text-sm">
+                      <div className="text-xs text-muted-foreground">{label}</div>
+                      <div className="font-medium">{data.item?.name ?? "—"}</div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <Badge variant="outline">
+                          {data.selection?.mode === "explicit_perk_order"
+                            ? `${data.selection?.active_perk_count ?? 0} perks ativos`
+                            : `${data.tree?.perk_count ?? 0} perks catalogados · referência`}
+                        </Badge>
+                      </div>
+                      {effects.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {effects.map((e: any, i: number) => (
+                            <Badge key={i} variant="secondary">
+                              {e.scope}{e.spell_key ? `/${e.spell_key}` : ""}: {e.effect_family} +{fmt(e.value, 2)}{e.unit === "percent" ? "%" : ""}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Os efeitos só ficam ativos quando os perk orders são informados explicitamente. Este preview não muda score, ranking nem escolha de mãos.
+                </p>
               </div>
             )}
 
