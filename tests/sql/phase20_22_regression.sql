@@ -1,5 +1,5 @@
 -- HuntNexus regression checks — recommendation preview v7.
--- Run after migrations through 0066.
+-- Run after migrations through 0070.
 -- These checks raise exceptions on invariant regressions.
 
 do $$
@@ -10,6 +10,7 @@ declare
   v_profiled jsonb;
   v_profiled_set jsonb;
   v_contract jsonb;
+  v_imbues jsonb;
   v_magma jsonb;
 begin
   v_health := huntnexus_api_health();
@@ -100,6 +101,32 @@ begin
      or (v_profiled_set #>> '{hand_analysis,two_handed,offense_options,0,effective_weapon_skill_with_item}')::int
      <> 124 then
     raise exception 'Profiled effective skill context regression';
+  end if;
+
+  v_imbues := huntnexus_imbuement_candidates('cobra-bastion','EK');
+  if v_imbues #>> '{methodology,stage}' <> 'imbuement_candidates_v2' then
+    raise exception 'Expected imbuement_candidates_v2';
+  end if;
+  if coalesce(
+    (v_imbues #>> '{methodology,community_observed_usage_affects_priority}')::boolean,
+    true
+  ) is not false then
+    raise exception 'Tier C community usage must not alter imbuement priority';
+  end if;
+  if jsonb_typeof(v_imbues->'community_observed_usage') <> 'array' then
+    raise exception 'Expected community_observed_usage array';
+  end if;
+
+  if (select count(*) from community_session_profile_state where status='completed') <> 100
+     or (select count(*) from community_session_profile_state where status='error') <> 0 then
+    raise exception 'HuntAnalyser player-profile parser regression';
+  end if;
+  if (select count(*) from session_player_combat_stats) <> 2193
+     or (select count(*) from session_player_equipment) <> 918 then
+    raise exception 'Normalized player profile row-count regression';
+  end if;
+  if (select count(*) from session_player_equipment where item_key is null) <> 1 then
+    raise exception 'Equipment canonical resolution regression';
   end if;
 
   if huntnexus_resolve_creature_exact('demongoblin') <> 'demon-goblin' then
