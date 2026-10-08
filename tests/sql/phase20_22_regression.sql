@@ -1,5 +1,5 @@
 -- HuntNexus regression checks — recommendation preview v7.
--- Run after migrations through 0073.
+-- Run after migrations through 0074.
 -- These checks raise exceptions on invariant regressions.
 
 do $$
@@ -170,6 +170,22 @@ begin
       and level_number is not null
   ) then
     raise exception 'Flattened proficiency source must not invent level assignments';
+  end if;
+
+  if huntnexus_ek_proficiency_comparison('sword','[]'::jsonb,'[]'::jsonb)
+       #>> '{methodology,stage}' <> 'ek_weapon_proficiency_comparison_v1' then
+    raise exception 'Weapon proficiency comparison stage regression';
+  end if;
+  if huntnexus_ek_proficiency_comparison('sword','[]'::jsonb,'[]'::jsonb)
+       #>> '{one_handed,selection,mode}' <> 'reference_only' then
+    raise exception 'Weapon proficiency reference mode regression';
+  end if;
+  if (
+    huntnexus_ek_proficiency_comparison(
+      'sword','[1,4,12,15]'::jsonb,'[1,3,12,15]'::jsonb
+    ) #>> '{methodology,optimizer_effect_applied}'
+  )::boolean is not false then
+    raise exception 'Weapon proficiency preview must not affect optimizer';
   end if;
 
   if huntnexus_resolve_creature_exact('demongoblin') <> 'demon-goblin' then
