@@ -1,5 +1,5 @@
 -- HuntNexus regression checks — recommendation preview v7.
--- Run after migrations through 0076.
+-- Run after migrations through 0079.
 -- These checks raise exceptions on invariant regressions.
 
 do $$
@@ -67,7 +67,7 @@ begin
   end if;
 
   v_contract := huntnexus_character_combat_profile_contract('EK');
-  if v_contract #>> '{stage}' <> 'character_combat_profile_contract_v1' then
+  if v_contract #>> '{stage}' <> 'character_combat_profile_contract_v2' then
     raise exception 'Character profile contract stage regression';
   end if;
   if v_contract #> '{vocation_specific,weapon_family,values}'
@@ -78,10 +78,10 @@ begin
 
   v_profiled := huntnexus_recommendation_preview_profiled(
     'EK',700,'xp',1,1,3,
-    '{"weapon_family":"sword","effective_weapon_skill":120,"effective_shielding":110}'::jsonb
+    '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb
   );
   if v_profiled #>> '{methodology,stage}'
-     <> 'recommendation_preview_profiled_v1' then
+     <> 'recommendation_preview_profiled_v2' then
     raise exception 'Profiled recommendation stage regression';
   end if;
   if coalesce((v_profiled #>> '{methodology,character_profile_applied}')::boolean,false)
@@ -96,11 +96,19 @@ begin
      <> 'sword' then
     raise exception 'Profiled Sword recommendation leaked another weapon family';
   end if;
-  if (v_profiled_set #>> '{hand_analysis,one_handed,offense_options,0,effective_weapon_skill_with_items}')::int
-     <> 127
-     or (v_profiled_set #>> '{hand_analysis,two_handed,offense_options,0,effective_weapon_skill_with_item}')::int
-     <> 124 then
-    raise exception 'Profiled effective skill context regression';
+  if v_profiled_set #>> '{methodology,stage}' <> 'loadout_set_preview_profiled_v2' then
+    raise exception 'Profiled set v2 regression';
+  end if;
+  if v_profiled_set #>> '{hand_analysis,methodology,stage}' <> 'ek_hand_options_profiled_v2' then
+    raise exception 'Profiled hand model v2 regression';
+  end if;
+  if (v_profiled_set #>> '{hand_analysis,one_handed,offense_options,0,displayed_effective_weapon_skill}')::int <> 120
+     or (v_profiled_set #>> '{hand_analysis,two_handed,offense_options,0,displayed_effective_weapon_skill}')::int <> 120 then
+    raise exception 'Displayed effective skill must not be recomputed by candidate items';
+  end if;
+  if (v_profiled_set #>> '{hand_analysis,one_handed,offense_options,0,matching_weapon_skill_bonus}')::int <> 7
+     or (v_profiled_set #>> '{hand_analysis,two_handed,offense_options,0,weapon_skill_bonus}')::int <> 4 then
+    raise exception 'Candidate item skill bonus regression';
   end if;
 
   v_imbues := huntnexus_imbuement_candidates('cobra-bastion','EK');
@@ -229,6 +237,41 @@ begin
     ) #>> '{one_handed,impact_vector,flat_skill_bonus_applied_to_displayed_skill}'
   )::boolean is not false then
     raise exception 'Weapon proficiency skill double-count regression';
+  end if;
+
+  if huntnexus_ek_hand_context_comparison(
+       'cobra-bastion',
+       700,
+       '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
+       '[1,3,10,12,15]'::jsonb,
+       '[1,2,10,12,15]'::jsonb,
+       12
+     ) #>> '{methodology,stage}' <> 'ek_hand_context_comparison_v1' then
+    raise exception 'EK hand context comparison stage regression';
+  end if;
+  if (
+    huntnexus_ek_hand_context_comparison(
+      'cobra-bastion',
+      700,
+      '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
+      '[1,3,10,12,15]'::jsonb,
+      '[1,2,10,12,15]'::jsonb,
+      12
+    ) #>> '{one_handed,base_vector,displayed_effective_weapon_skill}'
+  )::int <> 120 then
+    raise exception 'Context comparison displayed skill regression';
+  end if;
+  if (
+    huntnexus_ek_hand_context_batch(
+      '["cobra-bastion"]'::jsonb,
+      700,
+      '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
+      '[1,3,10,12,15]'::jsonb,
+      '[1,2,10,12,15]'::jsonb,
+      12
+    ) #>> '{methodology,stage}'
+  ) <> 'ek_hand_context_batch_v1' then
+    raise exception 'EK hand context batch stage regression';
   end if;
 
   if huntnexus_resolve_creature_exact('demongoblin') <> 'demon-goblin' then
