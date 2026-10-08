@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0065
+- schema/migrations aplicados até 0070
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -66,6 +66,13 @@ O catálogo TibiaData atual classifica 1.600 itens no filtro de combate utilizad
 - incoming damage source rows: 289
 - unresolved incoming damage sources: 0
 - unresolved session creature label: Nomad only (ambiguous canonical variants)
+- player combat profile parser: 100/100 sessions completed; 0 errors
+- normalized combat stat rows: 2.193 across 102 configured player snapshots
+- normalized equipment rows: 918 across 102 configured player snapshots
+- equipment canonical resolution: 917/918; only `Enchanted Ring of Souls` remains raw-only
+- normalized combat-stat provenance rows: 6.852
+- numeric provenance rows with source labels: 6.164
+- imbuement provenance matches: 492 rows across 75 player snapshots
 
 Current public sample differs from the prior Lovable snapshot because HuntAnalyser's newest public pages changed. This is expected for a live Tier C source.
 
@@ -81,6 +88,11 @@ Applied:
 - 0063 resolves source slug `demongoblin` to canonical `demon-goblin` / Demon (Goblin) through `entity_aliases`; raw hunt-source rows remain unchanged.
 - 0064 records Tier A RubinOT combat-profile facts for VIP, Loyalty, Guild Ascension and Weapon Proficiency.
 - 0065 defines `character_combat_profile_contract_v1`, preferring effective client-displayed stats to avoid double-counting RubinOT bonuses.
+- 0066 adds character-profiled EK recommendations while preserving legacy `preview_v7`; EK weapon families are explicitly Sword/Axe/Club.
+- 0067 normalizes HuntAnalyser member combat stats and equipped items without storing player names in clear text.
+- 0068 preserves semantically distinct stats such as `Magic Shield Capacity` vs `Magic Shield Capacity %`.
+- 0069 normalizes per-stat provenance (for example, `+25% from Vampirism`) and derives Tier C observed imbuement usage.
+- 0070 exposes that community usage in `imbuement_candidates_v2` as context only; it does not alter factual priority.
 
 ## Product smoke in Supabase
 
@@ -92,6 +104,8 @@ Confirmed:
 - set preview = `loadout_set_preview_v3`
 - EK hand comparison = `ek_hand_options_v2`
 - imbuement compatibility = `loadout_imbuement_compatibility_v1`
+- imbuement candidate context = `imbuement_candidates_v2`, including Tier C community-observed usage with `affects_priority=false`
+- Cobra Bastion / EK observed sample currently has 7 eligible configured profiles; 3 directly show Vampirism ×2, Void ×2, Strike ×1, Chop ×1 and Snake Skin ×1
 - Ice Rapier is excluded from sustained-hunt weapon choices by explicit catalog evidence
 - one-hand EK example: Grand Sanguine Blade + Shield of Corruption
 - two-hand EK example: Grand Sanguine Battleaxe
@@ -108,6 +122,10 @@ Endpoint:
 Confirmed through real public HTTP requests:
 - `health`: HTTP 200, HuntNexus, v13.9 / v4.064, preview_v7
 - `recommend`: EK 700 / XP / Solo -> Cobra Bastion, score 0.794, confidence 0.920, HTTP 200
+- legacy request without character profile remains on `recommendation_preview_v7`
+- profiled EK request uses `recommendation_preview_profiled_v1`; Sword 120 smoke constrains both one-hand and two-hand candidates to Sword
+- `profile_contract`: EK -> Sword/Axe/Club
+- frontend exposes optional EK weapon family, effective weapon skill and shielding; family options come from the API contract
 - recommendation stage atual: `preview_v7`
 - loadout set preview: `loadout_set_preview_v3`, sem score combinado artificial
 - EK hand tradeoff: `ek_hand_options_v2`, com Pareto dominance only
@@ -142,16 +160,26 @@ Tier A RubinOT facts now preserved:
 
 `character_combat_profile_contract_v1`:
 - prefers effective client-displayed values;
-- EK precise hand comparison requires weapon family + effective weapon skill;
+- EK precise hand comparison uses Sword/Axe/Club + effective weapon skill;
 - optional effective shielding, critical, life/mana leech and elemental/race modifiers are modeled in the contract;
+- API/frontend wiring is active through `recommendation_preview_profiled_v1`;
+- effective weapon skill/shielding are exposed as context, not silently converted into final DPS/mitigation;
 - Weapon Proficiency exact combat formula remains unreconciled;
 - Guild Ascension seasonal numeric perk values are intentionally not inferred.
+
+Observed community profile layer:
+- HuntAnalyser Member Details tabs map deterministically to existing hashed `session_players` rows (201/201 members matched in the current sample);
+- combat stats, equipped items and per-stat provenance are preserved separately from Tier A RubinOT facts;
+- observed equipment family can identify Sword/Axe/Club/etc. when the public profile has equipment configured;
+- community imbuement usage is explicitly Tier C and never changes optimizer priority by itself.
 
 ## Security
 
 Supabase advisor:
 - function search-path warning fixed in 0057
-- remaining security lint: pg_net installed in public schema
+- new player-profile tables are server-only: RLS enabled, no permissive policies, and privileges revoked from public/anon/authenticated
+- advisor reports 4 informational `rls_enabled_no_policy` findings for those server-only tables; this is intentional deny-by-default behavior
+- remaining warning: pg_net installed in public schema
   - accepted temporarily because pg_net is used only by service-role/internal ingestion
   - do not relocate extension until ingestion has a replacement path and a migration test
 
@@ -171,11 +199,22 @@ Supabase advisor:
 
 ## Remaining work
 
-- manual visual/browser interaction QA of form controls
-- wire `character_combat_profile_contract_v1` into the public recommendation request/UI
+- automatically invoke player-profile + provenance parsing when new HuntAnalyser detail snapshots are ingested, so the normalized layer cannot become stale
+- manual visual/browser interaction QA of the character-profile controls and Tier C imbuement section
 - reconcile Weapon Proficiency exact combat contribution before converting effective skill/attack into a final damage estimate
+- extend profiled recommendation logic beyond EK after vocation-specific evidence/formulas are reconciled
 - continue recommendation/final-set optimizer with character-aware data
-- keep cross-type imbuement priorities explicit until enough character/rotation evidence exists
+- keep cross-type imbuement priorities explicit; Tier C observed usage remains contextual only
 - current RubinOT boss mechanic reconciliation
 - optional performance indexing based on real query usage
-- terms/privacy decision before expanding HuntAnalyser beyond 100-session public sample
+- terms/privacy decision before expanding HuntAnalyser beyond the current 100-session public sample
+
+
+## 2026-10-08 continuation validation
+
+- migration history and repository aligned through 0070
+- SQL regression suite: status=ok
+- Web CI for Tier C imbuement UI: success
+- Cloudflare build/deploy commit `d9bec8bb3cdee851592c7413acf85349a34aa59d`: success
+- Public Smoke with `imbuement_candidates_v2`: success
+- character-profile public smoke remains backward compatible with legacy `preview_v7`
