@@ -30,7 +30,7 @@ const profileContract = await post({
   vocation: "EK",
 });
 assert(
-  profileContract?.data?.stage === "character_combat_profile_contract_v1",
+  profileContract?.data?.stage === "character_combat_profile_contract_v2",
   "character profile contract stage regression",
 );
 const ekFamilies =
@@ -104,13 +104,14 @@ const profiledRecommendation = await post({
   character_profile: {
     weapon_family: "sword",
     effective_weapon_skill: 120,
+    effective_magic_level: 12,
     effective_shielding: 110,
   },
 });
 
 assert(
   profiledRecommendation?.data?.methodology?.stage ===
-    "recommendation_preview_profiled_v1",
+    "recommendation_preview_profiled_v2",
   "profiled recommendation stage regression",
 );
 assert(
@@ -127,12 +128,12 @@ const profiledSet =
   profiledRecommendation?.data?.results?.[0]?.loadout_set_preview;
 assert(profiledSet, "profiled loadout set missing");
 assert(
-  profiledSet?.methodology?.stage === "loadout_set_preview_profiled_v1",
+  profiledSet?.methodology?.stage === "loadout_set_preview_profiled_v2",
   "profiled loadout stage regression",
 );
 assert(
   profiledSet?.hand_analysis?.methodology?.stage ===
-    "ek_hand_options_profiled_v1",
+    "ek_hand_options_profiled_v2",
   "profiled EK hand model regression",
 );
 
@@ -144,13 +145,23 @@ assert(oneHandType === "sword", `expected sword one-hand, got ${oneHandType}`);
 assert(twoHandType === "sword", `expected sword two-hand, got ${twoHandType}`);
 assert(
   profiledSet?.hand_analysis?.one_handed?.offense_options?.[0]
-    ?.effective_weapon_skill_with_items === 127,
-  "expected sword one-hand contextual skill 127 for regression fixture",
+    ?.displayed_effective_weapon_skill === 120,
+  "expected one-hand displayed skill 120",
 );
 assert(
   profiledSet?.hand_analysis?.two_handed?.offense_options?.[0]
-    ?.effective_weapon_skill_with_item === 124,
-  "expected sword two-hand contextual skill 124 for regression fixture",
+    ?.displayed_effective_weapon_skill === 120,
+  "expected two-hand displayed skill 120",
+);
+assert(
+  profiledSet?.hand_analysis?.one_handed?.offense_options?.[0]
+    ?.matching_weapon_skill_bonus === 7,
+  "expected one-hand candidate skill bonus 7",
+);
+assert(
+  profiledSet?.hand_analysis?.two_handed?.offense_options?.[0]
+    ?.weapon_skill_bonus === 4,
+  "expected two-hand candidate skill bonus 4",
 );
 
 const proficiencyReference = await post({
@@ -206,6 +217,48 @@ assert(
   proficiencyActive?.data?.impact?.one_handed?.impact_vector
     ?.flat_skill_bonus_applied_to_displayed_skill === false,
   "proficiency skill bonus must not be double counted",
+);
+
+const handContextBatch = await post({
+  action: "hand_context_batch",
+  hunt_keys: ["cobra-bastion"],
+  level: 700,
+  character_profile: {
+    weapon_family: "sword",
+    effective_weapon_skill: 120,
+    effective_magic_level: 12,
+    effective_shielding: 110,
+  },
+  one_hand_active_perk_orders: [1, 3, 10, 12, 15],
+  two_hand_active_perk_orders: [1, 2, 10, 12, 15],
+});
+assert(
+  handContextBatch?.data?.methodology?.stage === "ek_hand_context_batch_v1",
+  "hand context batch stage regression",
+);
+const cobraContext = handContextBatch?.data?.items?.["cobra-bastion"];
+assert(cobraContext, "cobra-bastion hand context missing");
+assert(
+  cobraContext?.methodology?.stage === "ek_hand_context_comparison_v1",
+  "hand context comparison stage regression",
+);
+assert(
+  cobraContext?.methodology?.optimizer_effect_applied === false,
+  "hand context must not alter optimizer",
+);
+assert(
+  cobraContext?.one_handed?.base_vector?.displayed_effective_weapon_skill === 120 &&
+  cobraContext?.two_handed?.base_vector?.displayed_effective_weapon_skill === 120,
+  "hand context displayed skill double-count regression",
+);
+assert(
+  cobraContext?.one_handed?.base_vector?.candidate_item_skill_bonus === 7 &&
+  cobraContext?.two_handed?.base_vector?.candidate_item_skill_bonus === 4,
+  "hand context candidate item skill bonus regression",
+);
+assert(
+  cobraContext?.comparison?.dimension_summary?.comparable_dimensions >= 4,
+  "hand context expected comparable dimensions",
 );
 
 const magma = await post({
