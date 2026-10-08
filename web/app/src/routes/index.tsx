@@ -438,6 +438,8 @@ function HuntResult({
   const actualProficiency = r.actual_weapon_proficiency ?? {};
   const oneProficiencyImpact = actualProficiency.one_handed ?? {};
   const twoProficiencyImpact = actualProficiency.two_handed ?? {};
+  const oneProficiencyReference = actualProficiency.one_handed_reference ?? {};
+  const twoProficiencyReference = actualProficiency.two_handed_reference ?? {};
   const oneProficiencyEffects = arr(oneProficiencyImpact.resolved_effects);
   const twoProficiencyEffects = arr(twoProficiencyImpact.resolved_effects);
   const oneProficiencyItemKey = oneProficiencyImpact.item_key ?? "";
@@ -639,6 +641,7 @@ function HuntResult({
                       name: handContext?.one_handed?.weapon_name,
                       tree: oneProficiencyTree,
                       impact: oneProficiencyImpact,
+                      reference: oneProficiencyReference,
                       effects: oneProficiencyEffects,
                     },
                     {
@@ -647,6 +650,7 @@ function HuntResult({
                       name: handContext?.two_handed?.weapon_name,
                       tree: twoProficiencyTree,
                       impact: twoProficiencyImpact,
+                      reference: twoProficiencyReference,
                       effects: twoProficiencyEffects,
                     },
                   ].map((x) => (
@@ -658,11 +662,43 @@ function HuntResult({
                       </div>
                       {x.tree ? (
                         <>
-                          <Input
-                            placeholder="perk orders, ex.: 1,4,7"
-                            value={perkSelections[x.itemKey] ?? ""}
-                            onChange={(e) => onPerkSelectionChange(x.itemKey, e.target.value)}
-                          />
+                          <details className="rounded-md border bg-muted/20">
+                            <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
+                              Selecionar perks ({arr(x.reference?.perks).length})
+                            </summary>
+                            <div className="max-h-72 space-y-1 overflow-y-auto border-t p-2">
+                              {arr(x.reference?.perks).map((perk: any) => {
+                                const order = Number(perk.perk_order);
+                                const selected = parsePerkOrders(perkSelections[x.itemKey] ?? "").includes(order);
+                                return (
+                                  <label
+                                    key={order}
+                                    className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="mt-1 h-4 w-4"
+                                      checked={selected}
+                                      onChange={(e) => {
+                                        const current = parsePerkOrders(perkSelections[x.itemKey] ?? "");
+                                        const next = e.target.checked
+                                          ? Array.from(new Set([...current, order])).sort((a, b) => a - b)
+                                          : current.filter((n) => n !== order);
+                                        onPerkSelectionChange(x.itemKey, next.join(","));
+                                      }}
+                                    />
+                                    <span className="min-w-0">
+                                      <span className="mr-2 font-mono text-xs text-muted-foreground">#{order}</span>
+                                      <span>{perk.description}</span>
+                                      <span className="ml-2 text-xs text-muted-foreground">
+                                        {perk.scope}{perk.spell_key ? ` · ${perk.spell_key}` : ""}
+                                      </span>
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </details>
                           <div className="flex flex-wrap gap-1">
                             <Badge variant="outline">
                               {Number(x.impact?.active_perk_count ?? 0) > 0
@@ -691,7 +727,7 @@ function HuntResult({
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Cada lista fica vinculada ao item exato. Preencha os perk orders e use “Atualizar contexto dos perks”. Ordens de uma arma nunca são reaproveitadas em outra.
+                  Marque os perks que você possui e use “Atualizar contexto dos perks”. Cada seleção fica vinculada ao item exato; perks de uma arma nunca são reaproveitados em outra.
                 </p>
               </div>
             )}
