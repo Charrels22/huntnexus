@@ -8,6 +8,12 @@ export type CharacterCombatProfile = {
   effectiveShielding?: number;
 };
 
+export type ProficiencyPreviewInput = {
+  weaponFamily: CharacterWeaponFamily;
+  oneHandActivePerkOrders?: number[];
+  twoHandActivePerkOrders?: number[];
+};
+
 export type ApiEnvelope<T> = {
   data: T;
   warnings?: unknown[];
@@ -100,6 +106,15 @@ export class HuntNexusApi {
 
   profileContract<T = unknown>(vocation: HuntNexusVocation) {
     return this.post<T>({ action: "profile_contract", vocation });
+  }
+
+  proficiencyPreview<T = unknown>(input: ProficiencyPreviewInput) {
+    return this.post<T>({
+      action: "proficiency_preview",
+      weapon_family: input.weaponFamily,
+      one_hand_active_perk_orders: input.oneHandActivePerkOrders ?? [],
+      two_hand_active_perk_orders: input.twoHandActivePerkOrders ?? [],
+    });
   }
 
   bossBuild<T = unknown>(input: BossBuildInput) {
