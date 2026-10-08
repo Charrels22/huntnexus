@@ -202,7 +202,7 @@ Supabase advisor:
 ## Remaining work
 
 - manual visual/browser interaction QA of the character-profile controls and Tier C imbuement section
-- reconcile Weapon Proficiency exact combat contribution before converting effective skill/attack into a final damage estimate
+- normalize per-weapon Weapon Proficiency trees for optimizer-relevant weapons before converting effective skill/attack into a final damage estimate
 - extend profiled recommendation logic beyond EK after vocation-specific evidence/formulas are reconciled
 - continue recommendation/final-set optimizer with character-aware data
 - keep cross-type imbuement priorities explicit; Tier C observed usage remains contextual only
@@ -222,3 +222,13 @@ Supabase advisor:
 
 - HuntAnalyser detail post-processing smoke: no pending details, all derived parsers returned zero work and zero post-processing errors
 - provenance snapshot mismatch count: 0
+
+
+## Weapon Proficiency research decision
+
+- No single generic Weapon Proficiency damage multiplier was found in RubinOT official material.
+- RubinOT confirms Weapon Proficiency bonuses are surfaced in Offense Stats.
+- Tibia official material defines Weapon Proficiency as per-weapon progression trees with weapon-specific perks.
+- TibiaWiki exposes those perk trees per item, including optimizer-relevant Sanguine/Grand Sanguine weapons.
+- Therefore the optimizer must model proficiency as per-weapon perks, not as one global damage formula.
+- Next bounded step: normalize proficiency trees only for weapons currently entering EK hand comparisons (Sanguine/Grand Sanguine first), validate them, then stop for checkpoint.
