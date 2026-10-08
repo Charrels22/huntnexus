@@ -1,5 +1,5 @@
 -- HuntNexus regression checks — recommendation preview v7.
--- Run after migrations through 0063.
+-- Run after migrations through 0066.
 -- These checks raise exceptions on invariant regressions.
 
 do $$
@@ -7,6 +7,9 @@ declare
   v_health jsonb;
   v_rec jsonb;
   v_set jsonb;
+  v_profiled jsonb;
+  v_profiled_set jsonb;
+  v_contract jsonb;
   v_magma jsonb;
 begin
   v_health := huntnexus_api_health();
@@ -60,6 +63,43 @@ begin
        and x->>'reason'='fragile_few_hit_weapon'
   ) then
     raise exception 'Expected Ice Rapier sustained-hunt exclusion evidence';
+  end if;
+
+  v_contract := huntnexus_character_combat_profile_contract('EK');
+  if v_contract #>> '{stage}' <> 'character_combat_profile_contract_v1' then
+    raise exception 'Character profile contract stage regression';
+  end if;
+  if v_contract #> '{vocation_specific,weapon_family,values}'
+     <> '["sword","axe","club"]'::jsonb then
+    raise exception 'EK weapon family contract regression: %',
+      v_contract #> '{vocation_specific,weapon_family,values}';
+  end if;
+
+  v_profiled := huntnexus_recommendation_preview_profiled(
+    'EK',700,'xp',1,1,3,
+    '{"weapon_family":"sword","effective_weapon_skill":120,"effective_shielding":110}'::jsonb
+  );
+  if v_profiled #>> '{methodology,stage}'
+     <> 'recommendation_preview_profiled_v1' then
+    raise exception 'Profiled recommendation stage regression';
+  end if;
+  if coalesce((v_profiled #>> '{methodology,character_profile_applied}')::boolean,false)
+     is not true then
+    raise exception 'Character profile was not applied';
+  end if;
+
+  v_profiled_set := v_profiled #> '{results,0,loadout_set_preview}';
+  if lower(coalesce(v_profiled_set #>> '{hand_options,one_handed,main_hand,weapon_type}',''))
+     <> 'sword'
+     or lower(coalesce(v_profiled_set #>> '{hand_options,two_handed,item,weapon_type}',''))
+     <> 'sword' then
+    raise exception 'Profiled Sword recommendation leaked another weapon family';
+  end if;
+  if (v_profiled_set #>> '{hand_analysis,one_handed,offense_options,0,effective_weapon_skill_with_items}')::int
+     <> 127
+     or (v_profiled_set #>> '{hand_analysis,two_handed,offense_options,0,effective_weapon_skill_with_item}')::int
+     <> 124 then
+    raise exception 'Profiled effective skill context regression';
   end if;
 
   if huntnexus_resolve_creature_exact('demongoblin') <> 'demon-goblin' then
