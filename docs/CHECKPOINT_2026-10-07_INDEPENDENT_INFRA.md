@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0073
+- schema/migrations aplicados até 0074
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -213,7 +213,7 @@ Supabase advisor:
 
 ## 2026-10-08 continuation validation
 
-- migration history and repository aligned through 0073
+- migration history and repository aligned through 0074
 - SQL regression suite: status=ok
 - Web CI for Tier C imbuement UI: success
 - Cloudflare build/deploy commit `d9bec8bb3cdee851592c7413acf85349a34aa59d`: success
@@ -250,3 +250,17 @@ Supabase advisor:
 - one-hand and two-hand differences are preserved instead of collapsed into one generic proficiency modifier.
 - no proficiency perk affects the optimizer yet; 0073 is factual normalization only.
 - SQL regression now asserts 6 trees, 90 perks and zero invented level assignments.
+
+
+## Weapon Proficiency preview
+
+- migration 0074 adds `weapon_proficiency_preview_v1` and `ek_weapon_proficiency_comparison_v1`.
+- supported EK families: Sword, Axe and Club through their Grand Sanguine one-hand/two-hand pairs.
+- no perk is inferred from level or proficiency points.
+- active effects are calculated only from explicitly supplied `perk_order` values.
+- preview groups active effects by scope/effect family and preserves spell-specific effects.
+- optimizer/ranking/hand choice remain unchanged: `optimizer_effect_applied=false`, `ranking_changed=false`, `hand_choice_changed=false`.
+- validated Sword example:
+  - Blade selection [1,4,12,15] -> +1 Sword, +3% global life leech, +1 attack, +3% critical chance.
+  - Razor selection [1,3,12,15] -> +1 Sword, +5% Fierce Berserk life leech, +1 attack, +3% critical chance.
+- legacy EK700 XP recommendation remains `preview_v7` with Cobra Bastion on top.
