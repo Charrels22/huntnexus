@@ -178,6 +178,7 @@ const proficiencyActive = await post({
   weapon_family: "sword",
   one_hand_active_perk_orders: [1, 4, 12, 15],
   two_hand_active_perk_orders: [1, 3, 12, 15],
+  effective_weapon_skill: 120,
 });
 assert(
   proficiencyActive?.data?.one_handed?.selection?.active_perk_count === 4,
@@ -186,6 +187,25 @@ assert(
 assert(
   proficiencyActive?.data?.two_handed?.selection?.active_perk_count === 4,
   "two-hand active proficiency count regression",
+);
+assert(
+  proficiencyActive?.data?.impact?.methodology?.stage ===
+    "ek_weapon_proficiency_impact_comparison_v1",
+  "proficiency impact stage regression",
+);
+assert(
+  proficiencyActive?.data?.impact?.methodology?.optimizer_effect_applied === false,
+  "proficiency impact must not affect optimizer",
+);
+assert(
+  proficiencyActive?.data?.impact?.one_handed?.impact_vector
+    ?.displayed_effective_weapon_skill === 120,
+  "displayed effective skill regression",
+);
+assert(
+  proficiencyActive?.data?.impact?.one_handed?.impact_vector
+    ?.flat_skill_bonus_applied_to_displayed_skill === false,
+  "proficiency skill bonus must not be double counted",
 );
 
 const magma = await post({
