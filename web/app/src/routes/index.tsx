@@ -175,6 +175,9 @@ function ProficiencyImpact({ data }: { data: any }) {
     Number(v.global_mana_leech_percent) ? `mana leech +${fmt(Number(v.global_mana_leech_percent), 2)}%` : null,
     Number(v.auto_attack_skill_derived_damage_term) ? `termo auto +${fmt(Number(v.auto_attack_skill_derived_damage_term), 2)}` : null,
     Number(v.spell_skill_derived_damage_term) ? `termo spells +${fmt(Number(v.spell_skill_derived_damage_term), 2)}` : null,
+    Number(v.auto_attack_magic_level_derived_damage_term) ? `termo auto/ML +${fmt(Number(v.auto_attack_magic_level_derived_damage_term), 2)}` : null,
+    Number(v.spell_magic_level_derived_damage_term) ? `termo spells/ML +${fmt(Number(v.spell_magic_level_derived_damage_term), 2)}` : null,
+    Number(v.healing_magic_level_derived_term) ? `termo healing/ML +${fmt(Number(v.healing_magic_level_derived_term), 2)}` : null,
   ].filter(Boolean);
 
   if (!parts.length && !unresolved.length) return null;
@@ -204,8 +207,7 @@ function HuntsTab() {
   const [weaponSkill, setWeaponSkill] = useState("");
   const [magicLevel, setMagicLevel] = useState("");
   const [shielding, setShielding] = useState("");
-  const [oneHandPerks, setOneHandPerks] = useState("");
-  const [twoHandPerks, setTwoHandPerks] = useState("");
+  const [perkSelections, setPerkSelections] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -220,8 +222,7 @@ function HuntsTab() {
       setWeaponSkill("");
       setMagicLevel("");
       setShielding("");
-      setOneHandPerks("");
-      setTwoHandPerks("");
+      setPerkSelections({});
     }
     return () => { active = false; };
   }, [vocation]);
@@ -245,8 +246,11 @@ function HuntsTab() {
         party_size: Number(party),
         ...(characterProfile ? {
           character_profile: characterProfile,
-          one_hand_active_perk_orders: parsePerkOrders(oneHandPerks),
-          two_hand_active_perk_orders: parsePerkOrders(twoHandPerks),
+          proficiency_selections: Object.fromEntries(
+            Object.entries(perkSelections)
+              .map(([itemKey, value]) => [itemKey, parsePerkOrders(value)])
+              .filter(([, orders]) => (orders as number[]).length > 0),
+          ),
         } : {}),
       });
       setResult(recommendation);
@@ -293,7 +297,13 @@ function HuntsTab() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label="Família de arma">
-                  <Select value={weaponFamily} onValueChange={setWeaponFamily}>
+                  <Select
+                    value={weaponFamily}
+                    onValueChange={(value) => {
+                      setWeaponFamily(value);
+                      setPerkSelections({});
+                    }}
+                  >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Não informar</SelectItem>
@@ -339,29 +349,11 @@ function HuntsTab() {
                   />
                 </Field>
               </div>
-              {weaponFamily !== "none" && (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Perk orders ativos · 1 mão">
-                    <Input
-                      placeholder="ex.: 1,4,12,15"
-                      value={oneHandPerks}
-                      onChange={(e) => setOneHandPerks(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Perk orders ativos · 2 mãos">
-                    <Input
-                      placeholder="ex.: 1,3,12,15"
-                      value={twoHandPerks}
-                      onChange={(e) => setTwoHandPerks(e.target.value)}
-                    />
-                  </Field>
-                </div>
-              )}
               <p className="text-xs text-muted-foreground">
                 {profileContract?.input_principle ??
                   "Use os valores efetivos mostrados pelo cliente. O perfil não é obrigatório."}
                 {weaponFamily !== "none" &&
-                  " Perk order é a ordem preservada da fonte, não o nível da proficiência; deixe vazio para referência apenas."}
+                  " Os perks são preenchidos depois, por arma candidata real. Perk order é a ordem preservada da fonte, não o nível da proficiência."}
               </p>
             </div>
           )}
@@ -379,9 +371,17 @@ function HuntsTab() {
       )}
 
       {result && (
-        <p className="text-xs text-muted-foreground">
-          Dados observados são evidência comunitária, não garantia.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">
+            Dados observados são evidência comunitária, não garantia.
+          </p>
+          {weaponFamily !== "none" && results.length > 0 && (
+            <Button variant="outline" size="sm" onClick={run} disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Atualizar contexto dos perks
+            </Button>
+          )}
+        </div>
       )}
 
       {result && results.length === 0 && (
@@ -393,8 +393,11 @@ function HuntsTab() {
           key={r.ranking?.hunt_key ?? i}
           rank={i + 1}
           r={r}
-          proficiency={result?.data?.proficiency_preview ?? null}
           handContext={r.hand_context_comparison ?? null}
+          perkSelections={perkSelections}
+          onPerkSelectionChange={(itemKey, value) =>
+            setPerkSelections((prev) => ({ ...prev, [itemKey]: value }))
+          }
         />
       ))}
     </div>
@@ -404,13 +407,15 @@ function HuntsTab() {
 function HuntResult({
   rank,
   r,
-  proficiency,
   handContext,
+  perkSelections,
+  onPerkSelectionChange,
 }: {
   rank: number;
   r: any;
-  proficiency?: any;
   handContext?: any;
+  perkSelections: Record<string, string>;
+  onPerkSelectionChange: (itemKey: string, value: string) => void;
 }) {
   const k = r.ranking ?? {};
   const incoming = arr(r.defensive_candidates?.incoming_damage);
@@ -430,12 +435,15 @@ function HuntResult({
   const fixedImbues = Object.entries(imbuePreview.fixed_slots ?? {}) as Array<[string, any]>;
   const characterProfile = setPreview.character_profile ?? {};
   const characterProfileAnalysis = setPreview.character_profile_analysis ?? {};
-  const oneProficiency = proficiency?.one_handed ?? {};
-  const twoProficiency = proficiency?.two_handed ?? {};
-  const oneProficiencyEffects = arr(oneProficiency.active_effect_summary);
-  const twoProficiencyEffects = arr(twoProficiency.active_effect_summary);
-  const oneProficiencyImpact = proficiency?.impact?.one_handed ?? {};
-  const twoProficiencyImpact = proficiency?.impact?.two_handed ?? {};
+  const actualProficiency = r.actual_weapon_proficiency ?? {};
+  const oneProficiencyImpact = actualProficiency.one_handed ?? {};
+  const twoProficiencyImpact = actualProficiency.two_handed ?? {};
+  const oneProficiencyEffects = arr(oneProficiencyImpact.resolved_effects);
+  const twoProficiencyEffects = arr(twoProficiencyImpact.resolved_effects);
+  const oneProficiencyItemKey = oneProficiencyImpact.item_key ?? "";
+  const twoProficiencyItemKey = twoProficiencyImpact.item_key ?? "";
+  const oneProficiencyTree = Boolean(actualProficiency.coverage?.one_handed_tree_available);
+  const twoProficiencyTree = Boolean(actualProficiency.coverage?.two_handed_tree_available);
   const contextComparison = handContext?.comparison ?? {};
   const contextDimensions = arr(contextComparison.dimensions);
   const contextDifferences = contextDimensions.filter((d) => d.better && d.better !== "tie");
@@ -616,40 +624,74 @@ function HuntResult({
               </div>
             )}
 
-            {proficiency?.methodology?.stage === "ek_weapon_proficiency_comparison_v1" && (
+            {(oneProficiencyItemKey || twoProficiencyItemKey) && (
               <div className="space-y-2 border-t pt-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-sm font-medium">Weapon Proficiency (preview)</div>
+                  <div className="text-sm font-medium">Weapon Proficiency por arma</div>
                   <Badge variant="outline">não altera ranking</Badge>
-                  <Badge variant="outline">sem nível inferido</Badge>
+                  <Badge variant="outline">item_key vinculado</Badge>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {[["1 mão", oneProficiency, oneProficiencyEffects], ["2 mãos", twoProficiency, twoProficiencyEffects]].map(([label, data, effects]: any) => (
-                    <div key={label} className="rounded-md border px-3 py-2 text-sm">
-                      <div className="text-xs text-muted-foreground">{label}</div>
-                      <div className="font-medium">{data.item?.name ?? "—"}</div>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        <Badge variant="outline">
-                          {data.selection?.mode === "explicit_perk_order"
-                            ? `${data.selection?.active_perk_count ?? 0} perks ativos`
-                            : `${data.tree?.perk_count ?? 0} perks catalogados · referência`}
-                        </Badge>
+                  {[
+                    {
+                      label: "1 mão",
+                      itemKey: oneProficiencyItemKey,
+                      name: handContext?.one_handed?.weapon_name,
+                      tree: oneProficiencyTree,
+                      impact: oneProficiencyImpact,
+                      effects: oneProficiencyEffects,
+                    },
+                    {
+                      label: "2 mãos",
+                      itemKey: twoProficiencyItemKey,
+                      name: handContext?.two_handed?.weapon_name,
+                      tree: twoProficiencyTree,
+                      impact: twoProficiencyImpact,
+                      effects: twoProficiencyEffects,
+                    },
+                  ].map((x) => (
+                    <div key={x.label} className="space-y-2 rounded-md border px-3 py-2 text-sm">
+                      <div>
+                        <div className="text-xs text-muted-foreground">{x.label}</div>
+                        <div className="font-medium">{x.name ?? x.itemKey ?? "—"}</div>
+                        {x.itemKey && <code className="text-xs text-muted-foreground">{x.itemKey}</code>}
                       </div>
-                      {effects.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {effects.map((e: any, i: number) => (
-                            <Badge key={i} variant="secondary">
-                              {e.scope}{e.spell_key ? `/${e.spell_key}` : ""}: {e.effect_family} +{fmt(e.value, 2)}{e.unit === "percent" ? "%" : ""}
+                      {x.tree ? (
+                        <>
+                          <Input
+                            placeholder="perk orders, ex.: 1,4,7"
+                            value={perkSelections[x.itemKey] ?? ""}
+                            onChange={(e) => onPerkSelectionChange(x.itemKey, e.target.value)}
+                          />
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant="outline">
+                              {Number(x.impact?.active_perk_count ?? 0) > 0
+                                ? `${x.impact.active_perk_count} perks ativos`
+                                : "árvore catalogada · referência"}
                             </Badge>
-                          ))}
-                        </div>
+                            {actualProficiency.selection_binding?.[
+                              x.label === "1 mão" ? "one_handed_selection_source" : "two_handed_selection_source"
+                            ] === "item_key" && <Badge variant="secondary">seleção desta arma</Badge>}
+                          </div>
+                          {x.effects.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {x.effects.map((e: any, i: number) => (
+                                <Badge key={i} variant="secondary">
+                                  {e.scope}{e.spell_key ? `/${e.spell_key}` : ""}: {e.effect_family} +{fmt(e.value, 2)}{e.unit === "percent" ? "%" : ""}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          <ProficiencyImpact data={x.impact} />
+                        </>
+                      ) : (
+                        <Badge variant="outline">árvore ainda não catalogada</Badge>
                       )}
-                      <ProficiencyImpact data={label === "1 mão" ? oneProficiencyImpact : twoProficiencyImpact} />
                     </div>
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Os efeitos só ficam ativos quando os perk orders são informados explicitamente. "Termo auto/spells" é a contribuição direta do percentual sobre o skill informado, não dano final nem DPS. Este preview não muda score, ranking nem escolha de mãos.
+                  Cada lista fica vinculada ao item exato. Preencha os perk orders e use “Atualizar contexto dos perks”. Ordens de uma arma nunca são reaproveitadas em outra.
                 </p>
               </div>
             )}
