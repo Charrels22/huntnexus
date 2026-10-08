@@ -176,6 +176,29 @@ assert(
     ?.selection_binding?.two_handed_selection_source === "item_key",
   "top result proficiency selection source must be item_key",
 );
+assert(
+  profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+    ?.methodology?.stage === "weapon_proficiency_pair_for_items_v2",
+  "actual weapon proficiency pair stage regression",
+);
+assert(
+  Array.isArray(
+    profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+      ?.one_handed_reference?.perks,
+  ) &&
+  profiledRecommendation.data.results[0].actual_weapon_proficiency
+    .one_handed_reference.perks.length > 0,
+  "one-hand full proficiency tree missing",
+);
+assert(
+  Array.isArray(
+    profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+      ?.two_handed_reference?.perks,
+  ) &&
+  profiledRecommendation.data.results[0].actual_weapon_proficiency
+    .two_handed_reference.perks.length > 0,
+  "two-hand full proficiency tree missing",
+);
 
 const oneHandType =
   profiledSet?.hand_options?.one_handed?.main_hand?.weapon_type?.toLowerCase();
