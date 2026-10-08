@@ -113,7 +113,7 @@ const profiledRecommendation = await post({
 
 assert(
   profiledRecommendation?.data?.methodology?.stage ===
-    "recommendation_preview_contextual_v1",
+    "recommendation_preview_contextual_v3",
   "contextual recommendation stage regression",
 );
 assert(
@@ -152,6 +152,16 @@ assert(
   profiledRecommendation?.data?.results?.[0]?.hand_context_comparison?.methodology
     ?.optimizer_effect_applied === false,
   "embedded hand context must not alter optimizer",
+);
+assert(
+  profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+    ?.selection_binding?.one_handed_applied_to_actual_item === true,
+  "top result one-hand proficiency binding regression",
+);
+assert(
+  profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+    ?.selection_binding?.two_handed_applied_to_actual_item === true,
+  "top result two-hand proficiency binding regression",
 );
 
 const oneHandType =
