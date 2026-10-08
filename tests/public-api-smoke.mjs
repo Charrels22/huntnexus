@@ -153,6 +153,41 @@ assert(
   "expected sword two-hand contextual skill 124 for regression fixture",
 );
 
+const proficiencyReference = await post({
+  action: "proficiency_preview",
+  weapon_family: "sword",
+  one_hand_active_perk_orders: [],
+  two_hand_active_perk_orders: [],
+});
+assert(
+  proficiencyReference?.data?.methodology?.stage ===
+    "ek_weapon_proficiency_comparison_v1",
+  "proficiency preview stage regression",
+);
+assert(
+  proficiencyReference?.data?.one_handed?.selection?.mode === "reference_only",
+  "proficiency reference mode regression",
+);
+assert(
+  proficiencyReference?.data?.methodology?.optimizer_effect_applied === false,
+  "proficiency preview must not affect optimizer",
+);
+
+const proficiencyActive = await post({
+  action: "proficiency_preview",
+  weapon_family: "sword",
+  one_hand_active_perk_orders: [1, 4, 12, 15],
+  two_hand_active_perk_orders: [1, 3, 12, 15],
+});
+assert(
+  proficiencyActive?.data?.one_handed?.selection?.active_perk_count === 4,
+  "one-hand active proficiency count regression",
+);
+assert(
+  proficiencyActive?.data?.two_handed?.selection?.active_perk_count === 4,
+  "two-hand active proficiency count regression",
+);
+
 const magma = await post({
   action: "boss_build",
   boss_key: "magma-bubble",
@@ -185,6 +220,11 @@ console.log(
         profiledSet?.hand_options?.one_handed?.main_hand?.name,
       profiled_two_hand:
         profiledSet?.hand_options?.two_handed?.item?.name,
+      proficiency_stage: proficiencyReference.data.methodology.stage,
+      proficiency_one_active:
+        proficiencyActive.data.one_handed.selection.active_perk_count,
+      proficiency_two_active:
+        proficiencyActive.data.two_handed.selection.active_perk_count,
       magma_blocked: magma.data.readiness.final_build_blocked,
     },
     null,
