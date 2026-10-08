@@ -51,6 +51,8 @@ const Body = z.discriminatedUnion("action", [
     limit: z.coerce.number().int().min(1).max(10).default(5),
     defensive_items_per_slot: z.coerce.number().int().min(1).max(5).default(3),
     character_profile: CharacterProfile.optional(),
+    one_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
+    two_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
   }),
   z.object({
     action: z.literal("boss_build"),
@@ -143,7 +145,7 @@ export const Route = createFileRoute("/api/huntnexus")({
               return json({ data: await rpc("huntnexus_search_bosses", { p_query: b.query, p_limit: b.limit }) });
             case "recommend": {
               const recommendationFn = b.character_profile
-                ? "huntnexus_recommendation_preview_profiled"
+                ? "huntnexus_recommendation_preview_contextual"
                 : "huntnexus_recommendation_preview";
               const recommendationParams: Record<string, unknown> = {
                 p_vocation: b.vocation,
@@ -155,6 +157,8 @@ export const Route = createFileRoute("/api/huntnexus")({
               };
               if (b.character_profile) {
                 recommendationParams.p_character_profile = b.character_profile;
+                recommendationParams.p_one_hand_active_perk_orders = b.one_hand_active_perk_orders;
+                recommendationParams.p_two_hand_active_perk_orders = b.two_hand_active_perk_orders;
               }
               const [data, warnings] = await Promise.all([
                 rpc(recommendationFn, recommendationParams),
