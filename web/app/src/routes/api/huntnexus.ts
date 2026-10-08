@@ -20,6 +20,8 @@ const Body = z.discriminatedUnion("action", [
     weapon_family: z.enum(["sword", "axe", "club"]),
     one_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
     two_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
+    effective_weapon_skill: z.coerce.number().int().min(1).max(1000).optional(),
+    effective_magic_level: z.coerce.number().int().min(0).max(1000).optional(),
   }),
   z.object({
     action: z.literal("search_hunts"),
@@ -98,14 +100,23 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_vocation: b.vocation,
                 }),
               });
-            case "proficiency_preview":
-              return json({
-                data: await rpc("huntnexus_ek_proficiency_comparison", {
+            case "proficiency_preview": {
+              const [reference, impact] = await Promise.all([
+                rpc("huntnexus_ek_proficiency_comparison", {
                   p_weapon_family: b.weapon_family,
                   p_one_hand_active_perk_orders: b.one_hand_active_perk_orders,
                   p_two_hand_active_perk_orders: b.two_hand_active_perk_orders,
                 }),
-              });
+                rpc("huntnexus_ek_proficiency_impact_comparison", {
+                  p_weapon_family: b.weapon_family,
+                  p_one_hand_active_perk_orders: b.one_hand_active_perk_orders,
+                  p_two_hand_active_perk_orders: b.two_hand_active_perk_orders,
+                  p_effective_weapon_skill: b.effective_weapon_skill,
+                  p_effective_magic_level: b.effective_magic_level,
+                }),
+              ]);
+              return json({ data: { ...reference, impact } });
+            }
             case "search_hunts":
               return json({ data: await rpc("huntnexus_search_hunts", { p_query: b.query, p_limit: b.limit }) });
             case "search_bosses":
