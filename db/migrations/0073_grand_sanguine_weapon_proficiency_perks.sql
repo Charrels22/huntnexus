@@ -46,10 +46,18 @@ grant select,insert,update,delete on public.weapon_proficiency_trees to service_
 grant select,insert,update,delete on public.weapon_proficiency_perks to service_role;
 
 delete from public.weapon_proficiency_perks
-where item_key like 'grand-sanguine-%';
+where item_key in (
+  'grand-sanguine-blade','grand-sanguine-razor',
+  'grand-sanguine-hatchet','grand-sanguine-battleaxe',
+  'grand-sanguine-cudgel','grand-sanguine-bludgeon'
+);
 
 delete from public.weapon_proficiency_trees
-where item_key like 'grand-sanguine-%';
+where item_key in (
+  'grand-sanguine-blade','grand-sanguine-razor',
+  'grand-sanguine-hatchet','grand-sanguine-battleaxe',
+  'grand-sanguine-cudgel','grand-sanguine-bludgeon'
+);
 
 insert into public.weapon_proficiency_trees(
   item_key,source_id,source_url,source_tier,levels_declared,topology_status,perk_count,notes
