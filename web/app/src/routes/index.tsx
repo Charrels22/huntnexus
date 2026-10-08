@@ -576,6 +576,18 @@ function HuntResult({
                   ) : (
                     <Badge variant="secondary">trade-off contextual aberto</Badge>
                   )}
+                  {contextComparison.extended_comparison_ready ? (
+                    <Badge variant="outline">proficiency aplicada ao par atual</Badge>
+                  ) : contextComparison.status === "proficiency_weapon_mismatch" ? (
+                    <Badge variant="outline">proficiency ainda não cobre o par atual</Badge>
+                  ) : (
+                    <Badge variant="outline">comparação base</Badge>
+                  )}
+                  {!contextComparison.extended_comparison_ready && contextComparison.base_pareto_dominance && (
+                    <Badge variant="secondary">
+                      dominância base: {contextComparison.base_pareto_dominance === "two_handed" ? "2 mãos" : "1 mão"}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
                   <Badge variant="outline">1 mão melhor: {contextSummary.one_handed_better ?? 0}</Badge>
