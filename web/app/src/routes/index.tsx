@@ -206,8 +206,6 @@ function HuntsTab() {
   const [shielding, setShielding] = useState("");
   const [oneHandPerks, setOneHandPerks] = useState("");
   const [twoHandPerks, setTwoHandPerks] = useState("");
-  const [proficiencyPreview, setProficiencyPreview] = useState<any>(null);
-  const [handContexts, setHandContexts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -224,8 +222,6 @@ function HuntsTab() {
       setShielding("");
       setOneHandPerks("");
       setTwoHandPerks("");
-      setProficiencyPreview(null);
-      setHandContexts({});
     }
     return () => { active = false; };
   }, [vocation]);
@@ -241,49 +237,19 @@ function HuntsTab() {
             ...(shielding !== "" && Number(shielding) >= 0 ? { effective_shielding: Number(shielding) } : {}),
           }
         : undefined;
-      const recommendationPromise = callApi({
+      const recommendation = await callApi({
         action: "recommend",
         vocation,
         level: Number(level),
         objective,
         party_size: Number(party),
-        ...(characterProfile ? { character_profile: characterProfile } : {}),
-      });
-      const proficiencyPromise = characterProfile
-        ? callApi({
-            action: "proficiency_preview",
-            weapon_family: weaponFamily,
-            one_hand_active_perk_orders: parsePerkOrders(oneHandPerks),
-            two_hand_active_perk_orders: parsePerkOrders(twoHandPerks),
-            ...(Number(weaponSkill) > 0 ? { effective_weapon_skill: Number(weaponSkill) } : {}),
-            ...(magicLevel !== "" && Number(magicLevel) >= 0 ? { effective_magic_level: Number(magicLevel) } : {}),
-          }).catch(() => null)
-        : Promise.resolve(null);
-      const [recommendation, proficiency] = await Promise.all([
-        recommendationPromise,
-        proficiencyPromise,
-      ]);
-      setResult(recommendation);
-      setProficiencyPreview(proficiency?.data ?? null);
-
-      const recommendationResults = arr(recommendation?.data?.results);
-      if (characterProfile && recommendationResults.length > 0) {
-        const huntKeys = recommendationResults
-          .map((x) => x?.ranking?.hunt_key)
-          .filter(Boolean)
-          .slice(0, 10);
-        const context = await callApi({
-          action: "hand_context_batch",
-          hunt_keys: huntKeys,
-          level: Number(level),
+        ...(characterProfile ? {
           character_profile: characterProfile,
           one_hand_active_perk_orders: parsePerkOrders(oneHandPerks),
           two_hand_active_perk_orders: parsePerkOrders(twoHandPerks),
-        }).catch(() => null);
-        setHandContexts(context?.data?.items ?? {});
-      } else {
-        setHandContexts({});
-      }
+        } : {}),
+      });
+      setResult(recommendation);
     } catch (e) { setError((e as Error).message); setResult(null); }
     finally { setLoading(false); }
   }
@@ -427,8 +393,8 @@ function HuntsTab() {
           key={r.ranking?.hunt_key ?? i}
           rank={i + 1}
           r={r}
-          proficiency={proficiencyPreview}
-          handContext={handContexts[r.ranking?.hunt_key] ?? null}
+          proficiency={result?.data?.proficiency_preview ?? null}
+          handContext={r.hand_context_comparison ?? null}
         />
       ))}
     </div>
