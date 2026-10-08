@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0076
+- schema/migrations aplicados até 0081
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -125,9 +125,9 @@ Confirmed through real public HTTP requests:
 - `health`: HTTP 200, HuntNexus, v13.9 / v4.064, preview_v7
 - `recommend`: EK 700 / XP / Solo -> Cobra Bastion, score 0.794, confidence 0.920, HTTP 200
 - legacy request without character profile remains on `recommendation_preview_v7`
-- profiled EK request uses `recommendation_preview_profiled_v1`; Sword 120 smoke constrains both one-hand and two-hand candidates to Sword
+- profiled EK API request uses `recommendation_preview_contextual_v1`, based on `recommendation_preview_profiled_v2`; Sword 120 constrains both one-hand and two-hand candidates to Sword
 - `profile_contract`: EK -> Sword/Axe/Club
-- frontend exposes optional EK weapon family, effective weapon skill and shielding; family options come from the API contract
+- frontend exposes optional EK weapon family, effective weapon skill, Magic Level and shielding; family options come from the API contract
 - recommendation stage atual: `preview_v7`
 - loadout set preview: `loadout_set_preview_v3`, sem score combinado artificial
 - EK hand tradeoff: `ek_hand_options_v2`, com Pareto dominance only
@@ -160,12 +160,12 @@ Tier A RubinOT facts now preserved:
 - Guild Ascension combat bonus categories: leech, critical, skill, race damage, elemental damage and elemental defense.
 - Weapon Proficiency bonus visibility in Offense Stats.
 
-`character_combat_profile_contract_v1`:
+`character_combat_profile_contract_v2`:
 - prefers effective client-displayed values;
 - EK precise hand comparison uses Sword/Axe/Club + effective weapon skill;
 - optional effective shielding, critical, life/mana leech and elemental/race modifiers are modeled in the contract;
-- API/frontend wiring is active through `recommendation_preview_profiled_v1`;
-- effective weapon skill/shielding are exposed as context, not silently converted into final DPS/mitigation;
+- internal profiled layer is `recommendation_preview_profiled_v2`; public profiled API path is `recommendation_preview_contextual_v1`;
+- effective weapon skill is treated as client-displayed context and is no longer incremented again by candidate item skill bonuses; candidate bonuses remain separate dimensions;
 - Weapon Proficiency exact combat formula remains unreconciled;
 - Guild Ascension seasonal numeric perk values are intentionally not inferred.
 
@@ -202,7 +202,7 @@ Supabase advisor:
 ## Remaining work
 
 - manual visual/browser interaction QA of the character-profile controls and Tier C imbuement section
-- normalize per-weapon Weapon Proficiency trees for optimizer-relevant weapons before converting effective skill/attack into a final damage estimate
+- expand Weapon Proficiency normalization beyond Grand Sanguine to actual optimizer-selected weapons; current Sword top-5 audit exposed Gnome Sword, Naga Sword, Soulshredder and Eldritch Claymore as uncovered candidates
 - extend profiled recommendation logic beyond EK after vocation-specific evidence/formulas are reconciled
 - continue recommendation/final-set optimizer with character-aware data
 - keep cross-type imbuement priorities explicit; Tier C observed usage remains contextual only
@@ -213,7 +213,7 @@ Supabase advisor:
 
 ## 2026-10-08 continuation validation
 
-- migration history and repository aligned through 0076
+- migration history and repository aligned through 0081
 - SQL regression suite: status=ok
 - Web CI for Tier C imbuement UI: success
 - Cloudflare build/deploy commit `d9bec8bb3cdee851592c7413acf85349a34aa59d`: success
@@ -277,7 +277,7 @@ Supabase advisor:
   - reference perk counts or active perk counts;
   - active effects grouped by scope/effect family;
   - explicit badges that proficiency does not alter ranking and no level is inferred.
-- recommendation payload/ranking remains unchanged; proficiency is fetched as a separate non-critical preview.
+- recommendation payload/ranking remains unchanged; since migration 0080 the profiled public request returns proficiency + contextual hand comparison in the same RPC path, reusing the already-computed hand analysis.
 - public API smoke validated:
   - reference mode HTTP 200;
   - explicit Sword [1,4,12,15] vs [1,3,12,15] HTTP 200;
@@ -309,3 +309,59 @@ Supabase advisor:
 - Web CI commit `5dcd5e4f3b68b612d488c20c89df6ac720e63abf`: success.
 - Cloudflare deploy for the same commit: success.
 - Public Smoke commit `ad67b1fd85f360af24651e4dfc1ff962197871b0`: success.
+
+
+## Contextual EK hand comparison and performance path
+
+- migration 0077 fixes profiled-skill semantics:
+  - `character_combat_profile_contract_v2`;
+  - `ek_hand_options_profiled_v2`;
+  - `loadout_set_preview_profiled_v2`;
+  - `recommendation_preview_profiled_v2`.
+- client-displayed effective weapon skill is no longer recalculated with candidate item bonuses.
+- example Sword 120:
+  - displayed skill remains 120 for one-hand and two-hand;
+  - candidate item/set skill bonuses remain separate: +7 one-hand vs +4 two-hand.
+- migration 0078 adds `ek_hand_context_comparison_v1`:
+  - compares attack proxy, candidate-item skill bonus, weighted protection and imbue capacity;
+  - adds explicitly selected Weapon Proficiency effects as separate dimensions;
+  - no weighted score;
+  - no mixed-scope summation;
+  - Pareto only;
+  - no optimizer/ranking mutation.
+- migration 0079 adds a batch contextual function for compatibility/testing.
+- a 5-hunt batch that recomputed hand analysis per hunt hit statement timeout; this path is not used by the frontend.
+- migration 0080 fixes that architecture:
+  - `huntnexus_ek_hand_context_from_precomputed` reuses the hand analysis already produced by the recommendation;
+  - `recommendation_preview_contextual_v1` calculates proficiency once and attaches contextual comparison to all returned hunts;
+  - public frontend now uses a single `recommend` request instead of recommend + proficiency + batch calls.
+- optimized 5-result validation succeeds in one call.
+- Cobra Bastion / Sword 120 / explicit proficiency fixture:
+  - 9 comparable dimensions;
+  - 1 one-hand advantage;
+  - 1 two-hand advantage;
+  - 7 ties;
+  - no base or contextual Pareto dominance.
+- top-5 Sword audit:
+  - Cobra Bastion: full Grand Sanguine proficiency coverage on both hand options;
+  - Warzone 3: Gnome Sword vs Grand Sanguine Razor, partial proficiency coverage;
+  - Murky Caverns: Naga Sword vs Soulshredder, no Grand Sanguine proficiency coverage;
+  - Haunted Tomb: Grand Sanguine Blade vs Eldritch Claymore, partial coverage;
+  - Exotic Cave: Grand Sanguine Blade vs Eldritch Claymore, partial coverage.
+- migration 0081 guards semantics:
+  - contextual Pareto dominance is only exposed when both actual weapon candidates match normalized proficiency trees and both perk selections are explicit;
+  - base Pareto dominance remains separately visible.
+- Warzone 3 validation after 0081:
+  - base dominance = two-handed;
+  - contextual dominance = null;
+  - status = `proficiency_weapon_mismatch`.
+- frontend explicitly distinguishes:
+  - contextual dominance;
+  - base-only dominance;
+  - proficiency applied to the current pair;
+  - proficiency not yet covering the current pair.
+- Web CI commit `be4dddf4c79afbce1beae1a1bf5f8a47453d08a0`: success.
+- Cloudflare deployment of the same single-request frontend: success.
+- Public Smoke commit `714da139b080fbd1348d5475e47a0951ae968cc7`: success.
+- focused synthetic SQL smoke: `tests/sql/phase23_contextual_hand_smoke.sql` -> status=ok.
+- the large legacy SQL regression remains versioned but can hit connector statement/runtime limits as coverage grows; new contextual semantics are protected by the focused synthetic smoke plus public API smoke.
