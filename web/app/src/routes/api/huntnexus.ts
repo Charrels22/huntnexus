@@ -6,6 +6,7 @@ const Level = z.coerce.number().int().min(1).max(5000);
 const CharacterProfile = z.object({
   weapon_family: z.enum(["sword", "axe", "club"]),
   effective_weapon_skill: z.coerce.number().int().min(1).max(1000).optional(),
+  effective_magic_level: z.coerce.number().int().min(0).max(1000).optional(),
   effective_shielding: z.coerce.number().int().min(0).max(1000).optional(),
 }).strict();
 
@@ -22,6 +23,14 @@ const Body = z.discriminatedUnion("action", [
     two_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
     effective_weapon_skill: z.coerce.number().int().min(1).max(1000).optional(),
     effective_magic_level: z.coerce.number().int().min(0).max(1000).optional(),
+  }),
+  z.object({
+    action: z.literal("hand_context_batch"),
+    hunt_keys: z.array(z.string().min(1).max(200)).min(1).max(10),
+    level: Level,
+    character_profile: CharacterProfile,
+    one_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
+    two_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
   }),
   z.object({
     action: z.literal("search_hunts"),
@@ -117,6 +126,17 @@ export const Route = createFileRoute("/api/huntnexus")({
               ]);
               return json({ data: { ...reference, impact } });
             }
+            case "hand_context_batch":
+              return json({
+                data: await rpc("huntnexus_ek_hand_context_batch", {
+                  p_hunt_keys: b.hunt_keys,
+                  p_level: b.level,
+                  p_character_profile: b.character_profile,
+                  p_one_hand_active_perk_orders: b.one_hand_active_perk_orders,
+                  p_two_hand_active_perk_orders: b.two_hand_active_perk_orders,
+                  p_effective_magic_level: b.character_profile.effective_magic_level,
+                }),
+              });
             case "search_hunts":
               return json({ data: await rpc("huntnexus_search_hunts", { p_query: b.query, p_limit: b.limit }) });
             case "search_bosses":
