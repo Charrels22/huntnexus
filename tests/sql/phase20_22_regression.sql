@@ -1,5 +1,5 @@
 -- HuntNexus regression checks — recommendation preview v7.
--- Run after migrations through 0079.
+-- Run after migrations through 0080.
 -- These checks raise exceptions on invariant regressions.
 
 do $$
@@ -272,6 +272,31 @@ begin
     ) #>> '{methodology,stage}'
   ) <> 'ek_hand_context_batch_v1' then
     raise exception 'EK hand context batch stage regression';
+  end if;
+
+  if huntnexus_recommendation_preview_contextual(
+       'EK',700,'xp',1,5,3,
+       '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
+       '[1,3,10,12,15]'::jsonb,
+       '[1,2,10,12,15]'::jsonb
+     ) #>> '{methodology,stage}' <> 'recommendation_preview_contextual_v1' then
+    raise exception 'Contextual recommendation stage regression';
+  end if;
+  if huntnexus_recommendation_preview_contextual(
+       'EK',700,'xp',1,5,3,
+       '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
+       '[1,3,10,12,15]'::jsonb,
+       '[1,2,10,12,15]'::jsonb
+     ) #>> '{methodology,precomputed_hand_analysis_reused}' <> 'true' then
+    raise exception 'Contextual recommendation must reuse precomputed hand analysis';
+  end if;
+  if huntnexus_recommendation_preview_contextual(
+       'EK',700,'xp',1,5,3,
+       '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
+       '[1,3,10,12,15]'::jsonb,
+       '[1,2,10,12,15]'::jsonb
+     ) #>> '{results,0,hand_context_comparison,methodology,optimizer_effect_applied}' <> 'false' then
+    raise exception 'Contextual hand comparison must not alter optimizer';
   end if;
 
   if huntnexus_resolve_creature_exact('demongoblin') <> 'demon-goblin' then
