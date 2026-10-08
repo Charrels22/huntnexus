@@ -59,6 +59,20 @@ const parsePerkOrders = (value: string) =>
       .filter((x) => Number.isInteger(x) && x >= 1 && x <= 100)
   )).slice(0, 20);
 
+const metricLabel = (key: string) => {
+  const base: Record<string, string> = {
+    effective_attack_proxy: "ataque proxy",
+    candidate_item_skill_bonus: "bônus de skill do set",
+    weighted_protection: "proteção ponderada",
+    imbue_capacity: "capacidade de imbue",
+  };
+  if (base[key]) return base[key];
+  return key
+    .replace(/^proficiency\//, "")
+    .replaceAll("/", " · ")
+    .replaceAll("_", " ");
+};
+
 function HomePage() {
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-4 py-10">
@@ -188,10 +202,12 @@ function HuntsTab() {
   const [profileContract, setProfileContract] = useState<any>(null);
   const [weaponFamily, setWeaponFamily] = useState("none");
   const [weaponSkill, setWeaponSkill] = useState("");
+  const [magicLevel, setMagicLevel] = useState("");
   const [shielding, setShielding] = useState("");
   const [oneHandPerks, setOneHandPerks] = useState("");
   const [twoHandPerks, setTwoHandPerks] = useState("");
   const [proficiencyPreview, setProficiencyPreview] = useState<any>(null);
+  const [handContexts, setHandContexts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -204,10 +220,12 @@ function HuntsTab() {
     if (vocation !== "EK") {
       setWeaponFamily("none");
       setWeaponSkill("");
+      setMagicLevel("");
       setShielding("");
       setOneHandPerks("");
       setTwoHandPerks("");
       setProficiencyPreview(null);
+      setHandContexts({});
     }
     return () => { active = false; };
   }, [vocation]);
@@ -219,6 +237,7 @@ function HuntsTab() {
         ? {
             weapon_family: weaponFamily,
             ...(Number(weaponSkill) > 0 ? { effective_weapon_skill: Number(weaponSkill) } : {}),
+            ...(magicLevel !== "" && Number(magicLevel) >= 0 ? { effective_magic_level: Number(magicLevel) } : {}),
             ...(shielding !== "" && Number(shielding) >= 0 ? { effective_shielding: Number(shielding) } : {}),
           }
         : undefined;
@@ -237,6 +256,7 @@ function HuntsTab() {
             one_hand_active_perk_orders: parsePerkOrders(oneHandPerks),
             two_hand_active_perk_orders: parsePerkOrders(twoHandPerks),
             ...(Number(weaponSkill) > 0 ? { effective_weapon_skill: Number(weaponSkill) } : {}),
+            ...(magicLevel !== "" && Number(magicLevel) >= 0 ? { effective_magic_level: Number(magicLevel) } : {}),
           }).catch(() => null)
         : Promise.resolve(null);
       const [recommendation, proficiency] = await Promise.all([
@@ -245,6 +265,25 @@ function HuntsTab() {
       ]);
       setResult(recommendation);
       setProficiencyPreview(proficiency?.data ?? null);
+
+      const recommendationResults = arr(recommendation?.data?.results);
+      if (characterProfile && recommendationResults.length > 0) {
+        const huntKeys = recommendationResults
+          .map((x) => x?.ranking?.hunt_key)
+          .filter(Boolean)
+          .slice(0, 10);
+        const context = await callApi({
+          action: "hand_context_batch",
+          hunt_keys: huntKeys,
+          level: Number(level),
+          character_profile: characterProfile,
+          one_hand_active_perk_orders: parsePerkOrders(oneHandPerks),
+          two_hand_active_perk_orders: parsePerkOrders(twoHandPerks),
+        }).catch(() => null);
+        setHandContexts(context?.data?.items ?? {});
+      } else {
+        setHandContexts({});
+      }
     } catch (e) { setError((e as Error).message); setResult(null); }
     finally { setLoading(false); }
   }
@@ -286,7 +325,7 @@ function HuntsTab() {
                 <div className="text-sm font-medium">Perfil de combate EK</div>
                 <Badge variant="outline">opcional</Badge>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label="Família de arma">
                   <Select value={weaponFamily} onValueChange={setWeaponFamily}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -309,6 +348,17 @@ function HuntsTab() {
                     value={weaponSkill}
                     disabled={weaponFamily === "none"}
                     onChange={(e) => setWeaponSkill(e.target.value)}
+                  />
+                </Field>
+                <Field label="Magic Level efetivo">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1000}
+                    placeholder="opcional"
+                    value={magicLevel}
+                    disabled={weaponFamily === "none"}
+                    onChange={(e) => setMagicLevel(e.target.value)}
                   />
                 </Field>
                 <Field label="Shielding efetivo">
@@ -378,13 +428,24 @@ function HuntsTab() {
           rank={i + 1}
           r={r}
           proficiency={proficiencyPreview}
+          handContext={handContexts[r.ranking?.hunt_key] ?? null}
         />
       ))}
     </div>
   );
 }
 
-function HuntResult({ rank, r, proficiency }: { rank: number; r: any; proficiency?: any }) {
+function HuntResult({
+  rank,
+  r,
+  proficiency,
+  handContext,
+}: {
+  rank: number;
+  r: any;
+  proficiency?: any;
+  handContext?: any;
+}) {
   const k = r.ranking ?? {};
   const incoming = arr(r.defensive_candidates?.incoming_damage);
   const defensive = arr(r.defensive_candidates?.candidates);
@@ -409,6 +470,10 @@ function HuntResult({ rank, r, proficiency }: { rank: number; r: any; proficienc
   const twoProficiencyEffects = arr(twoProficiency.active_effect_summary);
   const oneProficiencyImpact = proficiency?.impact?.one_handed ?? {};
   const twoProficiencyImpact = proficiency?.impact?.two_handed ?? {};
+  const contextComparison = handContext?.comparison ?? {};
+  const contextDimensions = arr(contextComparison.dimensions);
+  const contextDifferences = contextDimensions.filter((d) => d.better && d.better !== "tie");
+  const contextSummary = contextComparison.dimension_summary ?? {};
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -483,8 +548,8 @@ function HuntResult({ rank, r, proficiency }: { rank: number; r: any; proficienc
                         <div className="mt-2 flex flex-wrap gap-1">
                           <Badge variant="outline">atk proxy {fmt(oneAnalysis.weapon.effective_attack_proxy, 2)}</Badge>
                           <Badge variant="outline">skill +{fmt(oneAnalysis.matching_weapon_skill_bonus, 0)}</Badge>
-                          {oneAnalysis.effective_weapon_skill_with_items != null && (
-                            <Badge variant="outline">skill efetivo {fmt(oneAnalysis.effective_weapon_skill_with_items, 0)}</Badge>
+                          {oneAnalysis.displayed_effective_weapon_skill != null && (
+                            <Badge variant="outline">skill exibido {fmt(oneAnalysis.displayed_effective_weapon_skill, 0)}</Badge>
                           )}
                           {oneAnalysis.effective_shielding_with_offhand != null && (
                             <Badge variant="outline">shield {fmt(oneAnalysis.effective_shielding_with_offhand, 0)}</Badge>
@@ -503,8 +568,8 @@ function HuntResult({ rank, r, proficiency }: { rank: number; r: any; proficienc
                         <div className="mt-2 flex flex-wrap gap-1">
                           <Badge variant="outline">atk proxy {fmt(twoAnalysis.effective_attack_proxy, 2)}</Badge>
                           <Badge variant="outline">skill +{fmt(twoAnalysis.weapon_skill_bonus, 0)}</Badge>
-                          {twoAnalysis.effective_weapon_skill_with_item != null && (
-                            <Badge variant="outline">skill efetivo {fmt(twoAnalysis.effective_weapon_skill_with_item, 0)}</Badge>
+                          {twoAnalysis.displayed_effective_weapon_skill != null && (
+                            <Badge variant="outline">skill exibido {fmt(twoAnalysis.displayed_effective_weapon_skill, 0)}</Badge>
                           )}
                           <Badge variant="outline">prot {fmt(twoAnalysis.weighted_protection, 2)}</Badge>
                           <Badge variant="outline">{twoAnalysis.imbue_capacity ?? 0} imbue</Badge>
@@ -530,6 +595,46 @@ function HuntResult({ rank, r, proficiency }: { rank: number; r: any; proficienc
                     Fora da hunt sustentada: {excludedWeapons.map((x) => `${x.name} (${x.reason})`).join(", ")}.
                   </p>
                 )}
+              </div>
+            )}
+
+            {handContext?.methodology?.stage === "ek_hand_context_comparison_v1" && (
+              <div className="space-y-2 border-t pt-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="text-sm font-medium">Comparação contextual 1 mão × 2 mãos</div>
+                  <Badge variant="outline">Pareto · sem score combinado</Badge>
+                  {contextComparison.contextual_pareto_dominance ? (
+                    <Badge variant="secondary">
+                      dominância contextual: {contextComparison.contextual_pareto_dominance === "two_handed" ? "2 mãos" : "1 mão"}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">trade-off contextual aberto</Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Badge variant="outline">1 mão melhor: {contextSummary.one_handed_better ?? 0}</Badge>
+                  <Badge variant="outline">2 mãos melhor: {contextSummary.two_handed_better ?? 0}</Badge>
+                  <Badge variant="outline">empates: {contextSummary.ties ?? 0}</Badge>
+                  <Badge variant="outline">{contextSummary.comparable_dimensions ?? 0} dimensões</Badge>
+                </div>
+                {contextDifferences.length > 0 && (
+                  <div className="grid gap-1 text-xs sm:grid-cols-2">
+                    {contextDifferences.slice(0, 10).map((d: any) => (
+                      <div key={d.metric_key} className="rounded-md bg-muted/40 px-2 py-1.5">
+                        <span className="font-medium">{metricLabel(d.metric_key)}</span>
+                        <span className="text-muted-foreground">
+                          {" "}· 1M {fmt(Number(d.one_handed), 3)} vs 2M {fmt(Number(d.two_handed), 3)}
+                        </span>
+                        <Badge variant="outline" className="ml-2">
+                          {d.better === "two_handed" ? "2M" : "1M"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Proteção, ataque proxy, bônus de skill do set, slots de imbue e efeitos de proficiency ficam em dimensões separadas. Escopos diferentes não são somados entre si.
+                </p>
               </div>
             )}
 
