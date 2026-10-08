@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0074
+- schema/migrations aplicados até 0076
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -213,7 +213,7 @@ Supabase advisor:
 
 ## 2026-10-08 continuation validation
 
-- migration history and repository aligned through 0074
+- migration history and repository aligned through 0076
 - SQL regression suite: status=ok
 - Web CI for Tier C imbuement UI: success
 - Cloudflare build/deploy commit `d9bec8bb3cdee851592c7413acf85349a34aa59d`: success
@@ -285,3 +285,27 @@ Supabase advisor:
   - `optimizer_effect_applied=false`.
 - frontend commit `1df728af2ba2f9714c19d3a27b1678b20c3308a7`: GitHub Web CI success and Cloudflare build/deploy success.
 - Public Smoke commit `53a65fdda47cfbef121516f92c283e6b266a4be7`: success.
+
+
+## Weapon Proficiency impact preview
+
+- migration 0075 adds `weapon_proficiency_impact_preview_v1` and `ek_weapon_proficiency_impact_comparison_v1`.
+- migration 0076 prevents double-counting proficiency skill bonuses already present in RubinOT client-displayed effective skill values.
+- impact preview resolves only directly supported terms:
+  - flat skill bonus;
+  - flat attack bonus;
+  - global critical chance / critical extra damage;
+  - global life/mana leech;
+  - source-stat percentage terms such as 5% of effective weapon skill for auto-attacks and 10% for spells.
+- source-stat percentage terms are exposed as explanatory terms, not final hit damage or DPS.
+- with displayed Sword skill 120:
+  - 5% skill term = 6;
+  - 10% skill term = 12.
+- displayed effective skill remains 120 even when a +1 proficiency skill perk is active; the +1 is shown separately and is not re-applied.
+- missing source inputs remain explicit (for example Magic Level-dependent healing terms).
+- public `proficiency_preview` now returns both the tree/reference preview and a separate `impact` object.
+- frontend shows direct bonuses and derived terms while explicitly stating that they do not change score, ranking or hand choice.
+- SQL regression: status=ok.
+- Web CI commit `5dcd5e4f3b68b612d488c20c89df6ac720e63abf`: success.
+- Cloudflare deploy for the same commit: success.
+- Public Smoke commit `ad67b1fd85f360af24651e4dfc1ff962197871b0`: success.
