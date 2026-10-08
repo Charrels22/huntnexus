@@ -395,3 +395,5 @@ Supabase advisor:
 - contextual Pareto dominance remains NULL unless both actual weapons have explicit correctly-bound proficiency selections.
 - focused regression `tests/sql/phase24_actual_candidate_proficiency.sql`: status=ok.
 - public Worker validation for contextual v3: HTTP 200; top Cobra pair returns per-item proficiency impact on both sides with correct bindings.
+
+- Public Smoke for contextual v3 item-binding contract: success on commit `5f085d5957d80dcb94e198ce389bddc3820892de`.
