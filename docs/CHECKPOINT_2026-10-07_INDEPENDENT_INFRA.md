@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0085
+- schema/migrations aplicados até 0086
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -397,3 +397,30 @@ Supabase advisor:
 - public Worker validation for contextual v3: HTTP 200; top Cobra pair returns per-item proficiency impact on both sides with correct bindings.
 
 - Public Smoke for contextual v3 item-binding contract: success on commit `5f085d5957d80dcb94e198ce389bddc3820892de`.
+
+
+## Item-key Weapon Proficiency selections
+
+- migration 0086 adds `huntnexus_recommendation_preview_contextual_items`.
+- contextual recommendation stage is now `recommendation_preview_contextual_v4` for the public profiled path.
+- new request contract: `proficiency_selections = { item_key: [perk_order, ...] }`.
+- perk orders are resolved only from the exact actual candidate `item_key`.
+- legacy one-hand/two-hand arrays remain API-compatible fallback only for the original Grand Sanguine family pair.
+- verified no cross-tree leakage:
+  - Gnome Sword [1,2] does not activate Grand Sanguine Blade;
+  - Naga Sword [4,7] resolves only Naga Sword;
+  - Soulshredder [1,2,11,13] resolves only Soulshredder.
+- frontend no longer asks for generic one-hand/two-hand perk orders before recommendations.
+- after the first recommendation, each actual candidate weapon with a normalized proficiency tree receives its own perk-order input.
+- repeated weapons across hunt cards share the same item-key selection state.
+- `Atualizar contexto dos perks` reruns the contextual preview using the item-key selection map; ranking still ignores proficiency effects.
+- UI exposes active perk count, item key, selection source and resolved impact terms per actual weapon.
+- Magic Level-derived terms are visible when applicable.
+- focused regression `tests/sql/phase25_item_key_proficiency.sql`: status=ok.
+- Web CI commit `e71d2480e5b04ffa525a06ab96bd5b7daecaa38b`: success.
+- Cloudflare API deploy commit `f964167d374f261f201cb1f635a0ebf9ce901be6`: success.
+- Cloudflare UI deploy commit `e71d2480e5b04ffa525a06ab96bd5b7daecaa38b`: success.
+- Public Smoke commit `198aab0df7f59cd49d3c58c81e2eda22f796398c`: success.
+- security advisor after 0086:
+  - 6 informational `rls_enabled_no_policy` findings correspond to intentionally server-only deny-by-default tables;
+  - existing `pg_net` public-schema warning remains unchanged.
