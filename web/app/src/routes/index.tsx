@@ -150,14 +150,45 @@ function HuntsTab() {
   const [level, setLevel] = useState("300");
   const [objective, setObjective] = useState("balanced");
   const [party, setParty] = useState("1");
+  const [profileContract, setProfileContract] = useState<any>(null);
+  const [weaponFamily, setWeaponFamily] = useState("none");
+  const [weaponSkill, setWeaponSkill] = useState("");
+  const [shielding, setShielding] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
 
+  useEffect(() => {
+    let active = true;
+    callApi({ action: "profile_contract", vocation })
+      .then((r) => { if (active) setProfileContract(r.data); })
+      .catch(() => { if (active) setProfileContract(null); });
+    if (vocation !== "EK") {
+      setWeaponFamily("none");
+      setWeaponSkill("");
+      setShielding("");
+    }
+    return () => { active = false; };
+  }, [vocation]);
+
   async function run() {
     setLoading(true); setError(null);
     try {
-      setResult(await callApi({ action: "recommend", vocation, level: Number(level), objective, party_size: Number(party) }));
+      const characterProfile = vocation === "EK" && weaponFamily !== "none"
+        ? {
+            weapon_family: weaponFamily,
+            ...(Number(weaponSkill) > 0 ? { effective_weapon_skill: Number(weaponSkill) } : {}),
+            ...(shielding !== "" && Number(shielding) >= 0 ? { effective_shielding: Number(shielding) } : {}),
+          }
+        : undefined;
+      setResult(await callApi({
+        action: "recommend",
+        vocation,
+        level: Number(level),
+        objective,
+        party_size: Number(party),
+        ...(characterProfile ? { character_profile: characterProfile } : {}),
+      }));
     } catch (e) { setError((e as Error).message); setResult(null); }
     finally { setLoading(false); }
   }
@@ -168,28 +199,80 @@ function HuntsTab() {
   return (
     <div className="space-y-4">
       <Card>
-        <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-5">
-          <Field label="Vocação"><VocationSelect value={vocation} onChange={setVocation} /></Field>
-          <Field label="Level"><Input type="number" min={1} value={level} onChange={(e) => setLevel(e.target.value)} /></Field>
-          <Field label="Objetivo">
-            <Select value={objective} onValueChange={setObjective}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="xp">XP</SelectItem><SelectItem value="profit">Profit</SelectItem><SelectItem value="balanced">Balanced</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="Party size">
-            <Select value={party} onValueChange={setParty}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{PARTY.map((p) => <SelectItem key={p.v} value={p.v}>{p.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <div className="flex items-end">
-            <Button className="w-full" onClick={run} disabled={loading || Number(level) < 1}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Analisar hunts
-            </Button>
+        <CardContent className="space-y-4 pt-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <Field label="Vocação"><VocationSelect value={vocation} onChange={setVocation} /></Field>
+            <Field label="Level"><Input type="number" min={1} value={level} onChange={(e) => setLevel(e.target.value)} /></Field>
+            <Field label="Objetivo">
+              <Select value={objective} onValueChange={setObjective}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="xp">XP</SelectItem><SelectItem value="profit">Profit</SelectItem><SelectItem value="balanced">Balanced</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Party size">
+              <Select value={party} onValueChange={setParty}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PARTY.map((p) => <SelectItem key={p.v} value={p.v}>{p.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </Field>
+            <div className="flex items-end">
+              <Button className="w-full" onClick={run} disabled={loading || Number(level) < 1}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Analisar hunts
+              </Button>
+            </div>
           </div>
+
+          {vocation === "EK" && (
+            <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-sm font-medium">Perfil de combate EK</div>
+                <Badge variant="outline">opcional</Badge>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field label="Família de arma">
+                  <Select value={weaponFamily} onValueChange={setWeaponFamily}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Não informar</SelectItem>
+                      {arr(profileContract?.vocation_specific?.weapon_family?.values).map((family) => (
+                        <SelectItem key={family} value={family}>
+                          {family === "sword" ? "Sword" : family === "axe" ? "Axe" : family === "club" ? "Club" : family}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Skill efetivo">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    placeholder="ex.: 120"
+                    value={weaponSkill}
+                    disabled={weaponFamily === "none"}
+                    onChange={(e) => setWeaponSkill(e.target.value)}
+                  />
+                </Field>
+                <Field label="Shielding efetivo">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1000}
+                    placeholder="opcional"
+                    value={shielding}
+                    disabled={weaponFamily === "none"}
+                    onChange={(e) => setShielding(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {profileContract?.input_principle ??
+                  "Use os valores efetivos mostrados pelo cliente. O perfil não é obrigatório."}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -234,6 +317,8 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
   const excludedWeapons = arr(handAnalysis.excluded_from_sustained_hunt);
   const imbuePreview = setPreview.imbuement_preview ?? {};
   const fixedImbues = Object.entries(imbuePreview.fixed_slots ?? {}) as Array<[string, any]>;
+  const characterProfile = setPreview.character_profile ?? {};
+  const characterProfileAnalysis = setPreview.character_profile_analysis ?? {};
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -260,6 +345,12 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
             <div className="flex flex-wrap items-center gap-2">
               <div className="text-sm font-medium">Set sugerido (preview)</div>
               <Badge variant="outline">não final</Badge>
+              {characterProfileAnalysis.applied && characterProfile.weapon_family && (
+                <Badge variant="secondary">
+                  perfil {characterProfile.weapon_family}
+                  {characterProfile.effective_weapon_skill ? ` · skill ${characterProfile.effective_weapon_skill}` : ""}
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               {setPreview.methodology?.objective_policy ?? "Seleção por evidência, mantendo as dimensões separadas."}
@@ -302,6 +393,12 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
                         <div className="mt-2 flex flex-wrap gap-1">
                           <Badge variant="outline">atk proxy {fmt(oneAnalysis.weapon.effective_attack_proxy, 2)}</Badge>
                           <Badge variant="outline">skill +{fmt(oneAnalysis.matching_weapon_skill_bonus, 0)}</Badge>
+                          {oneAnalysis.effective_weapon_skill_with_items != null && (
+                            <Badge variant="outline">skill efetivo {fmt(oneAnalysis.effective_weapon_skill_with_items, 0)}</Badge>
+                          )}
+                          {oneAnalysis.effective_shielding_with_offhand != null && (
+                            <Badge variant="outline">shield {fmt(oneAnalysis.effective_shielding_with_offhand, 0)}</Badge>
+                          )}
                           <Badge variant="outline">prot {fmt(oneAnalysis.weighted_protection, 2)}</Badge>
                           <Badge variant="outline">{oneAnalysis.imbue_capacity ?? 0} imbue</Badge>
                         </div>
@@ -316,6 +413,9 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
                         <div className="mt-2 flex flex-wrap gap-1">
                           <Badge variant="outline">atk proxy {fmt(twoAnalysis.effective_attack_proxy, 2)}</Badge>
                           <Badge variant="outline">skill +{fmt(twoAnalysis.weapon_skill_bonus, 0)}</Badge>
+                          {twoAnalysis.effective_weapon_skill_with_item != null && (
+                            <Badge variant="outline">skill efetivo {fmt(twoAnalysis.effective_weapon_skill_with_item, 0)}</Badge>
+                          )}
                           <Badge variant="outline">prot {fmt(twoAnalysis.weighted_protection, 2)}</Badge>
                           <Badge variant="outline">{twoAnalysis.imbue_capacity ?? 0} imbue</Badge>
                         </div>
@@ -327,6 +427,11 @@ function HuntResult({ rank, r }: { rank: number; r: any }) {
                 {!setPreview.recommended_hand_configuration && (
                   <p className="text-xs text-muted-foreground">
                     Nenhuma configuração domina a outra em ataque efetivo, skill compatível, proteção observada e capacidade de imbue; o HuntNexus mantém o trade-off explícito.
+                  </p>
+                )}
+                {characterProfileAnalysis.applied && (
+                  <p className="text-xs text-muted-foreground">
+                    O perfil restringe armas à família treinada. Skill e shielding efetivos entram como contexto; ainda não são convertidos em DPS/mitigação final.
                   </p>
                 )}
 
