@@ -11,6 +11,7 @@ declare
   v_profiled_set jsonb;
   v_contract jsonb;
   v_imbues jsonb;
+  v_contextual jsonb;
   v_magma jsonb;
 begin
   v_health := huntnexus_api_health();
@@ -274,28 +275,20 @@ begin
     raise exception 'EK hand context batch stage regression';
   end if;
 
-  if huntnexus_recommendation_preview_contextual(
+  v_contextual := huntnexus_recommendation_preview_contextual(
        'EK',700,'xp',1,5,3,
        '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
        '[1,3,10,12,15]'::jsonb,
        '[1,2,10,12,15]'::jsonb
-     ) #>> '{methodology,stage}' <> 'recommendation_preview_contextual_v1' then
+     );
+
+  if v_contextual #>> '{methodology,stage}' <> 'recommendation_preview_contextual_v1' then
     raise exception 'Contextual recommendation stage regression';
   end if;
-  if huntnexus_recommendation_preview_contextual(
-       'EK',700,'xp',1,5,3,
-       '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
-       '[1,3,10,12,15]'::jsonb,
-       '[1,2,10,12,15]'::jsonb
-     ) #>> '{methodology,precomputed_hand_analysis_reused}' <> 'true' then
+  if v_contextual #>> '{methodology,precomputed_hand_analysis_reused}' <> 'true' then
     raise exception 'Contextual recommendation must reuse precomputed hand analysis';
   end if;
-  if huntnexus_recommendation_preview_contextual(
-       'EK',700,'xp',1,5,3,
-       '{"weapon_family":"sword","effective_weapon_skill":120,"effective_magic_level":12,"effective_shielding":110}'::jsonb,
-       '[1,3,10,12,15]'::jsonb,
-       '[1,2,10,12,15]'::jsonb
-     ) #>> '{results,0,hand_context_comparison,methodology,optimizer_effect_applied}' <> 'false' then
+  if v_contextual #>> '{results,0,hand_context_comparison,methodology,optimizer_effect_applied}' <> 'false' then
     raise exception 'Contextual hand comparison must not alter optimizer';
   end if;
 
