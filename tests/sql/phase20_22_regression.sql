@@ -1,5 +1,5 @@
 -- HuntNexus regression checks — recommendation preview v7.
--- Run after migrations through 0070.
+-- Run after migrations through 0072.
 -- These checks raise exceptions on invariant regressions.
 
 do $$
@@ -127,6 +127,14 @@ begin
   end if;
   if (select count(*) from session_player_equipment where item_key is null) <> 1 then
     raise exception 'Equipment canonical resolution regression';
+  end if;
+  if exists (
+    select 1
+    from community_session_profile_state
+    where status='completed'
+      and provenance_snapshot_id is distinct from detail_snapshot_id
+  ) then
+    raise exception 'Provenance snapshot idempotency regression';
   end if;
 
   if huntnexus_resolve_creature_exact('demongoblin') <> 'demon-goblin' then
