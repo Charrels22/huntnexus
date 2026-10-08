@@ -60,6 +60,20 @@ assert(
   "loadout matrix stage regression",
 );
 assert(
+  first?.imbuement_candidates?.methodology?.stage ===
+    "imbuement_candidates_v2",
+  "imbuement candidate stage regression",
+);
+assert(
+  first?.imbuement_candidates?.methodology
+    ?.community_observed_usage_affects_priority === false,
+  "community imbuement evidence must not affect priority",
+);
+assert(
+  Array.isArray(first?.imbuement_candidates?.community_observed_usage),
+  "community_observed_usage must be an array",
+);
+assert(
   first?.loadout_set_preview?.methodology?.stage === "loadout_set_preview_v3",
   "loadout set stage regression",
 );
