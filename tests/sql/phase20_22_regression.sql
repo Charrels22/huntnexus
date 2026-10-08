@@ -1,5 +1,5 @@
 -- HuntNexus regression checks — recommendation preview v7.
--- Run after migrations through 0074.
+-- Run after migrations through 0076.
 -- These checks raise exceptions on invariant regressions.
 
 do $$
@@ -186,6 +186,49 @@ begin
     ) #>> '{methodology,optimizer_effect_applied}'
   )::boolean is not false then
     raise exception 'Weapon proficiency preview must not affect optimizer';
+  end if;
+
+  if huntnexus_ek_proficiency_impact_comparison(
+       'sword',
+       '[1,3,10,12,15]'::jsonb,
+       '[1,2,10,12,15]'::jsonb,
+       120,
+       null
+     ) #>> '{methodology,stage}' <> 'ek_weapon_proficiency_impact_comparison_v1' then
+    raise exception 'Weapon proficiency impact stage regression';
+  end if;
+  if (
+    huntnexus_ek_proficiency_impact_comparison(
+      'sword',
+      '[1,3,10,12,15]'::jsonb,
+      '[1,2,10,12,15]'::jsonb,
+      120,
+      null
+    ) #>> '{one_handed,impact_vector,auto_attack_skill_derived_damage_term}'
+  )::numeric <> 6 then
+    raise exception 'Weapon proficiency 5%% skill-derived term regression';
+  end if;
+  if (
+    huntnexus_ek_proficiency_impact_comparison(
+      'sword',
+      '[1,3,10,12,15]'::jsonb,
+      '[1,2,10,12,15]'::jsonb,
+      120,
+      null
+    ) #>> '{one_handed,impact_vector,spell_skill_derived_damage_term}'
+  )::numeric <> 12 then
+    raise exception 'Weapon proficiency 10%% skill-derived term regression';
+  end if;
+  if (
+    huntnexus_ek_proficiency_impact_comparison(
+      'sword',
+      '[1,3,10,12,15]'::jsonb,
+      '[1,2,10,12,15]'::jsonb,
+      120,
+      null
+    ) #>> '{one_handed,impact_vector,flat_skill_bonus_applied_to_displayed_skill}'
+  )::boolean is not false then
+    raise exception 'Weapon proficiency skill double-count regression';
   end if;
 
   if huntnexus_resolve_creature_exact('demongoblin') <> 'demon-goblin' then
