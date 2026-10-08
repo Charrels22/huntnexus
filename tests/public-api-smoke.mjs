@@ -139,9 +139,11 @@ assert(
   "profiled EK hand model regression",
 );
 assert(
-  profiledRecommendation?.data?.proficiency_preview?.impact?.methodology?.stage ===
-    "ek_weapon_proficiency_impact_comparison_v1",
-  "contextual recommendation proficiency payload regression",
+  profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+    ?.one_handed?.methodology?.stage === "weapon_proficiency_impact_preview_v1" &&
+  profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+    ?.two_handed?.methodology?.stage === "weapon_proficiency_impact_preview_v1",
+  "contextual recommendation actual weapon proficiency payload regression",
 );
 assert(
   profiledRecommendation?.data?.results?.[0]?.hand_context_comparison?.methodology?.stage ===
