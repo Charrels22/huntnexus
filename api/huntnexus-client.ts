@@ -30,6 +30,8 @@ export type RecommendInput = {
   limit?: number;
   defensiveItemsPerSlot?: number;
   characterProfile?: CharacterCombatProfile;
+  oneHandActivePerkOrders?: number[];
+  twoHandActivePerkOrders?: number[];
 };
 
 export type BossBuildInput = {
@@ -105,6 +107,8 @@ export class HuntNexusApi {
             effective_shielding: input.characterProfile.effectiveShielding,
           }
         : undefined,
+      one_hand_active_perk_orders: input.oneHandActivePerkOrders ?? [],
+      two_hand_active_perk_orders: input.twoHandActivePerkOrders ?? [],
     });
   }
 
