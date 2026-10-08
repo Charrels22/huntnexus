@@ -264,3 +264,24 @@ Supabase advisor:
   - Blade selection [1,4,12,15] -> +1 Sword, +3% global life leech, +1 attack, +3% critical chance.
   - Razor selection [1,3,12,15] -> +1 Sword, +5% Fierce Berserk life leech, +1 attack, +3% critical chance.
 - legacy EK700 XP recommendation remains `preview_v7` with Cobra Bastion on top.
+
+
+## Public Weapon Proficiency preview wiring
+
+- public API action `proficiency_preview` is active for EK Sword/Axe/Club.
+- API accepts separate explicit perk-order arrays for one-hand and two-hand Grand Sanguine weapons.
+- frontend EK profile now accepts optional perk-order lists for both hand configurations.
+- leaving perk-order fields empty keeps `reference_only` mode.
+- result cards show a Weapon Proficiency preview section with:
+  - one-hand vs two-hand weapon names;
+  - reference perk counts or active perk counts;
+  - active effects grouped by scope/effect family;
+  - explicit badges that proficiency does not alter ranking and no level is inferred.
+- recommendation payload/ranking remains unchanged; proficiency is fetched as a separate non-critical preview.
+- public API smoke validated:
+  - reference mode HTTP 200;
+  - explicit Sword [1,4,12,15] vs [1,3,12,15] HTTP 200;
+  - 4 active perks on each side;
+  - `optimizer_effect_applied=false`.
+- frontend commit `1df728af2ba2f9714c19d3a27b1678b20c3308a7`: GitHub Web CI success and Cloudflare build/deploy success.
+- Public Smoke commit `53a65fdda47cfbef121516f92c283e6b266a4be7`: success.
