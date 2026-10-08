@@ -12,6 +12,8 @@ export type ProficiencyPreviewInput = {
   weaponFamily: CharacterWeaponFamily;
   oneHandActivePerkOrders?: number[];
   twoHandActivePerkOrders?: number[];
+  effectiveWeaponSkill?: number;
+  effectiveMagicLevel?: number;
 };
 
 export type ApiEnvelope<T> = {
@@ -114,6 +116,8 @@ export class HuntNexusApi {
       weapon_family: input.weaponFamily,
       one_hand_active_perk_orders: input.oneHandActivePerkOrders ?? [],
       two_hand_active_perk_orders: input.twoHandActivePerkOrders ?? [],
+      effective_weapon_skill: input.effectiveWeaponSkill,
+      effective_magic_level: input.effectiveMagicLevel,
     });
   }
 
