@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0087
+- schema/migrations aplicados até 0088
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -451,3 +451,61 @@ Supabase advisor:
   - checkout/install: success;
   - build and typecheck: success;
   - all post/complete steps: success.
+
+
+## Architecture pivot — category-first implementation
+
+- from migration 0088 onward, HuntNexus development is category-first instead of EK-first.
+- EK remains the principal regression case, not the center of the domain model.
+- first universal category: weapons.
+- `vw_weapon_catalog_universal` normalizes all currently cataloged weapon-like items into one server-only contract.
+- current universal weapon inventory: 855 items.
+- normalized weapon classes:
+  - `melee`;
+  - `distance`;
+  - `caster`.
+- normalized weapon families:
+  - sword;
+  - axe;
+  - club;
+  - fist;
+  - bow;
+  - crossbow;
+  - throwing;
+  - wand;
+  - rod.
+- the universal contract normalizes:
+  - weapon family/class;
+  - primary skill key;
+  - hands and whether hand count came from source or category default;
+  - raw and normalized vocation applicability;
+  - level requirement;
+  - attack/defense/range;
+  - imbue slots;
+  - damage type and elemental attack components;
+  - normalized item effects;
+  - Weapon Proficiency coverage.
+- important architecture correction: Rods/Wands do not rely on `weapon_type` in source data, so they are explicitly normalized as caster weapons rather than being silently excluded.
+- highest-level regression representatives validated in one contract:
+  - Knight: Moonsilver Claymore;
+  - Paladin: Moonsilver Bow;
+  - Druid: Moonsilver Sceptre;
+  - Sorcerer: Moonsilver Channeler.
+- server-only security preserved: no anon/authenticated SELECT grant.
+- security advisor after the universal layer introduced no new finding.
+- focused regression `tests/sql/phase27_universal_weapon_catalog.sql`: status=ok, 855 weapons, 3 classes, 9 families.
+- migration commit: `ba8d20a4a529d98063d0f65c8858c71fb10107d0`.
+- regression commit: `a985d554646d8e8da867076a0a3783c17aad139e`.
+
+### Category-first order
+
+1. weapons — universal catalog and candidate logic;
+2. armor/equipment slots;
+3. imbues;
+4. protections/effects;
+5. slot/restriction compatibility;
+6. combat/spell mechanics;
+7. vocation composition;
+8. final optimizer.
+
+The existing EK implementation remains as a regression fixture while generic category layers replace EK-specific assumptions incrementally.
