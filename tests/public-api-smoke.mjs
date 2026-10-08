@@ -107,13 +107,17 @@ const profiledRecommendation = await post({
     effective_magic_level: 12,
     effective_shielding: 110,
   },
-  one_hand_active_perk_orders: [1, 3, 10, 12, 15],
-  two_hand_active_perk_orders: [1, 2, 10, 12, 15],
+  one_hand_active_perk_orders: [],
+  two_hand_active_perk_orders: [],
+  proficiency_selections: {
+    "grand-sanguine-blade": [1, 3, 10, 12, 15],
+    "grand-sanguine-razor": [1, 2, 10, 12, 15],
+  },
 });
 
 assert(
   profiledRecommendation?.data?.methodology?.stage ===
-    "recommendation_preview_contextual_v3",
+    "recommendation_preview_contextual_v4",
   "contextual recommendation stage regression",
 );
 assert(
@@ -164,6 +168,13 @@ assert(
   profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
     ?.selection_binding?.two_handed_applied_to_actual_item === true,
   "top result two-hand proficiency binding regression",
+);
+assert(
+  profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+    ?.selection_binding?.one_handed_selection_source === "item_key" &&
+  profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
+    ?.selection_binding?.two_handed_selection_source === "item_key",
+  "top result proficiency selection source must be item_key",
 );
 
 const oneHandType =
