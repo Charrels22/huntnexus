@@ -149,6 +149,35 @@ function ErrorBox({ msg }: { msg: string }) {
   );
 }
 
+function ProficiencyImpact({ data }: { data: any }) {
+  const v = data?.impact_vector ?? {};
+  const unresolved = arr(data?.unresolved_inputs);
+  const parts = [
+    Number(v.flat_skill_bonus) ? `skill +${fmt(Number(v.flat_skill_bonus), 0)}` : null,
+    Number(v.flat_attack_bonus) ? `attack +${fmt(Number(v.flat_attack_bonus), 0)}` : null,
+    Number(v.global_critical_chance_percent) ? `crit chance +${fmt(Number(v.global_critical_chance_percent), 2)}%` : null,
+    Number(v.global_critical_extra_damage_percent) ? `crit dmg +${fmt(Number(v.global_critical_extra_damage_percent), 2)}%` : null,
+    Number(v.global_life_leech_percent) ? `life leech +${fmt(Number(v.global_life_leech_percent), 2)}%` : null,
+    Number(v.global_mana_leech_percent) ? `mana leech +${fmt(Number(v.global_mana_leech_percent), 2)}%` : null,
+    Number(v.auto_attack_skill_derived_damage_term) ? `termo auto +${fmt(Number(v.auto_attack_skill_derived_damage_term), 2)}` : null,
+    Number(v.spell_skill_derived_damage_term) ? `termo spells +${fmt(Number(v.spell_skill_derived_damage_term), 2)}` : null,
+  ].filter(Boolean);
+
+  if (!parts.length && !unresolved.length) return null;
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="flex flex-wrap gap-1">
+        {parts.map((p) => <Badge key={p} variant="secondary">{p}</Badge>)}
+      </div>
+      {unresolved.length > 0 && (
+        <div className="text-xs text-muted-foreground">
+          Falta dado para: {unresolved.join(", ")}.
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------------- HUNTS ---------------- */
 
 function HuntsTab() {
@@ -207,6 +236,7 @@ function HuntsTab() {
             weapon_family: weaponFamily,
             one_hand_active_perk_orders: parsePerkOrders(oneHandPerks),
             two_hand_active_perk_orders: parsePerkOrders(twoHandPerks),
+            ...(Number(weaponSkill) > 0 ? { effective_weapon_skill: Number(weaponSkill) } : {}),
           }).catch(() => null)
         : Promise.resolve(null);
       const [recommendation, proficiency] = await Promise.all([
@@ -377,6 +407,8 @@ function HuntResult({ rank, r, proficiency }: { rank: number; r: any; proficienc
   const twoProficiency = proficiency?.two_handed ?? {};
   const oneProficiencyEffects = arr(oneProficiency.active_effect_summary);
   const twoProficiencyEffects = arr(twoProficiency.active_effect_summary);
+  const oneProficiencyImpact = proficiency?.impact?.one_handed ?? {};
+  const twoProficiencyImpact = proficiency?.impact?.two_handed ?? {};
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -529,11 +561,12 @@ function HuntResult({ rank, r, proficiency }: { rank: number; r: any; proficienc
                           ))}
                         </div>
                       )}
+                      <ProficiencyImpact data={label === "1 mão" ? oneProficiencyImpact : twoProficiencyImpact} />
                     </div>
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Os efeitos só ficam ativos quando os perk orders são informados explicitamente. Este preview não muda score, ranking nem escolha de mãos.
+                  Os efeitos só ficam ativos quando os perk orders são informados explicitamente. "Termo auto/spells" é a contribuição direta do percentual sobre o skill informado, não dano final nem DPS. Este preview não muda score, ranking nem escolha de mãos.
                 </p>
               </div>
             )}
