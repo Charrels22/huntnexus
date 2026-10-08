@@ -107,17 +107,19 @@ const profiledRecommendation = await post({
     effective_magic_level: 12,
     effective_shielding: 110,
   },
+  one_hand_active_perk_orders: [1, 3, 10, 12, 15],
+  two_hand_active_perk_orders: [1, 2, 10, 12, 15],
 });
 
 assert(
   profiledRecommendation?.data?.methodology?.stage ===
-    "recommendation_preview_profiled_v2",
-  "profiled recommendation stage regression",
+    "recommendation_preview_contextual_v1",
+  "contextual recommendation stage regression",
 );
 assert(
   profiledRecommendation?.data?.methodology?.base_stage ===
-    "recommendation_preview_v7",
-  "profiled recommendation base stage regression",
+    "recommendation_preview_profiled_v2",
+  "contextual recommendation base stage regression",
 );
 assert(
   profiledRecommendation?.data?.methodology?.character_profile_applied === true,
@@ -135,6 +137,21 @@ assert(
   profiledSet?.hand_analysis?.methodology?.stage ===
     "ek_hand_options_profiled_v2",
   "profiled EK hand model regression",
+);
+assert(
+  profiledRecommendation?.data?.proficiency_preview?.impact?.methodology?.stage ===
+    "ek_weapon_proficiency_impact_comparison_v1",
+  "contextual recommendation proficiency payload regression",
+);
+assert(
+  profiledRecommendation?.data?.results?.[0]?.hand_context_comparison?.methodology?.stage ===
+    "ek_hand_context_comparison_v1",
+  "embedded hand context stage regression",
+);
+assert(
+  profiledRecommendation?.data?.results?.[0]?.hand_context_comparison?.methodology
+    ?.optimizer_effect_applied === false,
+  "embedded hand context must not alter optimizer",
 );
 
 const oneHandType =
@@ -288,7 +305,7 @@ console.log(
         first.loadout_set_preview?.hand_options?.one_handed?.main_hand?.name,
       two_hand:
         first.loadout_set_preview?.hand_options?.two_handed?.item?.name,
-      profiled_stage: profiledRecommendation.data.methodology.stage,
+      contextual_stage: profiledRecommendation.data.methodology.stage,
       profiled_one_hand:
         profiledSet?.hand_options?.one_handed?.main_hand?.name,
       profiled_two_hand:
