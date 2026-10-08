@@ -1,5 +1,12 @@
 export type HuntNexusVocation = "EK" | "RP" | "ED" | "MS";
 export type HuntObjective = "xp" | "profit" | "balanced";
+export type CharacterWeaponFamily = "sword" | "axe" | "club";
+
+export type CharacterCombatProfile = {
+  weaponFamily: CharacterWeaponFamily;
+  effectiveWeaponSkill?: number;
+  effectiveShielding?: number;
+};
 
 export type ApiEnvelope<T> = {
   data: T;
@@ -13,6 +20,7 @@ export type RecommendInput = {
   partySize?: number;
   limit?: number;
   defensiveItemsPerSlot?: number;
+  characterProfile?: CharacterCombatProfile;
 };
 
 export type BossBuildInput = {
@@ -80,7 +88,18 @@ export class HuntNexusApi {
       party_size: input.partySize ?? 1,
       limit: input.limit ?? 5,
       defensive_items_per_slot: input.defensiveItemsPerSlot ?? 3,
+      character_profile: input.characterProfile
+        ? {
+            weapon_family: input.characterProfile.weaponFamily,
+            effective_weapon_skill: input.characterProfile.effectiveWeaponSkill,
+            effective_shielding: input.characterProfile.effectiveShielding,
+          }
+        : undefined,
     });
+  }
+
+  profileContract<T = unknown>(vocation: HuntNexusVocation) {
+    return this.post<T>({ action: "profile_contract", vocation });
   }
 
   bossBuild<T = unknown>(input: BossBuildInput) {
