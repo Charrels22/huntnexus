@@ -5,6 +5,7 @@ export type CharacterWeaponFamily = "sword" | "axe" | "club";
 export type CharacterCombatProfile = {
   weaponFamily: CharacterWeaponFamily;
   effectiveWeaponSkill?: number;
+  effectiveMagicLevel?: number;
   effectiveShielding?: number;
 };
 
@@ -100,6 +101,7 @@ export class HuntNexusApi {
         ? {
             weapon_family: input.characterProfile.weaponFamily,
             effective_weapon_skill: input.characterProfile.effectiveWeaponSkill,
+            effective_magic_level: input.characterProfile.effectiveMagicLevel,
             effective_shielding: input.characterProfile.effectiveShielding,
           }
         : undefined,
@@ -108,6 +110,28 @@ export class HuntNexusApi {
 
   profileContract<T = unknown>(vocation: HuntNexusVocation) {
     return this.post<T>({ action: "profile_contract", vocation });
+  }
+
+  handContextBatch<T = unknown>(input: {
+    huntKeys: string[];
+    level: number;
+    characterProfile: CharacterCombatProfile;
+    oneHandActivePerkOrders?: number[];
+    twoHandActivePerkOrders?: number[];
+  }) {
+    return this.post<T>({
+      action: "hand_context_batch",
+      hunt_keys: input.huntKeys,
+      level: input.level,
+      character_profile: {
+        weapon_family: input.characterProfile.weaponFamily,
+        effective_weapon_skill: input.characterProfile.effectiveWeaponSkill,
+        effective_magic_level: input.characterProfile.effectiveMagicLevel,
+        effective_shielding: input.characterProfile.effectiveShielding,
+      },
+      one_hand_active_perk_orders: input.oneHandActivePerkOrders ?? [],
+      two_hand_active_perk_orders: input.twoHandActivePerkOrders ?? [],
+    });
   }
 
   proficiencyPreview<T = unknown>(input: ProficiencyPreviewInput) {
