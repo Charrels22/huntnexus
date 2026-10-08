@@ -16,6 +16,12 @@ const Body = z.discriminatedUnion("action", [
     vocation: Vocation,
   }),
   z.object({
+    action: z.literal("proficiency_preview"),
+    weapon_family: z.enum(["sword", "axe", "club"]),
+    one_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
+    two_hand_active_perk_orders: z.array(z.coerce.number().int().min(1).max(100)).max(20).default([]),
+  }),
+  z.object({
     action: z.literal("search_hunts"),
     query: z.string().max(100).default(""),
     limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -90,6 +96,14 @@ export const Route = createFileRoute("/api/huntnexus")({
               return json({
                 data: await rpc("huntnexus_character_combat_profile_contract", {
                   p_vocation: b.vocation,
+                }),
+              });
+            case "proficiency_preview":
+              return json({
+                data: await rpc("huntnexus_ek_proficiency_comparison", {
+                  p_weapon_family: b.weapon_family,
+                  p_one_hand_active_perk_orders: b.one_hand_active_perk_orders,
+                  p_two_hand_active_perk_orders: b.two_hand_active_perk_orders,
                 }),
               });
             case "search_hunts":
