@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0070
+- schema/migrations aplicados até 0072
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -93,6 +93,8 @@ Applied:
 - 0068 preserves semantically distinct stats such as `Magic Shield Capacity` vs `Magic Shield Capacity %`.
 - 0069 normalizes per-stat provenance (for example, `+25% from Vampirism`) and derives Tier C observed imbuement usage.
 - 0070 exposes that community usage in `imbuement_candidates_v2` as context only; it does not alter factual priority.
+- 0071 chains incoming-damage, player-profile and provenance parsing after HuntAnalyser detail ingestion, with each post-processing stage isolated from raw/detail ingestion failures.
+- 0072 makes provenance parsing snapshot-idempotent, including legitimate zero-row results.
 
 ## Product smoke in Supabase
 
@@ -199,7 +201,6 @@ Supabase advisor:
 
 ## Remaining work
 
-- automatically invoke player-profile + provenance parsing when new HuntAnalyser detail snapshots are ingested, so the normalized layer cannot become stale
 - manual visual/browser interaction QA of the character-profile controls and Tier C imbuement section
 - reconcile Weapon Proficiency exact combat contribution before converting effective skill/attack into a final damage estimate
 - extend profiled recommendation logic beyond EK after vocation-specific evidence/formulas are reconciled
@@ -212,9 +213,12 @@ Supabase advisor:
 
 ## 2026-10-08 continuation validation
 
-- migration history and repository aligned through 0070
+- migration history and repository aligned through 0072
 - SQL regression suite: status=ok
 - Web CI for Tier C imbuement UI: success
 - Cloudflare build/deploy commit `d9bec8bb3cdee851592c7413acf85349a34aa59d`: success
 - Public Smoke with `imbuement_candidates_v2`: success
 - character-profile public smoke remains backward compatible with legacy `preview_v7`
+
+- HuntAnalyser detail post-processing smoke: no pending details, all derived parsers returned zero work and zero post-processing errors
+- provenance snapshot mismatch count: 0
