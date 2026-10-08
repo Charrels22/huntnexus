@@ -32,6 +32,7 @@ export type RecommendInput = {
   characterProfile?: CharacterCombatProfile;
   oneHandActivePerkOrders?: number[];
   twoHandActivePerkOrders?: number[];
+  proficiencySelections?: Record<string, number[]>;
 };
 
 export type BossBuildInput = {
@@ -109,6 +110,7 @@ export class HuntNexusApi {
         : undefined,
       one_hand_active_perk_orders: input.oneHandActivePerkOrders ?? [],
       two_hand_active_perk_orders: input.twoHandActivePerkOrders ?? [],
+      proficiency_selections: input.proficiencySelections ?? {},
     });
   }
 
