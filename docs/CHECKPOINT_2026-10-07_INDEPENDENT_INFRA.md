@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0086
+- schema/migrations aplicados até 0087
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -424,3 +424,31 @@ Supabase advisor:
 - security advisor after 0086:
   - 6 informational `rls_enabled_no_policy` findings correspond to intentionally server-only deny-by-default tables;
   - existing `pg_net` public-schema warning remains unchanged.
+
+
+## Visual Weapon Proficiency selection
+
+- migration 0087 upgrades `huntnexus_weapon_proficiency_pair_for_items` to `weapon_proficiency_pair_for_items_v2`.
+- actual candidate proficiency payload now includes both:
+  - resolved impact for selected perks;
+  - full normalized proficiency tree reference for each actual one-hand/two-hand weapon.
+- full tree reference contains every normalized perk with:
+  - `perk_order`;
+  - normalized effect family/value/unit/scope;
+  - optional spell/source stat;
+  - original normalized description;
+  - active state for the current item-key selection.
+- frontend replaces manual perk-order text entry with a collapsible checkbox list built from the actual weapon tree.
+- checkbox state remains keyed by exact `item_key`, so a repeated weapon across multiple hunts shares one selection.
+- checkbox interaction only updates the local item-key selection map; the user explicitly runs `Atualizar contexto dos perks` to refresh derived context.
+- UI shows active count and resolved impact terms after refresh.
+- no proficiency effect changes score, ranking or automatic hand selection.
+- focused regression `tests/sql/phase26_actual_weapon_tree_reference.sql`: status=ok.
+- top Cobra Grand Sanguine pair validation returns 15 normalized perks on each side and preserves selected active counts.
+- Public Smoke commit `177e2c64c011e30d17858fbe5ab7fbacf6a5abcc`: success.
+- Cloudflare UI build/deploy commit `81e938be49314b2b091024b2f1dcd49b7882bf18`: success.
+- GitHub Web CI run for the same UI commit:
+  - checkout/install: success;
+  - build and typecheck: success;
+  - all post/complete steps: success;
+  - aggregate run status was still reported as `in_progress` at checkpoint time despite every job step being completed successfully.
