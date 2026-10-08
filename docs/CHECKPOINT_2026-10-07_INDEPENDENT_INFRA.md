@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0081
+- schema/migrations aplicados até 0085
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -365,3 +365,33 @@ Supabase advisor:
 - Public Smoke commit `714da139b080fbd1348d5475e47a0951ae968cc7`: success.
 - focused synthetic SQL smoke: `tests/sql/phase23_contextual_hand_smoke.sql` -> status=ok.
 - the large legacy SQL regression remains versioned but can hit connector statement/runtime limits as coverage grows; new contextual semantics are protected by the focused synthetic smoke plus public API smoke.
+
+
+## Proficiency coverage expansion and item binding
+
+- migration 0082 normalizes additional Sword proficiency trees that appear in real EK optimizer results:
+  - Gnome Sword: 2 perks;
+  - Naga Sword: 7 perks;
+  - Eldritch Claymore: 8 perks;
+  - Soulshredder: 16 perks.
+- all four sources declare 7 proficiency levels, but normalized `level_number` remains NULL because the accessible source is flattened; no branch/level placement is invented.
+- migration 0083 resolves explicit Magic Level-derived proficiency terms without converting them into final hit damage or DPS.
+- Naga Sword validation with ML 20:
+  - 75% of Magic Level auto-attack term = 15;
+  - 50% of Magic Level spell term = 10;
+  - `optimizer_effect_applied=false`.
+- migration 0084 exposes normalized proficiency coverage for each actual one-hand/two-hand candidate pair.
+- migration 0085 fixes selection semantics:
+  - perk-order inputs are bound to the weapon tree they were entered for;
+  - perk orders never transfer from Grand Sanguine Blade to Gnome/Naga/etc.;
+  - non-bound actual candidates may expose their normalized tree as reference only.
+- contextual recommendation stage is now `recommendation_preview_contextual_v3`.
+- Sword EK700 XP top-5 validation:
+  - Cobra Bastion: Grand Sanguine Blade / Grand Sanguine Razor -> both trees available and both explicit selections applied;
+  - Warzone 3: Gnome Sword / Grand Sanguine Razor -> both trees available, only Razor selection applied;
+  - Murky Caverns: Naga Sword / Soulshredder -> both trees available, both reference-only;
+  - Haunted Tomb: Grand Sanguine Blade / Eldritch Claymore -> both trees available, only Blade selection applied;
+  - Exotic Cave: Grand Sanguine Blade / Eldritch Claymore -> same partial binding behavior.
+- contextual Pareto dominance remains NULL unless both actual weapons have explicit correctly-bound proficiency selections.
+- focused regression `tests/sql/phase24_actual_candidate_proficiency.sql`: status=ok.
+- public Worker validation for contextual v3: HTTP 200; top Cobra pair returns per-item proficiency impact on both sides with correct bindings.
