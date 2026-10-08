@@ -298,7 +298,10 @@ begin
 
   if exists (
     select 1
-    from hunting_place_creatures hpc
+    from (
+      select distinct monster_slug
+      from hunting_place_creatures
+    ) hpc
     where huntnexus_resolve_creature_exact(hpc.monster_slug) is null
   ) then
     raise exception 'Expected all hunt-creature links to resolve canonically';
@@ -317,7 +320,11 @@ select jsonb_build_object(
   'recommendation_stage',huntnexus_api_health() #>> '{recommendation_stage}',
   'hunt_creature_links_total',(select count(*) from hunting_place_creatures),
   'hunt_creature_links_unresolved',(
-    select count(*) from hunting_place_creatures
-    where huntnexus_resolve_creature_exact(monster_slug) is null
+    select count(*)
+    from (
+      select distinct monster_slug
+      from hunting_place_creatures
+    ) hpc
+    where huntnexus_resolve_creature_exact(hpc.monster_slug) is null
   )
 ) as regression_summary;
