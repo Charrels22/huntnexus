@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0099
+- schema/migrations aplicados até 0100
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1132,6 +1132,84 @@ The existing EK implementation remains as a regression fixture while generic cat
 3. imbues — factual catalog + compatibility + defensive hunt context READY; final assignment remains separate;
 4. protections/effects — next;
 5. slot/restriction compatibility;
+6. combat/spell mechanics;
+7. vocation composition;
+8. final optimizer.
+
+
+## Universal protection / effect contract
+
+- migration 0100 adds:
+  - server-only `vw_combat_item_effects_universal`;
+  - `huntnexus_item_effect_profile_universal(item_key,proficiency_selection)`;
+  - `huntnexus_item_effect_hunt_context_universal(item_key,hunt_key,vocation,proficiency_selection)`;
+  - `huntnexus_effect_category_audit()`.
+- current universal static-effect inventory:
+  - 1,655 effect rows;
+  - 692 items with effects;
+  - 9 semantic groups.
+- normalized semantic groups:
+  - protection;
+  - reflection;
+  - magic_shield;
+  - leech;
+  - movement;
+  - offense;
+  - skill;
+  - magic_skill;
+  - special.
+- static item effects and Weapon Proficiency effects are separate source layers.
+- protection values are signed:
+  - positive = protection;
+  - negative = vulnerability.
+- current protection inventory:
+  - 657 protection rows;
+  - 95 negative-protection rows;
+  - 95 items with at least one negative protection.
+- examples validated:
+  - Dragon Robe: Fire +12%, Ice -12%;
+  - Eldritch Shield: physical +4%, 42 damage reflection;
+  - Cocoa Grimoire: magic-shield capacity +150 and +3%, ML/protection effects;
+  - Charged Ethereal Ring: life leech, Fist, ML, multi-element protection and duration;
+  - Depth Calcei: speed -5 preserved as signed movement modifier.
+- Weapon Proficiency is integrated only as a conditional/active effect layer:
+  - `conditional_pierce_perks` lists pierce present in the tree;
+  - `active_pierce_effects` is populated only when explicit perk selection is supplied.
+- current normalized pierce evidence:
+  - Moonsilver Katar: Energy pierce +4%;
+  - no selection -> conditional only;
+  - explicit perk 16 -> active.
+- no Proficiency perk is assumed active from level/tree topology.
+- hunt-context protection alignment:
+  - joins static item protection against observed incoming damage;
+  - exposes signed item protection and observed damage share;
+  - descriptive proxy = `observed_damage_share * item_protection_percent`;
+  - proxy is explicitly not final damage reduction.
+- contextual vulnerability example:
+  - Dragon Robe at Nimmersatts Breeding Ground / RP:
+    - Fire +12% aligns positively with observed Fire damage;
+    - Ice -12% remains a negative vulnerability against observed Ice damage.
+- unmatched incoming damage remains visible rather than being treated as protected.
+- reflection/leech/magic-shield/speed/special effects are exposed as facts but are not collapsed into the protection proxy.
+- `huntnexus_effect_category_audit()`, stage `effect_category_audit_v1`:
+  - static_effect_contract_ready=true;
+  - hunt_protection_alignment_ready=true;
+  - proficiency_pierce_inventory_ready=true;
+  - pierce_target_context_ready=false;
+  - stacking_formula_ready=false;
+  - cross_effect_utility_score_ready=false.
+- focused regression `tests/sql/phase39_universal_protection_effect_contract.sql`: status=ok.
+- migration commit: `46587611fd31f52ad403bdcded5a122b6de8c1e1`.
+- regression commit: `a9870b9b897f414b7767dfa1b4065ce0422fca0d`.
+- security advisor after 0100: no new findings; 10 intentional server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
+
+### Category-first status after 0100
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY;
+4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
+5. slot/restriction compatibility — next;
 6. combat/spell mechanics;
 7. vocation composition;
 8. final optimizer.
