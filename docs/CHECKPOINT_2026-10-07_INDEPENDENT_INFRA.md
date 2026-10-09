@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0092
+- schema/migrations aplicados até 0093
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -687,3 +687,44 @@ The existing EK implementation remains as a regression fixture while generic cat
 - security advisor after 0092:
   - 9 informational `rls_enabled_no_policy` findings; new server-only tables `ammunition_catalog` and `weapon_proficiency_family_rules` are intentionally deny-by-default;
   - existing `pg_net` public-schema warning remains unchanged.
+
+
+## Distance Weapon Proficiency normalization
+
+- migration 0093 adds the first normalized Bow/Crossbow Weapon Proficiency trees.
+- normalized Distance trees in this block:
+  - Grand Sanguine Bow;
+  - Grand Sanguine Crossbow;
+  - Soulbleeder;
+  - Soulpiercer;
+  - Eldritch Bow;
+  - Gilded Eldritch Bow;
+  - Bow of Destruction;
+  - Crossbow of Destruction.
+- 8 trees / 92 perks added.
+- source: current TibiaWiki BR item pages, Tier B.
+- each source declares seven proficiency levels, but rendered page topology flattens the perk placement.
+- therefore:
+  - `levels_declared=7`;
+  - `topology_status='flattened_source_order'`;
+  - all `level_number=NULL`;
+  - `perk_order` is source order only.
+- no branch/unlock level is inferred.
+- the existing generic `huntnexus_weapon_proficiency_preview` works unchanged for Bow/Crossbow.
+- examples validated:
+  - Grand Sanguine Bow explicit selection returns Distance skill, Divine Caldera leech, Distance-derived spell damage, attack and crit effects;
+  - Soulpiercer explicit selection preserves life-on-hit, Distance skill, attack and crit as independent effects.
+- current normalized family coverage:
+  - sword: 6;
+  - axe: 2;
+  - club: 2;
+  - bow: 5;
+  - crossbow: 3;
+  - fist: 0;
+  - wand: 0;
+  - rod: 0.
+- total normalized Weapon Proficiency trees: 18.
+- focused regression `tests/sql/phase32_distance_weapon_proficiency_trees.sql`: status=ok.
+- migration commit: `2d47ad79df9fbbe39a10b89970aea6f87894697a`.
+- regression commit: `d4ed0765a704ff2e61e70c29a9f6eca12d636508`.
+- security advisor after 0093: no new finding count; existing intentional server-only INFO findings and known `pg_net` warning remain unchanged.
