@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0093
+- schema/migrations aplicados até 0094
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -728,3 +728,60 @@ The existing EK implementation remains as a regression fixture while generic cat
 - migration commit: `2d47ad79df9fbbe39a10b89970aea6f87894697a`.
 - regression commit: `d4ed0765a704ff2e61e70c29a9f6eca12d636508`.
 - security advisor after 0093: no new finding count; existing intentional server-only INFO findings and known `pg_net` warning remain unchanged.
+
+
+## Caster Weapon Proficiency normalization
+
+- migration 0094 adds the first normalized Wand/Rod Weapon Proficiency trees.
+- normalized caster trees in this block:
+  - Soultainter;
+  - Soulhexer;
+  - Grand Sanguine Coil;
+  - Grand Sanguine Rod;
+  - Amber Wand;
+  - Amber Rod;
+  - Eldritch Wand;
+  - Eldritch Rod.
+- 8 trees / 100 perks added.
+- current Tier-B sources are the individual TibiaWiki BR item pages.
+- each source declares seven proficiency levels, but rendered topology is flattened:
+  - `levels_declared=7`;
+  - `topology_status='flattened_source_order'`;
+  - all `level_number=NULL`;
+  - `perk_order` remains source order only.
+- caster perks now exercise:
+  - Magic Level;
+  - elemental Magic Level;
+  - Healing Magic Level;
+  - offensive-rune critical modifiers;
+  - spell/rune elemental critical modifiers;
+  - spell-specific base damage/critical/leech/healing;
+  - life/mana on kill;
+  - bestiary damage;
+  - Powerful Foe damage.
+- `huntnexus_weapon_proficiency_impact_preview` upgraded to stage `weapon_proficiency_impact_preview_v2`.
+- impact vector now also exposes:
+  - `flat_magic_level_bonus`;
+  - `elemental_magic_level_bonuses`;
+  - `healing_magic_level_bonus`.
+- ML-derived percentage terms remain explanatory only; no final damage/DPS is inferred.
+- semantic bug fixed:
+  - absent effective skill/ML inputs now remain NULL instead of being coerced to zero;
+  - unresolved ML-derived terms correctly surface `effective_magic_level` in `unresolved_inputs`.
+- validation examples:
+  - Grand Sanguine Coil, ML 20: +1 flat ML, +2 Energy ML, +2 Fire ML, 8% ML spell term -> 1.6 explanatory derived term;
+  - Grand Sanguine Rod, ML 20: +1 flat ML, +2 Earth ML, +2 Ice ML, +3 Healing ML, 8% ML spell term -> 1.6 explanatory derived term.
+- current normalized family coverage:
+  - sword: 6;
+  - axe: 2;
+  - club: 2;
+  - bow: 5;
+  - crossbow: 3;
+  - wand: 4;
+  - rod: 4;
+  - fist: 0.
+- total normalized Weapon Proficiency trees: 26.
+- focused regression `tests/sql/phase33_caster_weapon_proficiency_trees.sql`: status=ok.
+- migration commit: `d3aa6877e33577b3fa2c0e5f8bdfdb7fe1aa7ddf`.
+- regression commit: `07c97067b901b7de9e4b8be133b84b84c418c82f`.
+- security advisor after 0094: no new findings; 9 intentional server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
