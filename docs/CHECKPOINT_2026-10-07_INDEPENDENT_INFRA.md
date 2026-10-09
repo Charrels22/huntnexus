@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0097
+- schema/migrations aplicados até 0098
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -982,6 +982,92 @@ The existing EK implementation remains as a regression fixture while generic cat
 1. weapons — core contract READY; proficiency backfill separate;
 2. armor/equipment slots — catalog + eligibility + factual comparison READY;
 3. imbues — next;
+4. protections/effects;
+5. slot/restriction compatibility;
+6. combat/spell mechanics;
+7. vocation composition;
+8. final optimizer.
+
+
+## Universal Imbuement catalog + factual compatibility
+
+- migration 0098 completes the current Tier-B Powerful Imbuement catalog and separates factual compatibility from hunt-context priority.
+- current source catalog contains 24 Imbuement types.
+- legacy `imbuement_definitions` was expanded from 15 to 24 definitions.
+- newly normalized definitions:
+  - Punch;
+  - Electrify;
+  - Frost;
+  - Reap;
+  - Scorch;
+  - Venom;
+  - Swiftness;
+  - Vibrancy;
+  - Featherweight.
+- normalized Powerful values include:
+  - skill boosts: +4 levels;
+  - elemental damage conversion: 50%;
+  - Swiftness: +30 speed points;
+  - Vibrancy: 50% paralysis-avoid effect;
+  - Featherweight: +15% capacity.
+- Strike raw-category coverage was corrected to include Crossbows.
+- new server-only `imbuement_applicability_rules` contains 86 source-driven rules.
+- normalized applicability targets use:
+  - target domain: weapon / equipment / container;
+  - normalized family;
+  - optional minimum item level.
+- important compatibility facts:
+  - Punch -> Fist weapons + Helmets;
+  - elemental damage conversion -> Sword/Axe/Club/Bow/Crossbow;
+  - elemental protection -> Armor/Shield/Spellbook;
+  - Swiftness/Vibrancy -> Boots;
+  - Featherweight -> Backpack (outside current equipment-slot catalog);
+  - Strike -> Bow/Crossbow/Sword/Axe/Club/Rod/Wand;
+  - Strike on Rod/Wand requires item level 200+;
+  - Vampirism/Void follow their current explicit Tier-B applicability lists.
+- Fist is source-strict:
+  - Punch is explicitly confirmed;
+  - other Imbuements are not inferred without explicit applicability evidence.
+- new server-only view: `vw_imbuement_catalog_universal`.
+- new function: `huntnexus_item_imbuement_compatibility_universal(item_key)`.
+- compatibility function:
+  - resolves either universal weapon or equipment family;
+  - exposes item Imbuement slot capacity;
+  - applies min-level restrictions;
+  - returns eligible/blocked candidates with explicit reasons;
+  - does not apply hunt priority;
+  - does not assign multiple candidates into slots.
+- validation examples:
+  - Grand Sanguine Claws -> Punch confirmed; no unsupported Fist assumptions;
+  - Falcon Coif -> 8 factual candidates;
+  - Lion Plate -> 6 elemental protections + Vampirism;
+  - Lion Spellbook -> 6 elemental protections + Blockade;
+  - Depth Calcei -> Swiftness + Vibrancy;
+  - Jungle Rod level 150 -> Strike blocked by minimum item level 200;
+  - Soulhexer level 400 -> Strike eligible.
+- new audit: `huntnexus_imbuement_category_audit()`, stage `imbuement_category_audit_v1`.
+- audit state:
+  - powerful_definitions=24;
+  - applicability_rules=86;
+  - definitions_without_rules=0;
+  - source_catalog_complete_for_current_24=true;
+  - factual_compatibility_ready=true;
+  - hunt_context_priority_ready=false;
+  - final_assignment_ready=false.
+- Basic/Intricate values are intentionally not modeled in this layer yet; current optimizer contract continues to use Powerful facts.
+- legacy Imbuement functions were preserved.
+- focused regression `tests/sql/phase37_universal_imbuement_catalog_compatibility.sql`: status=ok.
+- migration commit: `48db1deb1c96a661f2731fcefa1b5dc00b89b5e2`.
+- regression commit: `a5bd5b6a0c28106535e5f4ee3cb5eb27a028ca8e`.
+- security advisor after adding the new rules table:
+  - 10 informational `rls_enabled_no_policy` findings; `imbuement_applicability_rules` is intentionally server-only deny-by-default;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+### Category-first status after 0098
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + item compatibility READY; hunt-context priority next;
 4. protections/effects;
 5. slot/restriction compatibility;
 6. combat/spell mechanics;
