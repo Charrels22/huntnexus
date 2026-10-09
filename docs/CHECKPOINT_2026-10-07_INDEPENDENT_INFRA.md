@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0088
+- schema/migrations aplicados até 0089
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -509,3 +509,52 @@ Supabase advisor:
 8. final optimizer.
 
 The existing EK implementation remains as a regression fixture while generic category layers replace EK-specific assumptions incrementally.
+
+
+## Universal weapon eligibility
+
+- migration 0089 adds `huntnexus_weapon_candidates_universal`.
+- the function is category-first and vocation-agnostic in structure; vocation is used only as an eligibility input.
+- supported vocation aliases normalize through the existing canonical helper:
+  - EK / Knight;
+  - RP / Paladin;
+  - ED / Druid;
+  - MS / Sorcerer;
+  - EM / Monk.
+- optional filters:
+  - weapon class;
+  - weapon family;
+  - result limit.
+- every matching weapon is classified factually as:
+  - `eligible`;
+  - `incomplete`;
+  - `blocked`;
+  - invalid input is returned explicitly for unsupported vocation values.
+- known blocking reasons:
+  - `level_requirement`;
+  - `vocation_restriction`.
+- completeness flags include:
+  - missing level requirement;
+  - unknown vocation restriction;
+  - unknown hand count.
+- conservative rule: unknown vocation/level data is never silently assumed eligible.
+- known blocking facts take precedence over incompleteness.
+- the function does not apply:
+  - combat score;
+  - hunt weighting;
+  - vocation-specific optimizer logic;
+  - final weapon ranking.
+- level 700 regression snapshot:
+  - EK Sword eligible: 87;
+  - RP Distance eligible: 80;
+  - ED Rod eligible: 45;
+  - MS Wand eligible: 51;
+  - EM Fist eligible: 34.
+- factual regression examples:
+  - Grand Sanguine Blade is eligible for EK 700;
+  - Moonsilver Claymore is blocked for EK 700 by level requirement;
+  - Grand Sanguine Blade is blocked for RP 1000 by vocation restriction.
+- focused regression `tests/sql/phase28_universal_weapon_candidates.sql`: status=ok.
+- migration commit: `7a3380b19f76ff671b74d38409eb69455a26e7d1`.
+- regression commit: `077cf3a76663e0b29a902fb6ea652e6cedd53395`.
+- security advisor after 0089: no new finding; existing server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
