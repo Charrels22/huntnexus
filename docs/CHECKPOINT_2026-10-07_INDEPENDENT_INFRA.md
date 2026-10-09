@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0096
+- schema/migrations aplicados até 0097
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -928,6 +928,60 @@ The existing EK implementation remains as a regression fixture while generic cat
 1. weapons — core contract READY; proficiency backfill separate;
 2. armor/equipment slots — universal catalog + eligibility READY, comparison/protection layer next;
 3. imbues;
+4. protections/effects;
+5. slot/restriction compatibility;
+6. combat/spell mechanics;
+7. vocation composition;
+8. final optimizer.
+
+
+## Universal equipment attribute comparison
+
+- migration 0097 adds:
+  - `huntnexus_equipment_attribute_vector(item_key)`;
+  - `huntnexus_compare_equipment_universal(item_keys)`.
+- equipment facts remain dimensionally separated by:
+  - scope;
+  - metric;
+  - unit.
+- core dimensions include:
+  - armor;
+  - defense;
+  - defense modifier;
+  - imbue slots.
+- normalized item effects remain independent dimensions, including:
+  - physical/elemental protection;
+  - melee/distance/shielding skills;
+  - Magic Level and elemental/healing ML;
+  - movement speed;
+  - life leech;
+  - damage reflection;
+  - magic-shield capacity flat/percent;
+  - other cataloged special effects.
+- convenience factual profiles are also exposed for:
+  - protection;
+  - skill;
+  - magic_skill.
+- missing dimensions remain missing/null; zero is never imputed.
+- no cross-metric sum is applied.
+- no winner, score, Pareto dominance or "higher is better" direction is inferred.
+- cross-slot comparisons are allowed for inspection but explicitly report `same_slot=false`.
+- validation examples:
+  - Eldritch Shield: reflection 42 damage + physical protection;
+  - Cocoa Grimoire: +150 magic-shield capacity, +3% capacity, ML and protections;
+  - Charged Ethereal Ring: life leech, Fist, ML and multi-element protection;
+  - Depth Calcei: speed -5 preserved as a negative fact.
+- focused regression `tests/sql/phase36_universal_equipment_attribute_comparison.sql`: status=ok.
+- cross-equipment regression produced 13 independent dimensions.
+- migration commit: `7a33627db0466964fb4fdbf48d1ef27a60a378b6`.
+- regression commit: `7a8a15d5f64d1d92c278a8024675291b142b7480`.
+- security advisor after 0097: no new findings; existing intentional server-only RLS INFO findings and known `pg_net` warning remain unchanged.
+
+### Category-first status after 0097
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — next;
 4. protections/effects;
 5. slot/restriction compatibility;
 6. combat/spell mechanics;
