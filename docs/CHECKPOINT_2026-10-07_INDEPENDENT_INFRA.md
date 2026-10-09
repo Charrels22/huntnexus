@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0090
+- schema/migrations aplicados até 0091
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -603,3 +603,40 @@ The existing EK implementation remains as a regression fixture while generic cat
 - migration commit: `07162f126b037d01e463470358fbbff3b2d460e6`.
 - regression commit: `4104a8e85c1204ca5088c760ea8add5e3459aed6`.
 - security advisor after 0090: no new findings; existing server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
+
+
+## Universal weapon usage dependencies
+
+- migration 0091 adds:
+  - server-only `weapon_usage_rules`;
+  - server-only `vw_quiver_catalog_universal`;
+  - `huntnexus_weapon_usage_context(item_key,vocation,level)`.
+- current usage rules cover all 9 normalized weapon families.
+- bows/crossbows:
+  - require a quiver in the shield/off-hand slot;
+  - bow ammunition family = arrow;
+  - crossbow ammunition family = bolt;
+  - ammunition catalog is explicitly marked `missing`, so no ammo candidate is inferred yet.
+- usable quiver catalog contains 8 items; the category-page pseudo-item `quivers` is excluded.
+- quiver effects are preserved, including:
+  - Alicorn Quiver ML/perfect-shot effects;
+  - Eldritch Quiver perfect-shot effect;
+  - Naga/Candy-Coated elemental protections.
+- Tier-B quiver rule source: TibiaWiki BR `Aljavas`.
+- throwing weapons are modeled one-handed with optional shield/off-hand and no quiver requirement.
+- rods/wands are modeled one-handed with optional shield or spellbook.
+- melee one-hand allows optional shield/off-hand; melee two-hand blocks standard off-hand.
+- compatibility is kept separate from combat score/ranking.
+- unresolved catalog facts remain unresolved:
+  - ammunition candidates are not present in the current item catalog;
+  - Assassin Star still has unknown vocation restriction in catalog data and remains `incomplete`.
+- focused regression `tests/sql/phase30_weapon_usage_dependencies.sql`: status=ok.
+- regression summary:
+  - 8 usable quivers;
+  - 9 rule families;
+  - ammunition_catalog_ready=false.
+- migration commit: `6f28e882c1f81566e4078692488dea477f36e134`.
+- regression commit: `94651a8e9ed7bafc470e58228776f7d8447a0bad`.
+- security advisor after 0091:
+  - 7 informational `rls_enabled_no_policy` findings; the new one is `weapon_usage_rules`, intentionally server-only deny-by-default;
+  - existing `pg_net` public-schema warning remains unchanged.
