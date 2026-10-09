@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0089
+- schema/migrations aplicados até 0090
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -558,3 +558,48 @@ The existing EK implementation remains as a regression fixture while generic cat
 - migration commit: `7a3380b19f76ff671b74d38409eb69455a26e7d1`.
 - regression commit: `077cf3a76663e0b29a902fb6ea652e6cedd53395`.
 - security advisor after 0089: no new finding; existing server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
+
+
+## Universal weapon attribute comparison
+
+- migration 0090 adds:
+  - `huntnexus_weapon_attribute_vector(item_key)`;
+  - `huntnexus_compare_weapons_universal(item_keys)`.
+- the attribute vector is category-first and factual only.
+- normalized dimensions remain separated by:
+  - scope;
+  - metric;
+  - unit.
+- core weapon dimensions include:
+  - base attack;
+  - defense;
+  - defense modifier;
+  - range;
+  - imbue slots.
+- elemental/physical attack components remain separate metrics.
+- normalized `item_effects` become independent comparison dimensions such as:
+  - melee/distance skill;
+  - generic and elemental Magic Level;
+  - attack modifier;
+  - hit modifier;
+  - critical;
+  - leech;
+  - elemental protection;
+  - other cataloged effects.
+- Weapon Proficiency coverage remains metadata and is not converted into an inferred combat score.
+- missing dimensions remain NULL/missing; zero is never imputed.
+- no cross-metric sum is applied.
+- no "higher is better" direction is inferred.
+- no winner, ranking or Pareto dominance is selected by this layer.
+- comparisons support up to 10 item keys and explicitly report whether all items share:
+  - weapon class;
+  - weapon family.
+- cross-class regression with Grand Sanguine Blade, Moonsilver Bow, Moonsilver Sceptre and Moonsilver Channeler produced 18 independent dimensions.
+- factual regression examples:
+  - Moonsilver Bow: attack modifier +10, hit modifier +7, Distance +5;
+  - Moonsilver Sceptre: Magic Level +6, Healing Magic Level +2;
+  - Moonsilver Channeler: Magic Level +6, Death Magic Level +1.
+- focused regression `tests/sql/phase29_universal_weapon_attribute_comparison.sql`: status=ok.
+- migration commit: `07162f126b037d01e463470358fbbff3b2d460e6`.
+- regression commit: `4104a8e85c1204ca5088c760ea8add5e3459aed6`.
+- security advisor after 0090: no new findings; existing server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
