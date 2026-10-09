@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0091
+- schema/migrations aplicados até 0092
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -639,4 +639,51 @@ The existing EK implementation remains as a regression fixture while generic cat
 - regression commit: `94651a8e9ed7bafc470e58228776f7d8447a0bad`.
 - security advisor after 0091:
   - 7 informational `rls_enabled_no_policy` findings; the new one is `weapon_usage_rules`, intentionally server-only deny-by-default;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+
+## Ammunition catalog + Weapon Proficiency family audit
+
+- migration 0092 adds:
+  - server-only `ammunition_catalog`;
+  - `huntnexus_ammunition_candidates(family,level)`;
+  - server-only `weapon_proficiency_family_rules`;
+  - server-only `vw_weapon_proficiency_family_audit`;
+  - `huntnexus_weapon_usage_context` upgraded to stage `weapon_usage_context_v2`.
+- ammunition catalog source: TibiaWiki BR `Munição` (Tier B).
+- current ammunition inventory:
+  - 19 arrows;
+  - 8 bolts;
+  - 27 total.
+- ammo facts preserve source attack, level requirement and physical/elemental components separately.
+- no final damage formula is inferred from source attack.
+- Diamond Arrow is explicitly marked as area ammunition from the Tier-B source.
+- Burst Arrow attack pattern remains `unspecified`; no area behavior is inferred.
+- Bow usage context now returns real arrow candidates.
+- Crossbow usage context now returns real bolt candidates.
+- level filtering is active:
+  - at level 100: 14/19 arrows eligible, 5 blocked;
+  - at level 100: 6/8 bolts eligible, 2 blocked.
+- Weapon Proficiency family audit source: TibiaWiki BR `Weapon Proficiency` (Tier B).
+- Tier-B system-listed families:
+  - sword;
+  - axe;
+  - club;
+  - fist;
+  - bow;
+  - crossbow;
+  - wand;
+  - rod.
+- Throwing is marked `not_listed`, not inferred as supported or unsupported.
+- normalized tree coverage currently in HuntNexus:
+  - sword: 6;
+  - axe: 2;
+  - club: 2;
+  - bow/crossbow/fist/wand/rod: 0;
+  - total normalized trees: 10.
+- focused regression `tests/sql/phase31_ammunition_and_proficiency_family_audit.sql`: status=ok.
+- migration commit: `6402373e83ceb932e8ddf2a6e4b42cae7fb27675`.
+- regression commit: `c870c631c7e2401ab9943fffbd06650840dd1235`.
+- security advisor after 0092:
+  - 9 informational `rls_enabled_no_policy` findings; new server-only tables `ammunition_catalog` and `weapon_proficiency_family_rules` are intentionally deny-by-default;
   - existing `pg_net` public-schema warning remains unchanged.
