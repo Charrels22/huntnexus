@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0094
+- schema/migrations aplicados até 0095
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -785,3 +785,73 @@ The existing EK implementation remains as a regression fixture while generic cat
 - migration commit: `d3aa6877e33577b3fa2c0e5f8bdfdb7fe1aa7ddf`.
 - regression commit: `07c97067b901b7de9e4b8be133b84b84c418c82f`.
 - security advisor after 0094: no new findings; 9 intentional server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
+
+
+## Fist proficiency + weapon category readiness
+
+- migration 0095 completes the first Fist proficiency slice and formalizes the weapon-category readiness audit.
+- normalized Fist trees in this block:
+  - Pair of Monk Fists;
+  - Nunchaku of Destruction;
+  - Eldritch Crescent Moon Spade;
+  - Amber Kusarigama;
+  - Soulkamas;
+  - Grand Sanguine Claws;
+  - Moonsilver Katar.
+- Fist contribution: 7 trees / 75 perks.
+- current Assassin Star page exposes Weapon Proficiency, so Throwing is no longer marked `not_listed`.
+- Assassin Star now contributes 1 normalized Throwing tree / 5 perks.
+- current total normalized Weapon Proficiency trees: 34.
+- important catalog semantics correction:
+  - source rows with no vocation restriction are normalized as unrestricted instead of unknown;
+  - missing level requirement is normalized as level 0;
+  - pseudo category row `fist-fighting-weapons` is excluded.
+- universal real-weapon catalog count is now 854.
+- current structural gaps across the 854 weapons:
+  - missing hands: 0;
+  - missing level: 0;
+  - unknown vocation: 0;
+  - unparsed explicit vocation: 0.
+- `huntnexus_weapon_proficiency_impact_preview_v2` now also exposes `flat_defense_bonus`.
+- Fist effects exercised include:
+  - Fist-derived auto/spell damage;
+  - Magic-Level-derived auto/spell damage;
+  - spell-specific leech/base damage/crit;
+  - defence;
+  - attack;
+  - global crit/leech;
+  - bestiary/Powerful Foe;
+  - Energy pierce;
+  - Moonsilver homing-missile proc metadata;
+  - Omega damage below 30% HP.
+- `huntnexus_weapon_category_audit()` stage `weapon_category_audit_v1` reports:
+  - catalog_weapons=854;
+  - weapon_classes=3;
+  - weapon_families=9;
+  - normalized_proficiency_trees=34;
+  - core_contract_ready=true;
+  - proficiency_exhaustive=false;
+  - proficiency_backfill_pending=true;
+  - final_combat_formula_ready=false.
+- dependencies:
+  - 8 quivers: ready;
+  - 19 arrows + 8 bolts: ready.
+- interpretation:
+  - the universal weapon factual/eligibility/compatibility contract is ready to be consumed by vocation composition later;
+  - Weapon Proficiency item coverage is intentionally tracked as a separate non-exhaustive backfill;
+  - final combat/DPS formulas are intentionally not part of the weapon category layer.
+- focused regression `tests/sql/phase34_fist_proficiency_weapon_category_audit.sql`: status=ok.
+- migration commit: `fd739b43841087123999aeb6b1df4517dc21dbd6`.
+- regression commit: `f240bdbce5600383b727224c90edaadb013bb7ea`.
+- security advisor after 0095: no new findings; 9 intentional server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
+
+### Category-first status after 0095
+
+1. weapons — core contract READY; proficiency backfill continues separately;
+2. armor/equipment slots — next;
+3. imbues;
+4. protections/effects;
+5. slot/restriction compatibility;
+6. combat/spell mechanics;
+7. vocation composition;
+8. final optimizer.
