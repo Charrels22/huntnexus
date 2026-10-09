@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0095
+- schema/migrations aplicados até 0096
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -849,6 +849,84 @@ The existing EK implementation remains as a regression fixture while generic cat
 
 1. weapons — core contract READY; proficiency backfill continues separately;
 2. armor/equipment slots — next;
+3. imbues;
+4. protections/effects;
+5. slot/restriction compatibility;
+6. combat/spell mechanics;
+7. vocation composition;
+8. final optimizer.
+
+
+## Universal equipment catalog + eligibility
+
+- migration 0096 starts the category-first ARMOR/EQUIPMENT layer.
+- new server-only view: `vw_equipment_catalog_universal`.
+- new server-only function: `huntnexus_equipment_candidates_universal(vocation,level,slot,family,combat_only,limit)`.
+- normalized equipment slots:
+  - head;
+  - body;
+  - legs;
+  - feet;
+  - offhand;
+  - neck;
+  - ring.
+- normalized equipment families:
+  - helmet;
+  - armor;
+  - legs;
+  - boots;
+  - shield;
+  - spellbook;
+  - quiver;
+  - amulet_necklace;
+  - ring.
+- important source correction:
+  - equipable Spellbooks are stored under source category `Shields` with `primary_type='Spellbooks'`;
+  - the standalone `Spellbooks` category is an aggregate page and is not used as an equipment item source.
+- aggregate pseudo-items excluded:
+  - helmets;
+  - armors;
+  - legs;
+  - boots;
+  - shields;
+  - rings;
+  - spellbooks;
+  - quivers.
+- current inventory:
+  - 689 equipment items;
+  - 627 marked `combat_relevant`;
+  - 62 `catalog_only`;
+  - 29 real spellbooks.
+- `combat_relevant` is factual presence of combat metadata/effects/restrictions; it is not a combat score.
+- item effects remain normalized independently and currently cover protections, skills, ML, movement, magic-shield capacity, reflection, leech and temporary/special effects.
+- candidate classification uses:
+  - level requirement;
+  - vocation restriction;
+  - slot;
+  - equipment family.
+- default candidate mode excludes `catalog_only` items but can include them explicitly.
+- no combat score, final ranking or optimizer weighting is applied.
+- level 700 validation samples:
+  - EK body: 84 eligible;
+  - RP head: 79 eligible;
+  - ED spellbook: 24 eligible;
+  - MS spellbook: 25 eligible;
+  - EM ring: 26 eligible.
+- focused regression `tests/sql/phase35_universal_equipment_catalog_candidates.sql`: status=ok.
+- regression summary:
+  - equipment_items=689;
+  - combat_relevant=627;
+  - spellbooks=29;
+  - slots=7;
+  - families=9.
+- migration commit: `9244ade699065a5626c0fa5cd2ce0daa80edd4c2`.
+- regression commit: `090b761f467b4accb0431cb01501707de3efd995`.
+- security advisor before migration showed no new findings; existing intentional server-only RLS INFO findings and known `pg_net` warning remain unchanged.
+
+### Category-first status after 0096
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — universal catalog + eligibility READY, comparison/protection layer next;
 3. imbues;
 4. protections/effects;
 5. slot/restriction compatibility;
