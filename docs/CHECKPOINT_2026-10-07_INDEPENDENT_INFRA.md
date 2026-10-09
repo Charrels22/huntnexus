@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0098
+- schema/migrations aplicados até 0099
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1069,6 +1069,68 @@ The existing EK implementation remains as a regression fixture while generic cat
 2. armor/equipment slots — catalog + eligibility + factual comparison READY;
 3. imbues — factual catalog + item compatibility READY; hunt-context priority next;
 4. protections/effects;
+5. slot/restriction compatibility;
+6. combat/spell mechanics;
+7. vocation composition;
+8. final optimizer.
+
+
+## Universal Imbuement hunt context
+
+- migration 0099 adds:
+  - `huntnexus_imbuement_hunt_context_universal(hunt_key,vocation)`;
+  - `huntnexus_item_imbuement_context_universal(item_key,hunt_key,vocation)`.
+- the contextual layer combines three evidence streams without collapsing them:
+  1. factual item compatibility from migration 0098;
+  2. observed incoming damage by hunt/vocation;
+  3. community-observed Imbuement usage as Tier C evidence.
+- defensive elemental protection is the only Imbuement class prioritized here.
+- protection priority is derived from observed incoming damage and exposes both:
+  - share of total observed damage;
+  - share of protectable observed damage.
+- physical/agony/life-drain/mana-drain and any other elements with no current protection Imbuement remain visible as unprotected/unmatched damage instead of being silently removed.
+- community usage:
+  - evidence_tier=C;
+  - `affects_priority=false`;
+  - never changes defensive ordering.
+- offense/sustain/skill candidates remain factual compatible options without cross-type ranking.
+- final slot assignment is still not applied.
+- unsupported vocation input now returns an explicit `unsupported_vocation` error.
+- no-observation hunt contexts return:
+  - `available=false`;
+  - zero observed damage;
+  - empty defensive priority;
+  - empty community evidence.
+- current observed-data coverage:
+  - 29 distinct hunt+vocation contexts with incoming damage;
+  - 28 distinct hunt+vocation contexts with observed Imbuement usage.
+- regression anchors:
+  - Cobra Bastion / EK total observed damage = 5,734,100;
+  - protectable observed damage = 2,853,813;
+  - Earth -> Snake Skin is first defensive priority;
+  - Death -> Lich Shroud is second;
+  - Lion Plate retains Vampirism as unranked nondefensive candidate;
+  - community Snake Skin/Vampirism evidence is surfaced but does not affect priority;
+  - Gloom Pillars / ED spellbook context prioritizes Fire, Holy, Earth, Energy, then Death from observed damage;
+  - Nimmersatts Breeding Ground / RP and Grounds of Undeath / EM validate non-EK behavior.
+- `huntnexus_imbuement_category_audit()` upgraded to `imbuement_category_audit_v2`:
+  - factual_compatibility_ready=true;
+  - hunt_context_priority_ready=true;
+  - defensive_hunt_context_ready=true;
+  - cross_type_priority_ready=false;
+  - final_assignment_ready=false.
+- priority scope is explicitly `defensive_only`.
+- focused regression `tests/sql/phase38_universal_imbuement_hunt_context.sql`: status=ok.
+- migration commit: `564de93c9e367ef0c41b56c25eb00293df9f6e23`.
+- regression commit: `812556e2e48c10c99dc0b19bf5cda43949e1dae6`.
+- security advisor after 0099: no new findings; 10 intentional server-only RLS INFO findings and the known `pg_net` warning remain unchanged.
+
+### Category-first status after 0099
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY; final assignment remains separate;
+4. protections/effects — next;
 5. slot/restriction compatibility;
 6. combat/spell mechanics;
 7. vocation composition;
