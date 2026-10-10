@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { OfficialAssetSlot } from "@/components/shell/app-shell";
+import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 import { getOrCreateClientId } from "@/lib/client-id";
 
 export const Route = createFileRoute("/planner")({ component: PlannerPage });
@@ -62,8 +63,11 @@ function PlannerPage() {
         }).filter(([, value]) => value !== undefined && value !== null && value !== ""),
       );
 
+      const clientId = getOrCreateClientId();
+
       const response = await callHuntNexusApi<FinalResponse>({
         action: "final_optimizer",
+        client_id: clientId,
         vocation,
         level: Number(level),
         hunt_objective: huntObjective,
@@ -155,6 +159,11 @@ function PlannerPage() {
               const hunt = row.hunt ?? {};
               const selection = row.set_selection ?? {};
               const sets = Array.isArray(selection.selected_sets) ? selection.selected_sets : [];
+              const ownedBuilds = row.owned_builds ?? {};
+              const ownedOptions = Array.isArray(ownedBuilds.options) ? ownedBuilds.options : [];
+              const mainOption = ownedOptions.find((option:any) => option.option_type === "main") ?? null;
+              const ownedVariants = ownedOptions.filter((option:any) => option.option_type === "owned_variant");
+              const savedChoice = row.saved_owned_choice?.exists ? row.saved_owned_choice.choice : null;
               return (
                 <article key={hunt.hunt_key ?? index} className="hn-hunt-card overflow-hidden">
                   <OfficialAssetSlot label="Imagem oficial/canônica da hunt" compact />
@@ -166,10 +175,46 @@ function PlannerPage() {
                       <Mini label="Profit/h" value={formatMetric(hunt.median_balance_per_hour)} />
                       <Mini label="Conf." value={hunt.confidence_score != null ? `${Math.round(Number(hunt.confidence_score) * 100)}%` : "—"} />
                     </div>
-                    <div className="mt-4 rounded-xl border border-white/6 bg-white/[0.025] p-3">
-                      <div className="text-xs text-slate-500">Sets co-vencedores</div>
+                    {mainOption && (
+                      <div className="mt-4 rounded-xl border border-cyan-400/12 bg-cyan-400/[0.025] p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <div className="text-xs font-semibold text-cyan-100">Com os seus itens</div>
+                            <div className="mt-1 text-[10px] text-slate-500">
+                              Main + {ownedVariants.length} alternativa{ownedVariants.length === 1 ? "" : "s"} viável{ownedVariants.length === 1 ? "" : "is"} da BP
+                            </div>
+                          </div>
+                          {savedChoice && (
+                            <span className="rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-2 py-1 text-[9px] font-semibold text-emerald-300">
+                              Build salva
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {Object.entries(mainOption.selection ?? {}).slice(0,8).map(([slot,itemKey]) => (
+                            <div
+                              key={slot}
+                              title={String(itemKey)}
+                              className="rounded-lg border border-white/6 bg-black/20 p-1.5"
+                            >
+                              <CanonicalSprite kind="item" name={slugToName(String(itemKey))} size="sm" />
+                            </div>
+                          ))}
+                        </div>
+
+                        {ownedBuilds?.summary?.discarded_as_main_dominated > 0 && (
+                          <div className="mt-2 text-[10px] text-slate-600">
+                            {ownedBuilds.summary.discarded_as_main_dominated} variação(ões) da BP foram descartadas por serem inferiores ao Main quando comparáveis.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="mt-3 rounded-xl border border-white/6 bg-white/[0.025] p-3">
+                      <div className="text-xs text-slate-500">Frontier universal</div>
                       <div className="mt-1 text-2xl font-black text-white">{selection.summary?.co_winners ?? sets.length ?? 0}</div>
-                      <div className="mt-2 text-xs text-slate-500">Nenhum vencedor único é forçado.</div>
+                      <div className="mt-2 text-xs text-slate-500">Catálogo completo; nenhum vencedor único é forçado.</div>
                     </div>
                     {hunt.hunt_key && (
                       <Link
@@ -209,6 +254,14 @@ function formatMetric(value: unknown) {
   return String(Math.round(value));
 }
 
+
+function slugToName(value: string) {
+  return value
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 function validFinalStat(baseValue: unknown, finalValue: unknown) {
   const base = Number(baseValue);
