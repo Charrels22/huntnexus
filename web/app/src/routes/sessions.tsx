@@ -257,8 +257,11 @@ function Analyse({ data }: { data: any }) {
           </div>
         </div>
         <div className="space-y-3">
-          <DataRow label="XP total" value={formatNumber(Number(a.xp_gain || 0))} />
+          <DataRow label="XP total" value={a.xp_gain == null ? "Não informado" : formatNumber(Number(a.xp_gain))} />
+          <DataRow label="Raw XP total" value={a.raw_xp_gain == null ? "Não informado" : formatNumber(Number(a.raw_xp_gain))} />
           <DataRow label="Raw XP/h" value={formatCompact(a.raw_xp_per_hour)} />
+          <DataRow label="Damage/h" value={formatCompact(a.damage_per_hour)} />
+          <DataRow label="Healing/h" value={formatCompact(a.healing_per_hour)} />
           <DataRow label="Loot" value={a.loot_value == null ? "Não informado" : formatCompact(a.loot_value)} />
           <DataRow label="Supplies" value={a.supplies_value == null ? "Não informado" : formatCompact(a.supplies_value)} />
           <DataRow label="Party" value={Number(a.party_size || 1) > 1 ? `x${a.party_size}` : "Solo"} />
