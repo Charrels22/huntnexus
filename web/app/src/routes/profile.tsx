@@ -461,35 +461,91 @@ function ProfilePage() {
     return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="size-7 animate-spin text-cyan-300" /></div>;
   }
 
+  const hasRegisteredCharacter = Boolean(form.character_name.trim() && form.vocation && form.level);
+  const mainVisualItems = Object.values(inventory.main_set).slice(0, 6);
+
   return (
     <div className="mx-auto max-w-[1320px] space-y-6">
-      <section className="hn-hero overflow-hidden rounded-3xl border border-white/8 p-5 md:p-7">
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Character Profile</div>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-white md:text-4xl">Cadastre seu personagem uma vez.</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-              O perfil vira o contexto padrão do Hunt Planner, Session Analyzer e optimizer.
-            </p>
-            <div className="mt-5 rounded-2xl border border-white/7 bg-slate-950/35 p-4 text-xs leading-5 text-slate-500">
-              A busca automática no RubinOT ficou fora deste bloco porque o site bloqueia consultas server-side comuns. O perfil manual continua integrado ao restante do HuntNexus.
+      {hasRegisteredCharacter ? (
+        <section className="hn-hero overflow-hidden rounded-3xl border border-white/8">
+          <div className="grid min-h-[250px] xl:grid-cols-[1fr_.9fr]">
+            <div className="p-5 md:p-7">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Character Profile</div>
+              <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-2">
+                <h1 className="text-3xl font-black tracking-tight text-white md:text-4xl">{form.character_name}</h1>
+                <span className="rounded-full border border-cyan-400/15 bg-cyan-400/[0.06] px-3 py-1 text-xs font-semibold text-cyan-200">
+                  {vocationLabel(form.vocation)}
+                </span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <CharacterMeta label="Level" value={form.level} />
+                <CharacterMeta label="Mundo" value={form.world_name || "—"} />
+                <CharacterMeta label="Weapon" value={weaponFamilyOptions(form.vocation).find((x) => x.value === form.weapon_family)?.label || "—"} />
+                <CharacterMeta label="ML" value={form.magic_level || "—"} />
+              </div>
+              <div className="mt-5 text-xs text-slate-500">
+                Perfil ativo no Hunt Planner, Session Analyzer e optimizer.
+              </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-white/7 bg-slate-950/45 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
-              <UserRound className="size-4 text-cyan-300" />
-              Personagem padrão
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Summary label="Nome" value={form.character_name || "—"} />
-              <Summary label="Mundo" value={form.world_name || "—"} />
-              <Summary label="Vocação" value={form.vocation || "—"} />
-              <Summary label="Level" value={form.level || "—"} />
+            <div className="relative overflow-hidden border-l border-white/7 bg-slate-950/50 p-6">
+              <div className={`absolute inset-0 ${vocationBackdrop(form.vocation)}`} />
+              <div className="relative z-10 flex h-full min-h-[200px] items-center justify-center">
+                <div className="w-full max-w-[520px]">
+                  <div className="text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    Set Main
+                  </div>
+                  {mainVisualItems.length ? (
+                    <div className="mt-4 flex flex-wrap justify-center gap-3">
+                      {mainVisualItems.map((item) => (
+                        <div key={item.inventory_id} className="rounded-2xl border border-white/8 bg-black/20 p-3 shadow-lg">
+                          <CanonicalSprite kind="item" name={item.item_name} size="md" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid min-h-[110px] place-items-center rounded-2xl border border-dashed border-white/8 text-center">
+                      <div>
+                        <Swords className="mx-auto size-6 text-slate-700" />
+                        <div className="mt-2 text-xs text-slate-600">Cadastre o Set Main para completar o visual do personagem.</div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="mt-4 text-center text-xs font-bold text-slate-300">{vocationLabel(form.vocation)}</div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="hn-hero overflow-hidden rounded-3xl border border-white/8 p-5 md:p-7">
+          <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Character Profile</div>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-white md:text-4xl">Cadastre seu personagem uma vez.</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+                O perfil vira o contexto padrão do Hunt Planner, Session Analyzer e optimizer.
+              </p>
+              <div className="mt-5 rounded-2xl border border-white/7 bg-slate-950/35 p-4 text-xs leading-5 text-slate-500">
+                Preencha nome, mundo, vocação e level. Depois disso, este bloco vira o resumo compacto do personagem.
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/7 bg-slate-950/45 p-5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                <UserRound className="size-4 text-cyan-300" />
+                Novo personagem
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Summary label="Nome" value={form.character_name || "—"} />
+                <Summary label="Mundo" value={form.world_name || "—"} />
+                <Summary label="Vocação" value={form.vocation || "—"} />
+                <Summary label="Level" value={form.level || "—"} />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">
         <SectionTitle icon={ShieldCheck} title="Personagem" subtitle="Informações básicas reutilizadas em todo o HuntNexus." />
@@ -910,6 +966,35 @@ function ProfilePage() {
       </div>
     </div>
   );
+}
+
+function CharacterMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/7 bg-slate-950/35 px-3 py-2">
+      <div className="text-[9px] uppercase tracking-wide text-slate-600">{label}</div>
+      <div className="mt-1 text-sm font-bold text-slate-200">{value}</div>
+    </div>
+  );
+}
+
+function vocationLabel(vocation: string) {
+  return ({
+    EK: "Elite Knight",
+    RP: "Royal Paladin",
+    ED: "Elder Druid",
+    MS: "Master Sorcerer",
+    EM: "Exalted Monk",
+  } as Record<string,string>)[vocation] || vocation || "—";
+}
+
+function vocationBackdrop(vocation: string) {
+  return ({
+    EK: "bg-[radial-gradient(circle_at_center,rgba(251,146,60,.14),transparent_58%)]",
+    RP: "bg-[radial-gradient(circle_at_center,rgba(250,204,21,.12),transparent_58%)]",
+    ED: "bg-[radial-gradient(circle_at_center,rgba(74,222,128,.12),transparent_58%)]",
+    MS: "bg-[radial-gradient(circle_at_center,rgba(168,85,247,.16),transparent_58%)]",
+    EM: "bg-[radial-gradient(circle_at_center,rgba(34,211,238,.12),transparent_58%)]",
+  } as Record<string,string>)[vocation] || "bg-[radial-gradient(circle_at_center,rgba(34,211,238,.08),transparent_58%)]";
 }
 
 function SectionTitle({ icon: Icon, title, subtitle }: { icon: typeof Swords; title: string; subtitle: string }) {
