@@ -37,6 +37,10 @@ const Body = z.discriminatedUnion("action", [
     weapon_family: z.string().max(40).nullable().optional(),
   }),
   z.object({
+    action: z.literal("player_profile_delete"),
+    client_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("player_profile_save"),
     client_id: z.string().uuid(),
     profile: z.object({
@@ -241,6 +245,12 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_vocation: b.vocation,
                   p_level: b.level,
                   p_weapon_family: b.weapon_family ?? null,
+                }),
+              });
+            case "player_profile_delete":
+              return json({
+                data: await rpc("huntnexus_player_profile_delete", {
+                  p_client_id: b.client_id,
                 }),
               });
             case "player_profile_save":
