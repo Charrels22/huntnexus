@@ -688,6 +688,187 @@ function ProfilePage() {
       </section>
 
       <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">
+        <SectionTitle
+          icon={Backpack}
+          title="Set Main e itens da BP"
+          subtitle="Seu Set Main é a base. A BP contém alternativas que o HuntNexus pode considerar para hunts específicas."
+        />
+
+        <div className="mt-4 rounded-xl border border-cyan-400/10 bg-cyan-400/[0.03] p-4 text-xs leading-5 text-slate-500">
+          Regra do personagem: <strong className="text-slate-300">o Set Main continua sendo o padrão.</strong> Itens da BP podem substituir ou mesclar peças somente quando houver contexto factual para isso. Itens que você não possui serão mostrados separadamente como sugestões externas.
+        </div>
+
+        <div className="mt-5 grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
+          <div className="rounded-2xl border border-white/7 bg-[#07101b] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-bold text-white">Set Main</div>
+                <div className="mt-1 text-[11px] text-slate-500">{inventory.summary.main_slots} slots cadastrados</div>
+              </div>
+              {inventoryLoading && <Loader2 className="size-4 animate-spin text-cyan-300" />}
+            </div>
+
+            <div className="mx-auto mt-5 grid max-w-[620px] grid-cols-3 gap-3">
+              {mainSetSlots(form.vocation).map((slot) => {
+                const item = inventory.main_set[slot.key];
+                return (
+                  <div key={slot.key} className="min-w-0">
+                    <div className="mb-1 text-center text-[10px] uppercase tracking-wide text-slate-600">{slot.label}</div>
+                    <div className={`relative rounded-2xl border p-2 transition ${
+                      item ? "border-emerald-400/25 bg-emerald-400/[0.04]" : "border-white/7 bg-slate-950/60"
+                    }`}>
+                      <button
+                        type="button"
+                        onClick={() => openInventoryPicker("main", slot.key)}
+                        className="grid min-h-[116px] w-full place-items-center rounded-xl text-center transition hover:bg-white/[0.025]"
+                      >
+                        {item ? (
+                          <div className="grid place-items-center">
+                            <CanonicalSprite kind="item" name={item.item_name} size="md" />
+                            <div className="mt-2 line-clamp-2 text-[11px] font-semibold leading-4 text-slate-200">{item.item_name}</div>
+                          </div>
+                        ) : (
+                          <div className="grid place-items-center gap-2 text-slate-600">
+                            <Plus className="size-5" />
+                            <span className="text-[10px]">Adicionar</span>
+                          </div>
+                        )}
+                      </button>
+
+                      {item && (
+                        <button
+                          type="button"
+                          onClick={() => void removeInventoryItem(item.inventory_id)}
+                          className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-lg border border-white/7 bg-slate-950/90 text-slate-600 transition hover:border-red-400/20 hover:text-red-300"
+                          title="Remover do Set Main"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/7 bg-slate-950/45 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-bold text-white">Itens na BP</div>
+                <div className="mt-1 text-[11px] text-slate-500">{inventory.summary.backpack_items} alternativas cadastradas</div>
+              </div>
+              <button type="button" onClick={() => openInventoryPicker("backpack", null)} className="hn-secondary-button">
+                <Plus className="size-4" />
+                Adicionar
+              </button>
+            </div>
+
+            {inventory.backpack.length ? (
+              <div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-1">
+                {inventory.backpack.map((item) => (
+                  <div key={item.inventory_id} className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] p-2.5">
+                    <CanonicalSprite kind="item" name={item.item_name} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-slate-200">{item.item_name}</div>
+                      <div className="mt-1 text-[10px] text-slate-600">
+                        {slotLabel(item.selection_key)} · {item.item_family || item.item_domain || "item"}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void removeInventoryItem(item.inventory_id)}
+                      className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/7 text-slate-600 transition hover:border-red-400/20 hover:text-red-300"
+                      title="Remover da BP"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 grid min-h-[180px] place-items-center rounded-xl border border-dashed border-white/8 text-center">
+                <div>
+                  <Backpack className="mx-auto size-6 text-slate-700" />
+                  <div className="mt-2 text-sm font-semibold text-slate-400">BP ainda vazia</div>
+                  <div className="mt-1 text-xs text-slate-600">Cadastre armas e equipamentos alternativos que você realmente possui.</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {inventoryTarget && (
+          <div className="mt-5 rounded-2xl border border-cyan-400/15 bg-[#07101b] p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">
+                  {inventoryTarget.storageKind === "main" ? `Selecionar ${slotLabel(inventoryTarget.selectionKey || "")}` : "Adicionar item à BP"}
+                </div>
+                <div className="mt-1 text-xs text-slate-500">Busca no catálogo real de equipamentos e armas do HuntNexus.</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setInventoryTarget(null);
+                  setInventoryQuery("");
+                  setInventoryResults([]);
+                }}
+                className="text-xs text-slate-500 transition hover:text-slate-300"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="relative mt-4">
+              <input
+                autoFocus
+                className="hn-control"
+                value={inventoryQuery}
+                onChange={(e) => setInventoryQuery(e.target.value)}
+                placeholder="Digite o nome do item..."
+              />
+              {inventorySearching && <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-cyan-300" />}
+            </div>
+
+            {inventoryQuery.trim().length >= 2 && !inventorySearching && inventoryResults.length === 0 && (
+              <div className="mt-3 text-xs text-slate-600">Nenhum item encontrado.</div>
+            )}
+
+            {inventoryResults.length > 0 && (
+              <div className="mt-3 grid gap-2 md:grid-cols-2">
+                {inventoryResults.map((item) => {
+                  const blockedForMain = inventoryTarget.storageKind === "main" && !item.eligible;
+                  return (
+                    <button
+                      key={`${item.selection_key}-${item.item_key}`}
+                      type="button"
+                      disabled={blockedForMain}
+                      onClick={() => void putInventoryItem(item)}
+                      className="flex items-center gap-3 rounded-xl border border-white/7 bg-white/[0.02] p-3 text-left transition hover:border-cyan-400/20 hover:bg-cyan-400/[0.035] disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      <CanonicalSprite kind="item" name={item.name} size="sm" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-slate-200">{item.name}</span>
+                        <span className="mt-1 block text-[10px] text-slate-600">
+                          {slotLabel(item.selection_key)} · Level {item.level_required ?? "—"} · {item.item_family}
+                        </span>
+                        {!item.eligible && (
+                          <span className="mt-1 block text-[10px] text-amber-300/80">
+                            Não elegível para o level/vocação atual
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">
         <SectionTitle icon={Sparkles} title="Preferências padrão" subtitle="Pré-preenchidas automaticamente no Hunt Planner." />
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <Field label="Objetivo da hunt">
@@ -796,6 +977,36 @@ function weaponFamilyOptions(vocation: string) {
   if (vocation === "MS") return [{ value: "wand", label: "Wand" }];
   if (vocation === "EM") return [{ value: "fist", label: "Fist" }];
   return [];
+}
+
+function mainSetSlots(vocation: string) {
+  const slots = [
+    { key: "neck", label: "Amuleto" },
+    { key: "head", label: "Helmet" },
+    { key: "ring", label: "Ring" },
+    { key: "weapon", label: "Weapon" },
+    { key: "body", label: "Armor" },
+    { key: "offhand", label: "Off-hand" },
+    { key: "legs", label: "Legs" },
+    { key: "feet", label: "Boots" },
+  ];
+  if (vocation === "RP") slots.push({ key: "ammunition", label: "Ammo" });
+  return slots;
+}
+
+function slotLabel(selectionKey: string) {
+  const labels: Record<string, string> = {
+    head: "Helmet",
+    body: "Armor",
+    legs: "Legs",
+    feet: "Boots",
+    neck: "Amuleto",
+    ring: "Ring",
+    weapon: "Weapon",
+    offhand: "Off-hand",
+    ammunition: "Ammo",
+  };
+  return labels[selectionKey] || selectionKey || "Item";
 }
 
 function compareFinalStat(label: string, baseRaw: string, finalRaw: string) {
