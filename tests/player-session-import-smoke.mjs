@@ -1,4 +1,4 @@
-// Canonical loot parsing checkpoint.
+// Canonical loot parsing checkpoint after deployed parser.
 const endpoint =
   process.env.HUNTNEXUS_ENDPOINT ??
   "https://huntnexus.charr3ls22.workers.dev/api/huntnexus";
