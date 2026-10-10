@@ -93,6 +93,11 @@ const Body = z.discriminatedUnion("action", [
     session_id: z.string().uuid(),
   }),
   z.object({
+    action: z.literal("player_session_delete"),
+    client_id: z.string().uuid(),
+    session_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("session_list"),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     hunt_key: z.string().min(1).max(200).nullable().optional(),
@@ -306,6 +311,13 @@ export const Route = createFileRoute("/api/huntnexus")({
             case "player_session_detail":
               return json({
                 data: await rpc("huntnexus_player_session_detail", {
+                  p_client_id: b.client_id,
+                  p_session_id: b.session_id,
+                }),
+              });
+            case "player_session_delete":
+              return json({
+                data: await rpc("huntnexus_player_session_delete", {
                   p_client_id: b.client_id,
                   p_session_id: b.session_id,
                 }),
