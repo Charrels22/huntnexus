@@ -11,7 +11,8 @@ import {
   Swords,
   TrendingUp,
   Users,
-  type LucideIcon,\n} from "lucide-react";
+  type LucideIcon,
+} from "lucide-react";
 import { OfficialAssetSlot } from "@/components/shell/app-shell";
 
 export const Route = createFileRoute("/")({ component: DashboardPage });
