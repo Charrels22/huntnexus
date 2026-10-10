@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
+  Check,
   Loader2,
   Save,
   ShieldCheck,
@@ -10,6 +12,7 @@ import {
 } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 
 export const Route = createFileRoute("/profile")({ component: ProfilePage });
 
@@ -34,6 +37,29 @@ type FormState = {
   hunt_objective: "xp" | "profit" | "balanced";
   set_objective: "offense" | "defense" | "sustain" | "utility" | "balanced";
   party_size: string;
+};
+
+type ProficiencyPerk = {
+  perk_order: number;
+  level_number: number | null;
+  effect_key: string;
+  numeric_value: number | null;
+  unit: string | null;
+  scope: string | null;
+  spell_key: string | null;
+  description_raw: string;
+};
+
+type ProficiencyTree = {
+  item_key: string;
+  item_name: string;
+  weapon_family: string;
+  level_required: number | null;
+  eligible: boolean;
+  levels_declared: number | null;
+  topology_status: string | null;
+  perk_count: number;
+  perks: ProficiencyPerk[];
 };
 
 const emptyForm: FormState = {
@@ -61,7 +87,10 @@ const emptyForm: FormState = {
 
 function ProfilePage() {
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [proficiencySelections, setProficiencySelections] = useState<Record<string, number[]>>({});
+  const [proficiencyTrees, setProficiencyTrees] = useState<ProficiencyTree[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProficiency, setLoadingProficiency] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -101,13 +130,93 @@ function ProfilePage() {
           set_objective: defaults.set_objective ?? "balanced",
           party_size: String(defaults.party_size ?? 1),
         });
+
+        setProficiencySelections(
+          p.proficiency_selections && typeof p.proficiency_selections === "object"
+            ? p.proficiency_selections
+            : {},
+        );
       })
       .catch(() => setError("Não foi possível carregar o perfil salvo."))
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const level = Number(form.level);
+    if (!form.vocation || !Number.isFinite(level) || level < 1 || !form.weapon_family) {
+      setProficiencyTrees([]);
+      return;
+    }
+
+    let active = true;
+    setLoadingProficiency(true);
+
+    callHuntNexusApi<any>({
+      action: "player_profile_proficiency_catalog",
+      vocation: form.vocation,
+      level,
+      weapon_family: form.weapon_family,
+    })
+      .then((response) => {
+        if (!active) return;
+        const trees = Array.isArray(response?.data?.trees) ? response.data.trees : [];
+        setProficiencyTrees(trees);
+      })
+      .catch(() => {
+        if (active) setProficiencyTrees([]);
+      })
+      .finally(() => {
+        if (active) setLoadingProficiency(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [form.vocation, form.level, form.weapon_family]);
+
+  const effectiveWarnings = useMemo(() => {
+    const warnings: string[] = [];
+
+    const magic = compareFinalStat("Magic Level", form.magic_level, form.effective_magic_level);
+    if (magic) warnings.push(magic);
+
+    const shield = compareFinalStat("Shielding", form.shielding, form.effective_shielding);
+    if (shield) warnings.push(shield);
+
+    const distance = compareFinalStat("Distance", form.distance, form.effective_distance_skill);
+    if (distance) warnings.push(distance);
+
+    const fist = compareFinalStat("Fist", form.fist, form.effective_fist_skill);
+    if (fist) warnings.push(fist);
+
+    const baseWeapon = baseWeaponSkill(form);
+    const weapon = compareFinalStat("Weapon Skill", baseWeapon, form.effective_weapon_skill);
+    if (weapon) warnings.push(weapon);
+
+    return warnings;
+  }, [form]);
+
+  const selectedPerkCount = useMemo(
+    () => Object.values(proficiencySelections).reduce((sum, rows) => sum + rows.length, 0),
+    [proficiencySelections],
+  );
+
   function patch<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function togglePerk(itemKey: string, perkOrder: number) {
+    setProficiencySelections((current) => {
+      const selected = new Set(current[itemKey] ?? []);
+      if (selected.has(perkOrder)) selected.delete(perkOrder);
+      else selected.add(perkOrder);
+
+      const next = { ...current };
+      const values = [...selected].sort((a, b) => a - b);
+      if (values.length) next[itemKey] = values;
+      else delete next[itemKey];
+      return next;
+    });
   }
 
   async function save() {
@@ -148,7 +257,7 @@ function ProfilePage() {
           official_lookup_at: null,
           official_lookup_status: null,
           manual_stats: manualStats,
-          proficiency_selections: {},
+          proficiency_selections: proficiencySelections,
           defaults: {
             hunt_objective: form.hunt_objective,
             set_objective: form.set_objective,
@@ -181,8 +290,8 @@ function ProfilePage() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
               O perfil vira o contexto padrão do Hunt Planner, Session Analyzer e optimizer.
             </p>
-            <div className="mt-5 rounded-2xl border border-amber-400/10 bg-amber-400/[0.035] p-4 text-xs leading-5 text-slate-500">
-              A busca automática por personagem no RubinOT ficou fora deste bloco porque o site bloqueia consultas server-side comuns. O preenchimento manual mantém o projeto simples e confiável.
+            <div className="mt-5 rounded-2xl border border-white/7 bg-slate-950/35 p-4 text-xs leading-5 text-slate-500">
+              A busca automática no RubinOT ficou fora deste bloco porque o site bloqueia consultas server-side comuns. O perfil manual continua integrado ao restante do HuntNexus.
             </div>
           </div>
 
@@ -221,7 +330,7 @@ function ProfilePage() {
       </section>
 
       <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">
-        <SectionTitle icon={Swords} title="Skills e contexto do optimizer" subtitle="Use os valores reais do personagem e, quando necessário, os valores efetivos com bônus." />
+        <SectionTitle icon={Swords} title="Skills e contexto do optimizer" subtitle="Use os valores reais do personagem e, quando necessário, o valor final com bônus." />
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Weapon family">
@@ -246,19 +355,120 @@ function ProfilePage() {
         </div>
 
         <div className="mt-6 border-t border-white/7 pt-5">
-          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Valores efetivos</div>
-          <p className="mt-1 text-xs text-slate-500">Opcional — use quando equipamento/bônus alterarem o valor usado pelo optimizer.</p>
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Valores finais com bônus</div>
+          <p className="mt-1 text-xs text-slate-500">
+            Opcional. Informe o valor final, não apenas o bônus. Ex.: ML base 110 +2 de equipamento = <strong className="text-slate-300">112</strong>.
+          </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <Field label="Weapon skill"><NumberInput value={form.effective_weapon_skill} onChange={(v) => patch("effective_weapon_skill", v)} /></Field>
-            <Field label="Magic level"><NumberInput value={form.effective_magic_level} onChange={(v) => patch("effective_magic_level", v)} /></Field>
-            <Field label="Shielding"><NumberInput value={form.effective_shielding} onChange={(v) => patch("effective_shielding", v)} /></Field>
-            <Field label="Distance"><NumberInput value={form.effective_distance_skill} onChange={(v) => patch("effective_distance_skill", v)} /></Field>
-            <Field label="Fist"><NumberInput value={form.effective_fist_skill} onChange={(v) => patch("effective_fist_skill", v)} /></Field>
+            <Field label="Weapon skill final"><NumberInput value={form.effective_weapon_skill} onChange={(v) => patch("effective_weapon_skill", v)} /></Field>
+            <Field label="Magic level final"><NumberInput value={form.effective_magic_level} onChange={(v) => patch("effective_magic_level", v)} /></Field>
+            <Field label="Shielding final"><NumberInput value={form.effective_shielding} onChange={(v) => patch("effective_shielding", v)} /></Field>
+            <Field label="Distance final"><NumberInput value={form.effective_distance_skill} onChange={(v) => patch("effective_distance_skill", v)} /></Field>
+            <Field label="Fist final"><NumberInput value={form.effective_fist_skill} onChange={(v) => patch("effective_fist_skill", v)} /></Field>
           </div>
+
+          {effectiveWarnings.length > 0 && (
+            <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-400/[0.05] p-3 text-xs leading-5 text-amber-100/80">
+              <div className="flex items-center gap-2 font-semibold text-amber-200">
+                <AlertTriangle className="size-4" />
+                Valor final inconsistente
+              </div>
+              <div className="mt-1">{effectiveWarnings.join(" ")}</div>
+              <div className="mt-1 text-slate-500">Enquanto isso não for corrigido, o Planner ignora o valor final menor e usa o skill base.</div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">
+        <SectionTitle
+          icon={Sparkles}
+          title="Weapon Proficiency"
+          subtitle="Marque somente os perks que estão ativos no seu personagem para cada arma."
+        />
+
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full border border-white/7 bg-white/[0.025] px-3 py-1.5 text-slate-400">
+            {proficiencyTrees.length} árvores compatíveis
+          </span>
+          <span className="rounded-full border border-cyan-400/15 bg-cyan-400/[0.05] px-3 py-1.5 text-cyan-200">
+            {selectedPerkCount} perks selecionados
+          </span>
+          {loadingProficiency && <Loader2 className="size-4 animate-spin text-cyan-300" />}
         </div>
 
-        <div className="mt-5 rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-4 text-xs leading-5 text-slate-500">
-          Weapon Proficiency continuará sendo configurada pela árvore e pelo item exato. O HuntNexus não transforma proficiency em um número genérico.
+        {!form.weapon_family && (
+          <div className="mt-4 rounded-xl border border-white/7 bg-white/[0.02] p-4 text-sm text-slate-500">
+            Selecione a Weapon Family para carregar as árvores compatíveis.
+          </div>
+        )}
+
+        {form.weapon_family && !loadingProficiency && proficiencyTrees.length === 0 && (
+          <div className="mt-4 rounded-xl border border-white/7 bg-white/[0.02] p-4 text-sm text-slate-500">
+            Nenhuma árvore de proficiency encontrada para esta combinação de vocação, level e família.
+          </div>
+        )}
+
+        {proficiencyTrees.length > 0 && (
+          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+            {proficiencyTrees.map((tree) => {
+              const selected = new Set(proficiencySelections[tree.item_key] ?? []);
+              return (
+                <article key={tree.item_key} className="overflow-hidden rounded-2xl border border-white/7 bg-slate-950/45">
+                  <div className="flex items-center gap-3 border-b border-white/7 p-4">
+                    <CanonicalSprite kind="item" name={tree.item_name} size="md" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-bold text-white">{tree.item_name}</div>
+                      <div className="mt-1 text-[11px] text-slate-500">
+                        Level {tree.level_required ?? "—"} · {tree.perk_count} perks catalogados
+                      </div>
+                    </div>
+                    <div className="rounded-full border border-white/7 px-2.5 py-1 text-[10px] text-slate-400">
+                      {selected.size} ativos
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 p-3">
+                    {tree.perks.map((perk) => {
+                      const active = selected.has(perk.perk_order);
+                      return (
+                        <button
+                          key={perk.perk_order}
+                          type="button"
+                          onClick={() => togglePerk(tree.item_key, perk.perk_order)}
+                          className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition ${
+                            active
+                              ? "border-cyan-400/25 bg-cyan-400/[0.07]"
+                              : "border-white/6 bg-white/[0.02] hover:border-white/12"
+                          }`}
+                        >
+                          <span className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border ${
+                            active
+                              ? "border-cyan-300 bg-cyan-300 text-slate-950"
+                              : "border-white/15 text-transparent"
+                          }`}>
+                            <Check className="size-3.5" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-xs font-semibold text-slate-200">
+                              Perk {perk.perk_order}
+                            </span>
+                            <span className="mt-0.5 block text-xs leading-5 text-slate-500">
+                              {perk.description_raw || perk.effect_key}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-4 rounded-xl border border-amber-400/10 bg-amber-400/[0.035] p-4 text-xs leading-5 text-slate-500">
+          A fonte atual confirma a ordem dos perks, mas não prova todas as conexões/dependências da árvore. Por isso o HuntNexus não desbloqueia perks automaticamente nem presume que selecionar um perk ativa os anteriores.
         </div>
       </section>
 
@@ -307,11 +517,60 @@ function ProfilePage() {
 }
 
 function SectionTitle({ icon: Icon, title, subtitle }: { icon: typeof Swords; title: string; subtitle: string }) {
-  return <div className="flex items-start gap-3"><div className="grid size-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300"><Icon className="size-4" /></div><div><div className="font-bold text-white">{title}</div><div className="mt-1 text-xs text-slate-500">{subtitle}</div></div></div>;
+  return (
+    <div className="flex items-start gap-3">
+      <div className="grid size-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300"><Icon className="size-4" /></div>
+      <div>
+        <div className="font-bold text-white">{title}</div>
+        <div className="mt-1 text-xs text-slate-500">{subtitle}</div>
+      </div>
+    </div>
+  );
 }
-function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="space-y-2 text-xs font-medium text-slate-400"><span>{label}</span>{children}</label>; }
-function NumberInput({ value, onChange }: { value: string; onChange: (value: string) => void }) { return <input className="hn-control" type="number" min="0" value={value} onChange={(e) => onChange(e.target.value)} />; }
-function Summary({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-white/6 bg-white/[0.025] p-3"><div className="text-[10px] uppercase tracking-wide text-slate-600">{label}</div><div className="mt-1 truncate text-sm font-bold text-slate-200">{value}</div></div>; }
-function toString(value: unknown) { return value == null ? "" : String(value); }
-function numberOrNull(value: string) { const n = Number(value); return value.trim() && Number.isFinite(n) ? n : null; }
-function compactObject<T extends Record<string, unknown>>(input: T) { return Object.fromEntries(Object.entries(input).filter(([,value]) => value !== null && value !== "")); }
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="space-y-2 text-xs font-medium text-slate-400"><span>{label}</span>{children}</label>;
+}
+
+function NumberInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return <input className="hn-control" type="number" min="0" value={value} onChange={(e) => onChange(e.target.value)} />;
+}
+
+function Summary({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/6 bg-white/[0.025] p-3">
+      <div className="text-[10px] uppercase tracking-wide text-slate-600">{label}</div>
+      <div className="mt-1 truncate text-sm font-bold text-slate-200">{value}</div>
+    </div>
+  );
+}
+
+function toString(value: unknown) {
+  return value == null ? "" : String(value);
+}
+
+function numberOrNull(value: string) {
+  const n = Number(value);
+  return value.trim() && Number.isFinite(n) ? n : null;
+}
+
+function compactObject<T extends Record<string, unknown>>(input: T) {
+  return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== null && value !== ""));
+}
+
+function baseWeaponSkill(form: FormState) {
+  if (form.weapon_family === "sword") return form.sword;
+  if (form.weapon_family === "axe") return form.axe;
+  if (form.weapon_family === "club") return form.club;
+  if (form.weapon_family === "distance") return form.distance;
+  if (form.weapon_family === "fist") return form.fist;
+  return "";
+}
+
+function compareFinalStat(label: string, baseRaw: string, finalRaw: string) {
+  const base = Number(baseRaw);
+  const finalValue = Number(finalRaw);
+  if (!baseRaw.trim() || !finalRaw.trim() || !Number.isFinite(base) || !Number.isFinite(finalValue)) return null;
+  if (finalValue >= base) return null;
+  return `${label} final (${finalValue}) está abaixo do valor base (${base}).`;
+}
