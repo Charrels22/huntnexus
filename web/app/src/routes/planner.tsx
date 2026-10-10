@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Loader2, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
@@ -123,6 +123,20 @@ function PlannerPage() {
                       <div className="mt-1 text-2xl font-black text-white">{selection.summary?.co_winners ?? sets.length ?? 0}</div>
                       <div className="mt-2 text-xs text-slate-500">Nenhum vencedor único é forçado.</div>
                     </div>
+                    {hunt.hunt_key && (
+                      <Link
+                        to="/hunts/$huntKey"
+                        params={{ huntKey: hunt.hunt_key }}
+                        search={{
+                          vocation,
+                          level: Number(level),
+                          setObjective,
+                        }}
+                        className="hn-primary-button mt-4 w-full justify-center"
+                      >
+                        Ver hunt e setup
+                      </Link>
+                    )}
                   </div>
                 </article>
               );
