@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0106
+- schema/migrations aplicados até 0107
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1790,3 +1790,109 @@ The existing EK implementation remains as a regression fixture while generic cat
 6. combat/spell mechanics — core READY;
 7. vocation composition — universal factual composition READY;
 8. final optimizer — candidate envelope + Pareto/frontier READY; concrete set generation + validation next.
+
+
+## Universal optimizer concrete set generation + validation
+
+- migration 0107 adds:
+  - `huntnexus_optimizer_hand_packages_universal(hunt_key,vocation,level,per_source,limit)`;
+  - `huntnexus_optimizer_concrete_sets_universal(hunt_key,vocation,level,hand_per_source,per_body_slot,set_limit)`.
+- `huntnexus_optimizer_audit()` upgraded to `optimizer_audit_v3`.
+- hand package stage combines only Pareto-frontier candidates:
+  - weapon;
+  - optional/required offhand;
+  - required ammunition when applicable.
+- hand-package dependency semantics:
+  - ordinary two-handed melee/Fist weapons are generated without offhand;
+  - one-handed melee may use a valid shield/offhand;
+  - Wand/Rod may use valid shield or spellbook;
+  - Bow/Crossbow require a quiver;
+  - Bow requires Arrow family ammunition;
+  - Crossbow requires Bolt family ammunition.
+- every returned hand package is passed through `huntnexus_loadout_compatibility_universal`.
+- bounded deterministic enumeration:
+  - source/frontier slices are ordered by `item_key`;
+  - the order exists only to bound combinatorics;
+  - the order is explicitly not a recommendation or ranking.
+- hand-package validation with `per_source=3`:
+  - EK: 9 frontier weapons considered -> 24 valid packages;
+  - RP: 6 -> 18 valid packages;
+  - ED: 3 -> 21 valid packages;
+  - MS: 3 -> 21 valid packages;
+  - EM: 3 -> 3 valid packages;
+  - no blocked/incomplete packages in the validated slice.
+- RP hand packages explicitly include Weapon + Quiver + Ammunition and validate as complete.
+- EK regression confirms valid two-handed packages contain no offhand.
+- concrete-set stage combines each valid hand package with:
+  - head;
+  - body;
+  - legs;
+  - feet;
+  - neck;
+  - ring.
+- all six body slots come only from their Pareto frontiers.
+- every returned complete set is revalidated through `huntnexus_loadout_compatibility_universal`.
+- minimal deterministic validation slice (`hand_per_source=2`, `per_body_slot=1`):
+  - EK / Cobra Bastion: 12 valid sets;
+  - RP / Iksupan Last Stand: 8 valid sets;
+  - ED / Nimmersatt's Breeding Ground: 10 valid sets;
+  - MS / Podzilla: 10 valid sets;
+  - EM / Grounds of Undeath: 2 valid sets;
+  - blocked=0 and incomplete=0 for all five.
+- bounded-enumeration regression:
+  - EK / Cobra Bastion / `hand_per_source=2` / `per_body_slot=2`;
+  - theoretical combinations=768;
+  - set_limit=50;
+  - generated_for_validation=50;
+  - valid_sets=50;
+  - truncated=true;
+  - no set score, ranking or winner selection applied.
+- first RP full-set regression contains all required keys:
+  - weapon;
+  - offhand;
+  - ammunition;
+  - head;
+  - body;
+  - legs;
+  - feet;
+  - neck;
+  - ring;
+  - validation status=valid.
+- optimizer decision state after 0107:
+  - candidate envelope ready;
+  - item vectors ready;
+  - Pareto frontier ready;
+  - hand package generation ready;
+  - concrete set generation ready;
+  - universal set validation ready;
+  - set selection not ready;
+  - final optimizer not ready.
+- `huntnexus_optimizer_audit()` v3:
+  - hand_package_generation_ready=true;
+  - concrete_set_generation_ready=true;
+  - set_validation_ready=true;
+  - set_selection_ready=false;
+  - final_optimizer_ready=false.
+- next optimizer problem is no longer compatibility; it is selection policy among already valid, non-dominated sets.
+- remaining selection constraints:
+  - do not introduce a fake universal scalar;
+  - Weapon Proficiency remains explicit-selection context;
+  - defensive Imbuement evidence is available, but cross-type offense/sustain/skill Imbuement policy remains separate;
+  - final DPS/healing formula is not fabricated.
+- focused regression `tests/sql/phase46_universal_optimizer_concrete_set_validation.sql`: status=ok.
+- migration commit: `c81eb769511edeed9b2edec1f173d9afd57ae362`.
+- regression commit: `d7c6fd7134bc0f4487cafe594c296c4ffe0d0baf`.
+- security advisor after 0107:
+  - unchanged 14 intentional server-only `rls_enabled_no_policy` INFO findings;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+### Category-first status after 0107
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY;
+4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
+5. slot/restriction compatibility — universal loadout validation READY;
+6. combat/spell mechanics — core READY;
+7. vocation composition — universal factual composition READY;
+8. final optimizer — candidate envelope + Pareto/frontier + concrete set generation/validation READY; factual set-selection policy next.
