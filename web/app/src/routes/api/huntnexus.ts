@@ -74,6 +74,16 @@ const Body = z.discriminatedUnion("action", [
     frontier_limit: z.coerce.number().int().min(1).max(30).default(12),
   }),
   z.object({
+    action: z.literal("player_owned_build_options"),
+    client_id: z.string().uuid(),
+    hunt_key: z.string().min(1).max(200),
+    vocation: z.string().max(20),
+    level: z.coerce.number().int().min(1).max(5000),
+    proficiency_selections: z.record(z.string(), z.array(z.number().int().min(1).max(100))).default({}),
+    character_profile: z.record(z.string(), z.unknown()).default({}),
+    option_limit: z.coerce.number().int().min(1).max(3).default(3),
+  }),
+  z.object({
     action: z.literal("player_profile_save"),
     client_id: z.string().uuid(),
     profile: z.object({
@@ -327,6 +337,18 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_level: b.level,
                   p_proficiency_selections: b.proficiency_selections,
                   p_frontier_limit: b.frontier_limit,
+                }),
+              });
+            case "player_owned_build_options":
+              return json({
+                data: await rpc("huntnexus_player_owned_build_options", {
+                  p_client_id: b.client_id,
+                  p_hunt_key: b.hunt_key,
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_proficiency_selections: b.proficiency_selections,
+                  p_character_profile: b.character_profile,
+                  p_option_limit: b.option_limit,
                 }),
               });
             case "player_profile_save":
