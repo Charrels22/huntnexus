@@ -100,6 +100,48 @@ try {
     "external frontier classification regression",
   );
 
+  const personalizedPlanner = await post({
+    action: "final_optimizer",
+    client_id: clientId,
+    vocation: "MS",
+    level: 655,
+    hunt_objective: "balanced",
+    set_objective: "offense",
+    party_size: 1,
+    hunt_limit: 1,
+    hand_per_source: 2,
+    per_body_slot: 1,
+    set_limit: 30,
+    frontier_limit: 30,
+    selection_limit: 8,
+    unlocked_requirement_keys: [],
+    proficiency_selections: {
+      "soultainter": [1, 3],
+      "amber-wand": [1],
+    },
+    character_profile: {
+      weapon_family: "wand",
+      effective_magic_level: 110,
+    },
+  });
+
+  assert(
+    personalizedPlanner?.data?.methodology?.stage === "optimizer_final_personalized_v1",
+    "personalized planner stage regression",
+  );
+  assert(
+    personalizedPlanner?.data?.methodology?.ownership_affects_hunt_rank === false,
+    "inventory affected hunt rank",
+  );
+  assert(
+    personalizedPlanner?.data?.results?.[0]?.owned_builds?.methodology?.stage === "player_owned_build_options_v2",
+    "planner owned build enrichment regression",
+  );
+  assert(
+    personalizedPlanner?.data?.results?.[0]?.owned_builds?.options?.[0]?.option_type === "main",
+    "planner Main option regression",
+  );
+
   const ownedOptions = await post({
     action: "player_owned_build_options",
     client_id: clientId,
@@ -200,6 +242,7 @@ try {
     owned_build_options: ownedOptions.data.summary.returned_options,
     discarded_bp_variants: ownedOptions.data.summary.discarded_as_main_dominated,
     hunt_build_choice_tested: Boolean(ownedVariant),
+    personalized_planner_stage: personalizedPlanner.data.methodology.stage,
   }, null, 2));
 } finally {
   for (const inventoryId of inventoryIds) {
