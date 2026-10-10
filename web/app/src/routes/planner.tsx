@@ -66,14 +66,13 @@ function PlannerPage() {
       const clientId = getOrCreateClientId();
 
       const response = await callHuntNexusApi<FinalResponse>({
-        action: "final_optimizer",
+        action: "planner_personalized",
         client_id: clientId,
         vocation,
         level: Number(level),
-        hunt_objective: huntObjective,
-        set_objective: setObjective,
+        objective: huntObjective,
         party_size: Number(party),
-        hunt_limit: 3,
+        limit: 3,
         character_profile: characterProfile,
         proficiency_selections: savedProfile?.proficiency_selections ?? {},
       });
@@ -157,8 +156,6 @@ function PlannerPage() {
           <div className="grid gap-4 xl:grid-cols-3">
             {results.map((row: any, index: number) => {
               const hunt = row.hunt ?? {};
-              const selection = row.set_selection ?? {};
-              const sets = Array.isArray(selection.selected_sets) ? selection.selected_sets : [];
               const ownedBuilds = row.owned_builds ?? {};
               const ownedOptions = Array.isArray(ownedBuilds.options) ? ownedBuilds.options : [];
               const mainOption = ownedOptions.find((option:any) => option.option_type === "main") ?? null;
@@ -212,9 +209,10 @@ function PlannerPage() {
                     )}
 
                     <div className="mt-3 rounded-xl border border-white/6 bg-white/[0.025] p-3">
-                      <div className="text-xs text-slate-500">Frontier universal</div>
-                      <div className="mt-1 text-2xl font-black text-white">{selection.summary?.co_winners ?? sets.length ?? 0}</div>
-                      <div className="mt-2 text-xs text-slate-500">Catálogo completo; nenhum vencedor único é forçado.</div>
+                      <div className="text-xs font-semibold text-slate-300">Setup universal completo</div>
+                      <div className="mt-1 text-xs leading-5 text-slate-500">
+                        Calculado ao abrir a hunt. O Planner prioriza velocidade e usa aqui ranking factual + seus itens.
+                      </div>
                     </div>
                     {hunt.hunt_key && (
                       <Link
