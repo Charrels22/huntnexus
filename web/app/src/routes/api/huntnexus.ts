@@ -621,7 +621,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                     };
                   }
 
-                  const [ownedBuilds, savedChoice] = await Promise.all([
+                  const [ownedBuilds, savedChoice, personalPerformance] = await Promise.all([
                     rpc("huntnexus_player_owned_build_options_v2", {
                       p_client_id: b.client_id,
                       p_hunt_key: hunt.hunt_key,
@@ -636,6 +636,11 @@ export const Route = createFileRoute("/api/huntnexus")({
                       p_hunt_key: hunt.hunt_key,
                       p_vocation: b.vocation,
                     }),
+                    rpc("huntnexus_player_session_build_performance", {
+                      p_client_id: b.client_id,
+                      p_hunt_key: hunt.hunt_key,
+                      p_vocation: b.vocation,
+                    }),
                   ]);
 
                   return {
@@ -643,6 +648,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                     hunt_rank_order: index + 1,
                     owned_builds: ownedBuilds,
                     saved_owned_choice: savedChoice,
+                    personal_performance: personalPerformance,
                   };
                 }),
               );
@@ -760,6 +766,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                     ownership_affects_hunt_rank: false,
                     owned_builds_enrich_results_only: true,
                     external_items_used_in_owned_options: false,
+                    personal_session_history_affects_hunt_rank: false,
                     main_set_is_baseline: true,
                   },
                 },
