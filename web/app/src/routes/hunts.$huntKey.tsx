@@ -47,6 +47,8 @@ function HuntDetailPage() {
   const [error, setError] = useState("");
   const [personalReview, setPersonalReview] = useState<any>(null);
   const [ownedBuildOptions, setOwnedBuildOptions] = useState<any>(null);
+  const [huntBuildChoice, setHuntBuildChoice] = useState<any>(null);
+  const [savingBuildChoice, setSavingBuildChoice] = useState(false);
   const [loadingPersonalReview, setLoadingPersonalReview] = useState(false);
 
   useEffect(() => {
@@ -125,18 +127,26 @@ function HuntDetailPage() {
             character_profile: characterProfile,
             option_limit: 3,
           }),
+          callHuntNexusApi<any>({
+            action: "player_hunt_build_choice_get",
+            client_id: clientId,
+            hunt_key: huntKey,
+            vocation: search.vocation,
+          }),
         ]);
       })
       .then((responses) => {
         if (!active || !responses) return;
-        const [reviewResponse, optionsResponse] = responses;
+        const [reviewResponse, optionsResponse, choiceResponse] = responses;
         setPersonalReview(reviewResponse?.data ?? null);
         setOwnedBuildOptions(optionsResponse?.data ?? null);
+        setHuntBuildChoice(choiceResponse?.data?.exists ? choiceResponse.data.choice : null);
       })
       .catch(() => {
         if (active) {
           setPersonalReview(null);
           setOwnedBuildOptions(null);
+          setHuntBuildChoice(null);
         }
       })
       .finally(() => {
@@ -147,6 +157,39 @@ function HuntDetailPage() {
       active = false;
     };
   }, [tab, huntKey, search.vocation, search.level]);
+
+  async function chooseBuildForHunt(option:any) {
+    const clientId = getOrCreateClientId();
+    if (!clientId || !option || savingBuildChoice) return;
+
+    setSavingBuildChoice(true);
+    try {
+      const response = await callHuntNexusApi<any>({
+        action: "player_hunt_build_choice_save",
+        client_id: clientId,
+        hunt_key: huntKey,
+        vocation: search.vocation,
+        level: search.level,
+        selection: option.selection ?? {},
+        option_type: option.option_type === "main" ? "main" : "owned_variant",
+        replacements: Array.isArray(option.replacements) ? option.replacements : [],
+      });
+
+      if (!response?.data?.saved) {
+        throw new Error(response?.data?.error || "build_choice_not_saved");
+      }
+
+      setHuntBuildChoice({
+        hunt_key: huntKey,
+        vocation: search.vocation,
+        selection: option.selection ?? {},
+        option_type: option.option_type === "main" ? "main" : "owned_variant",
+        replacements: Array.isArray(option.replacements) ? option.replacements : [],
+      });
+    } finally {
+      setSavingBuildChoice(false);
+    }
+  }
 
   if (loading) {
     return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="size-7 animate-spin text-cyan-300" /></div>;
@@ -219,7 +262,17 @@ function HuntDetailPage() {
         {tab === "creatures" && <Creatures monsters={monsters} observed={data.observed} />}
         {tab === "map" && <MapPanel hunt={hunt} media={media} />}
         {tab === "damage" && <Damage defensive={data.defensive} />}
-        {tab === "setup" && <Setup selection={data.set_selection} personalReview={personalReview} ownedBuildOptions={ownedBuildOptions} loadingPersonalReview={loadingPersonalReview} />}
+        {tab === "setup" && (
+          <Setup
+            selection={data.set_selection}
+            personalReview={personalReview}
+            ownedBuildOptions={ownedBuildOptions}
+            huntBuildChoice={huntBuildChoice}
+            savingBuildChoice={savingBuildChoice}
+            onChooseBuild={chooseBuildForHunt}
+            loadingPersonalReview={loadingPersonalReview}
+          />
+        )}
         {tab === "spells" && <Spells spells={data.spells} composition={data.vocation_composition} />}
         {tab === "imbuements" && <Imbuements data={data.imbuements} />}
         {tab === "community" && <Community observed={data.observed} />}
