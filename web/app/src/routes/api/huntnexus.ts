@@ -593,17 +593,73 @@ export const Route = createFileRoute("/api/huntnexus")({
                 p_character_profile: b.character_profile,
               };
 
-              if (b.client_id) {
-                return json({
-                  data: await rpc("huntnexus_optimizer_final_personalized", {
-                    p_client_id: b.client_id,
-                    ...params,
-                  }),
-                });
+              const base = await rpc("huntnexus_optimizer_final_universal", params);
+
+              if (!b.client_id) {
+                return json({ data: base });
               }
 
+              const baseResults = Array.isArray(base?.results) ? base.results : [];
+              const enrichedResults = await Promise.all(
+                baseResults.map(async (row: any) => {
+                  const huntKey = row?.hunt?.hunt_key;
+                  if (!huntKey) {
+                    return {
+                      ...row,
+                      owned_builds: null,
+                      saved_owned_choice: { exists: false, choice: null },
+                    };
+                  }
+
+                  const [ownedBuilds, savedChoice] = await Promise.all([
+                    rpc("huntnexus_player_owned_build_options_v2", {
+                      p_client_id: b.client_id,
+                      p_hunt_key: huntKey,
+                      p_vocation: b.vocation,
+                      p_level: b.level,
+                      p_proficiency_selections: b.proficiency_selections,
+                      p_character_profile: b.character_profile,
+                      p_option_limit: 3,
+                    }),
+                    rpc("huntnexus_player_hunt_build_choice_get", {
+                      p_client_id: b.client_id,
+                      p_hunt_key: huntKey,
+                      p_vocation: b.vocation,
+                    }),
+                  ]);
+
+                  return {
+                    ...row,
+                    owned_builds: ownedBuilds,
+                    saved_owned_choice: savedChoice,
+                  };
+                }),
+              );
+
               return json({
-                data: await rpc("huntnexus_optimizer_final_universal", params),
+                data: {
+                  ...base,
+                  results: enrichedResults,
+                  personalization_summary: {
+                    client_scope_available: true,
+                    ranked_hunts: enrichedResults.length,
+                    hunts_with_registered_main_set: enrichedResults.filter(
+                      (row: any) => Number(row?.owned_builds?.summary?.main_items ?? 0) > 0,
+                    ).length,
+                    hunts_with_saved_build_choice: enrichedResults.filter(
+                      (row: any) => row?.saved_owned_choice?.exists === true,
+                    ).length,
+                  },
+                  methodology: {
+                    ...(base?.methodology ?? {}),
+                    stage: "optimizer_final_personalized_api_v1",
+                    hunt_ranking_reordered_by_inventory: false,
+                    ownership_affects_hunt_rank: false,
+                    owned_builds_enrich_results_only: true,
+                    external_items_used_in_owned_options: false,
+                    main_set_is_baseline: true,
+                  },
+                },
               });
             }
             case "boss_build": {
