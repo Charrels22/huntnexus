@@ -68,6 +68,10 @@ export type ParsedSessionImport = {
       raw_value: string;
       unit: string;
     }>;
+    looted_items: Array<{
+      item_name_raw: string;
+      amount: number;
+    }>;
     raw_misc_available: boolean;
   };
   damage: {
@@ -101,6 +105,7 @@ export type ParsedSessionImport = {
     has_primary_hunt_analyzer: boolean;
     recognized_metric_count: number;
     creature_rows: number;
+    looted_item_rows: number;
     party_player_rows: number;
     incoming_element_rows: number;
     incoming_source_rows: number;
@@ -216,6 +221,26 @@ function parseKilledMonsters(textLines: string[]) {
       resolution_status: "raw_name",
       kills,
     });
+  }
+  return out;
+}
+
+function parseLootedItems(textLines: string[]) {
+  const start = textLines.findIndex((line) => /^Looted Items:?$/i.test(line));
+  if (start < 0) return [];
+
+  const out: Array<{ item_name_raw: string; amount: number }> = [];
+  for (let i = start + 1; i < textLines.length; i++) {
+    const line = textLines[i];
+    if (!line) continue;
+    if (/^(Session|Raw XP Gain|XP Gain|Raw XP\/h|XP\/h|Loot|Supplies|Balance|Damage|Damage\/h|Healing|Healing\/h|Killed Monsters):/i.test(line)) break;
+
+    const match = line.match(/^(\d[\d,]*)x\s+(.+)$/i);
+    if (!match?.[1] || !match?.[2]) continue;
+
+    const amount = parseIntegerLike(match[1]);
+    if (amount == null) continue;
+    out.push({ item_name_raw: match[2].trim(), amount });
   }
   return out;
 }
@@ -349,6 +374,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
   const primary = huntLines.length ? huntLines : partyLines;
   const range = parseSessionRange(primary);
   const creatures = parseKilledMonsters(huntLines);
+  const lootedItems = parseLootedItems(huntLines);
   const partyPlayers = parsePartyPlayers(partyLines);
   const input = parseInputAnalyzer(inputLines);
   const miscStats = parseMisc(miscLines);
@@ -398,6 +424,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
     misc: {
       creatures,
       combat_stats: miscStats,
+      looted_items: lootedItems,
       raw_misc_available: miscLines.length > 0,
     },
     damage: {
@@ -414,7 +441,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
     },
     availability: {
       hunt_analyse: recognizedMetricCount > 0,
-      misc: miscStats.length > 0 || creatures.length > 0,
+      misc: miscStats.length > 0 || creatures.length > 0 || lootedItems.length > 0,
       damage: metrics.total_damage != null || input.elements.length > 0 || input.sources.length > 0,
       party_hunt: partyPlayers.length > 1,
       charm_damage: false,
@@ -423,6 +450,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
       has_primary_hunt_analyzer: huntLines.length > 0,
       recognized_metric_count: recognizedMetricCount,
       creature_rows: creatures.length,
+      looted_item_rows: lootedItems.length,
       party_player_rows: partyPlayers.length,
       incoming_element_rows: input.elements.length,
       incoming_source_rows: input.sources.length,
