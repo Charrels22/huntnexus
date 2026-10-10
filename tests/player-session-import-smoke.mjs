@@ -104,6 +104,8 @@ try {
         "Healing: 500,000",
       ].join("\n"),
       input: [
+        "Total: 200,000",
+        "Max-DPS: 3,250",
         "Damage Types:",
         "physical: 120,000 (60%)",
         "fire: 80,000 (40%)",
@@ -144,8 +146,12 @@ try {
   assert(parsed?.hunt_analyse?.xp_per_hour === 8000000, "XP/h parse regression");
   assert(parsed?.hunt_analyse?.total_kills === 150, "kill parse regression");
   assert(parsed?.party_hunt?.players?.length === 2, "party parse regression");
+  assert(parsed?.party_hunt?.totals?.total_damage === 6000000, "party explicit total damage regression");
+  assert(parsed?.party_hunt?.totals?.total_healing === 1200000, "party explicit total healing regression");
   assert(parsed?.misc?.looted_items?.length === 2, "looted items parse regression");
   assert(parsed?.misc?.looted_items?.[0]?.amount === 3, "loot item amount regression");
+  assert(parsed?.damage?.incoming_total_damage === 200000, "Damage Input total regression");
+  assert(parsed?.damage?.incoming_max_dps === 3250, "Damage Input Max-DPS regression");
   assert(parsed?.damage?.incoming_by_element?.length === 2, "element damage parse regression");
   assert(parsed?.damage?.incoming_by_source?.length === 2, "damage source parse regression");
   assert(parsed?.misc?.combat_stats?.length === 2, "misc parse regression");
