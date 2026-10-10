@@ -161,6 +161,9 @@ function PlannerPage() {
               const mainOption = ownedOptions.find((option:any) => option.option_type === "main") ?? null;
               const ownedVariants = ownedOptions.filter((option:any) => option.option_type === "owned_variant");
               const savedChoice = row.saved_owned_choice?.exists ? row.saved_owned_choice.choice : null;
+              const personalPerformance = row.personal_performance ?? {};
+              const personalSessions = Number(personalPerformance?.summary?.sessions ?? 0);
+              const personalBuilds = Number(personalPerformance?.summary?.distinct_builds ?? 0);
               return (
                 <article key={hunt.hunt_key ?? index} className="hn-hunt-card overflow-hidden">
                   <OfficialAssetSlot label="Imagem oficial/canônica da hunt" compact />
@@ -172,6 +175,20 @@ function PlannerPage() {
                       <Mini label="Profit/h" value={formatMetric(hunt.median_balance_per_hour)} />
                       <Mini label="Conf." value={hunt.confidence_score != null ? `${Math.round(Number(hunt.confidence_score) * 100)}%` : "—"} />
                     </div>
+                    {personalSessions > 0 && (
+                      <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-violet-400/12 bg-violet-400/[0.025] p-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-violet-100">Seu histórico nesta hunt</div>
+                          <div className="mt-1 text-[10px] text-slate-500">
+                            {personalSessions} sessão(ões) privadas · {personalBuilds} build{personalBuilds === 1 ? "" : "s"} registrada{personalBuilds === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                        <span className="rounded-full border border-violet-400/15 bg-violet-400/[0.05] px-2 py-1 text-[9px] text-violet-200">
+                          não altera ranking
+                        </span>
+                      </div>
+                    )}
+
                     {mainOption && (
                       <div className="mt-4 rounded-xl border border-cyan-400/12 bg-cyan-400/[0.025] p-3">
                         <div className="flex items-center justify-between gap-2">
