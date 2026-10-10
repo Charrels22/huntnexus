@@ -2,12 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Backpack,
   Check,
+  ChevronDown,
   Loader2,
+  Plus,
   Save,
   ShieldCheck,
   Sparkles,
   Swords,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
@@ -50,6 +54,37 @@ type ProficiencyPerk = {
   description_raw: string;
 };
 
+type InventoryItem = {
+  inventory_id: string;
+  selection_key: string;
+  item_key: string;
+  item_name: string;
+  quantity: number;
+  item_domain?: string | null;
+  item_family?: string | null;
+  level_required?: number | null;
+  hands?: string | null;
+  weapon_class?: string | null;
+  imbue_slots?: number | null;
+};
+
+type InventorySearchItem = {
+  item_key: string;
+  name: string;
+  selection_key: string;
+  item_domain: string;
+  item_family: string;
+  level_required: number | null;
+  eligible: boolean;
+  blocking_reasons: string[];
+};
+
+type InventoryState = {
+  main_set: Record<string, InventoryItem>;
+  backpack: InventoryItem[];
+  summary: { main_slots: number; backpack_items: number };
+};
+
 type ProficiencyTree = {
   item_key: string;
   item_name: string;
@@ -89,6 +124,13 @@ function ProfilePage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [proficiencySelections, setProficiencySelections] = useState<Record<string, number[]>>({});
   const [proficiencyTrees, setProficiencyTrees] = useState<ProficiencyTree[]>([]);
+  const [openTreeKey, setOpenTreeKey] = useState<string | null>(null);
+  const [inventory, setInventory] = useState<InventoryState>({ main_set: {}, backpack: [], summary: { main_slots: 0, backpack_items: 0 } });
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [inventoryTarget, setInventoryTarget] = useState<{ storageKind: "main" | "backpack"; selectionKey: string | null } | null>(null);
+  const [inventoryQuery, setInventoryQuery] = useState("");
+  const [inventoryResults, setInventoryResults] = useState<InventorySearchItem[]>([]);
+  const [inventorySearching, setInventorySearching] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingProficiency, setLoadingProficiency] = useState(false);
   const [saving, setSaving] = useState(false);
