@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
+import { getOrCreateClientId } from "@/lib/client-id";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -54,12 +55,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    callHuntNexusApi<any>({ action: "session_list", limit: 2 })
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+
+    callHuntNexusApi<any>({ action: "player_session_list", client_id: clientId, limit: 2 })
       .then((response) => {
         if (!active) return;
         setRecentSessions(Array.isArray(response?.data?.sessions) ? response.data.sessions : []);
       })
       .catch(() => { if (active) setRecentSessions([]); });
+
     return () => { active = false; };
   }, []);
 
@@ -128,8 +133,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="mt-3 space-y-2 text-xs text-slate-400">
               {recentSessions.map((session) => (
                 <Link key={session.session_id} to="/sessions" className="block rounded-lg bg-white/[0.025] p-2.5 transition hover:bg-white/[0.05]">
-                  <div className="truncate font-medium text-slate-200">{decodeHtml(session.hunt_name_raw || session.hunt_key || "Hunt")}</div>
-                  <div className="mt-1 text-slate-500">{formatCompact(session.xp_per_hour)} XP/h · {Number(session.party_size || 1) > 1 ? `x${session.party_size}` : "solo"}</div>
+                  <div className="truncate font-medium text-slate-200">{decodeHtml(session.hunt_name || "Hunt sem local")}</div>
+                  <div className="mt-1 text-slate-500">{formatCompact(session.xp_per_hour)} XP/h · {session.vocation || "sem vocação"}</div>
                 </Link>
               ))}
               {recentSessions.length === 0 && (
