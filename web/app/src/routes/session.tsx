@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { detectAnalyzerType } from "@/lib/session-parser";
 
 export const Route = createFileRoute("/session")({ component: SessionImportPage });
 
@@ -201,6 +202,14 @@ function SessionImportPage() {
             <textarea
               value={draft[activeTab]}
               onChange={(e) => patch(activeTab, e.target.value)}
+              onPaste={(e) => {
+                const pasted = e.clipboardData.getData("text");
+                const detected = detectAnalyzerType(pasted);
+                if (!detected || detected === activeTab) return;
+                e.preventDefault();
+                patch(detected, pasted);
+                setActiveTab(detected);
+              }}
               placeholder={active.placeholder}
               spellCheck={false}
               className="min-h-[260px] w-full resize-y rounded-2xl border border-white/10 bg-[#080d18] p-4 font-mono text-sm leading-6 text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-400/35 focus:shadow-[0_0_0_3px_rgba(34,211,238,.05)]"
@@ -209,7 +218,7 @@ function SessionImportPage() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="text-slate-500">
-              {analyzerCount}/4 blocos preenchidos
+              {analyzerCount}/4 blocos preenchidos · colagens são redirecionadas automaticamente quando o tipo é reconhecido
               {!draft.hunt.trim() && <span className="ml-2 text-amber-300/80">Hunt Analyzer é o bloco principal</span>}
             </div>
             <button
