@@ -2,32 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Activity,
-  ArrowRight,
   Coins,
   Compass,
   Flame,
-  Gauge,
   ShieldCheck,
   Sparkles,
-  Swords,
-  TrendingUp,
-  Users,
-  type LucideIcon,
 } from "lucide-react";
 import { OfficialAssetSlot } from "@/components/shell/app-shell";
 import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 
 export const Route = createFileRoute("/")({ component: DashboardPage });
-
-const analyzerShortcuts: Array<{ title: string; text: string; icon: LucideIcon }> = [
-  { title: "Hunt Analyse", text: "XP, loot, supplies e balance", icon: TrendingUp },
-  { title: "Misc", text: "Consumo e dados auxiliares", icon: Gauge },
-  { title: "Damage", text: "Dano, charms e recebido", icon: Swords },
-  { title: "Party Hunt", text: "Contribuição de cada player", icon: Users },
-];
-
-
 
 function DashboardPage() {
   const [hunts, setHunts] = useState<any[]>([]);
@@ -67,7 +52,7 @@ function DashboardPage() {
                 <Compass className="size-4" /> Encontrar hunt
               </Link>
               <Link to="/session" className="hn-secondary-button">
-                <Activity className="size-4" /> Analisar sessão
+                <Activity className="size-4" /> Cadastrar hunt
               </Link>
             </div>
           </div>
@@ -75,20 +60,7 @@ function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {analyzerShortcuts.map(({ title, text, icon: Icon }) => (
-          <Link key={title} to="/session" className="hn-feature-card group">
-            <div className="grid size-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300 transition group-hover:scale-105">
-              <Icon className="size-5" />
-            </div>
-            <div>
-              <div className="font-semibold text-white">{title}</div>
-              <div className="mt-1 text-xs text-slate-500">{text}</div>
-            </div>
-            <ArrowRight className="ml-auto size-4 text-slate-600 transition group-hover:translate-x-1 group-hover:text-cyan-300" />
-          </Link>
-        ))}
-      </section>
+
 
       <section>
         <div className="mb-4 flex items-end justify-between gap-3">
