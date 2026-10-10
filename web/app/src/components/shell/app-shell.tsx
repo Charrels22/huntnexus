@@ -55,17 +55,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    const clientId = getOrCreateClientId();
-    if (!clientId) return;
 
-    callHuntNexusApi<any>({ action: "player_session_list", client_id: clientId, limit: 2 })
-      .then((response) => {
-        if (!active) return;
-        setRecentSessions(Array.isArray(response?.data?.sessions) ? response.data.sessions : []);
-      })
-      .catch(() => { if (active) setRecentSessions([]); });
+    const loadRecent = () => {
+      const clientId = getOrCreateClientId();
+      if (!clientId) return;
 
-    return () => { active = false; };
+      callHuntNexusApi<any>({ action: "player_session_list", client_id: clientId, limit: 2 })
+        .then((response) => {
+          if (!active) return;
+          setRecentSessions(Array.isArray(response?.data?.sessions) ? response.data.sessions : []);
+        })
+        .catch(() => { if (active) setRecentSessions([]); });
+    };
+
+    loadRecent();
+    window.addEventListener("huntnexus:player-sessions-changed", loadRecent);
+
+    return () => {
+      active = false;
+      window.removeEventListener("huntnexus:player-sessions-changed", loadRecent);
+    };
   }, []);
 
   return (
