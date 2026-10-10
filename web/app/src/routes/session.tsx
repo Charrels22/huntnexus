@@ -158,10 +158,8 @@ function SessionImportPage() {
       if (!sessionId) throw new Error("A sessão foi processada, mas não retornou identificador.");
 
       localStorage.removeItem(storageKey);
-      await navigate({
-        to: "/sessions",
-        search: { personal: sessionId },
-      });
+      sessionStorage.setItem("huntnexus.open-player-session", sessionId);
+      await navigate({ to: "/sessions" });
     } catch (e) {
       setSubmitError((e as Error).message || "Não foi possível salvar a hunt.");
     } finally {
@@ -371,7 +369,7 @@ function SessionImportPage() {
 
       <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-4 text-xs leading-5 text-slate-500">
         As hunts cadastradas ficam separadas da base comunitária. O texto original dos analyzers é preservado para permitir reprocessamento futuro sem perda de informação.
-        <Link to="/sessions" search={{ personal: undefined }} className="ml-1 text-cyan-300 hover:text-cyan-200">Ver minhas sessões →</Link>
+        <Link to="/sessions" className="ml-1 text-cyan-300 hover:text-cyan-200">Ver minhas sessões →</Link>
       </div>
     </div>
   );
