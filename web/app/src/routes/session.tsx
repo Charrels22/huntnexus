@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
+import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 
 export const Route = createFileRoute("/session")({ component: SessionAnalyzerPage });
 
@@ -212,10 +213,12 @@ function Misc({ data }: { data: any }) {
           {equipment.length ? (
             <div className="grid grid-cols-2 gap-2">
               {equipment.map((e:any, i:number) => (
-                <div key={`${e.player_id}-${e.slot_key}-${i}`} className="rounded-xl border border-white/6 bg-slate-950/45 p-3">
-                  <div className="text-[10px] uppercase tracking-wide text-slate-600">{e.slot_key}</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-200">{e.item_name_raw || e.item_key || "—"}</div>
-                  {e.raw_asset_file && <div className="mt-1 truncate text-[10px] text-slate-600">{e.raw_asset_file}</div>}
+                <div key={`${e.player_id}-${e.slot_key}-${i}`} className="grid grid-cols-[52px_1fr] items-center gap-2 rounded-xl border border-white/6 bg-slate-950/45 p-2">
+                  <CanonicalSprite kind="item" name={e.item_name_raw || slugToName(e.item_key)} size="sm" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-600">{e.slot_key}</div>
+                    <div className="mt-1 truncate text-sm font-semibold text-slate-200">{e.item_name_raw || slugToName(e.item_key) || "—"}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -390,6 +393,10 @@ function rate(value: unknown, seconds: unknown) {
 function formatStat(stat:any) {
   if (stat?.numeric_value == null) return "—";
   return `${formatNumber(Number(stat.numeric_value),2)}${stat.unit === "percent" ? "%" : ""}`;
+}
+function slugToName(value:unknown) {
+  if (typeof value !== "string") return "";
+  return value.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 function decodeHtml(value:string) {
   return value
