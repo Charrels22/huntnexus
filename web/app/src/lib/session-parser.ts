@@ -70,6 +70,8 @@ export type ParsedSessionImport = {
     }>;
     looted_items: Array<{
       item_name_raw: string;
+      item_name: string;
+      indefinite_article: "a" | "an" | null;
       amount: number;
     }>;
     raw_misc_available: boolean;
@@ -229,7 +231,12 @@ function parseLootedItems(textLines: string[]) {
   const start = textLines.findIndex((line) => /^Looted Items:?$/i.test(line));
   if (start < 0) return [];
 
-  const out: Array<{ item_name_raw: string; amount: number }> = [];
+  const out: Array<{
+    item_name_raw: string;
+    item_name: string;
+    indefinite_article: "a" | "an" | null;
+    amount: number;
+  }> = [];
   for (let i = start + 1; i < textLines.length; i++) {
     const line = textLines[i];
     if (!line) continue;
@@ -240,7 +247,22 @@ function parseLootedItems(textLines: string[]) {
 
     const amount = parseIntegerLike(match[1]);
     if (amount == null) continue;
-    out.push({ item_name_raw: match[2].trim(), amount });
+
+    const itemNameRaw = match[2].trim();
+    const articleMatch = itemNameRaw.match(/^(a|an)\s+(.+)$/i);
+    const indefiniteArticle = articleMatch?.[1]?.toLowerCase() === "an"
+      ? "an"
+      : articleMatch?.[1]
+        ? "a"
+        : null;
+    const itemName = articleMatch?.[2]?.trim() || itemNameRaw;
+
+    out.push({
+      item_name_raw: itemNameRaw,
+      item_name: itemName,
+      indefinite_article: indefiniteArticle,
+      amount,
+    });
   }
   return out;
 }
