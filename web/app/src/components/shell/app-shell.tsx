@@ -23,6 +23,7 @@ const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/planner", label: "Hunt Planner", icon: Compass },
   { to: "/session", label: "Session Analyzer", icon: Activity },
+  { to: "/sessions", label: "Sessions", icon: BarChart3 },
   { to: "/loadouts", label: "Loadouts", icon: Boxes },
   { to: "/creatures", label: "Creatures", icon: Swords },
   { to: "/bosses", label: "Bosses", icon: Shield },
@@ -123,7 +124,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div className="mt-3 space-y-2 text-xs text-slate-400">
               {recentSessions.map((session) => (
-                <Link key={session.session_id} to="/session" className="block rounded-lg bg-white/[0.025] p-2.5 transition hover:bg-white/[0.05]">
+                <Link key={session.session_id} to="/sessions" className="block rounded-lg bg-white/[0.025] p-2.5 transition hover:bg-white/[0.05]">
                   <div className="truncate font-medium text-slate-200">{decodeHtml(session.hunt_name_raw || session.hunt_key || "Hunt")}</div>
                   <div className="mt-1 text-slate-500">{formatCompact(session.xp_per_hour)} XP/h · {Number(session.party_size || 1) > 1 ? `x${session.party_size}` : "solo"}</div>
                 </Link>
