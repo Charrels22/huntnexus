@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { OfficialAssetSlot } from "@/components/shell/app-shell";
+import { getOrCreateClientId } from "@/lib/client-id";
 
 export const Route = createFileRoute("/planner")({ component: PlannerPage });
 
@@ -17,10 +18,41 @@ function PlannerPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+  const [savedProfile, setSavedProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+
+    callHuntNexusApi<any>({ action: "player_profile_get", client_id: clientId })
+      .then((response) => {
+        const profile = response?.data?.profile;
+        if (!profile) return;
+        setSavedProfile(profile);
+        if (profile.vocation) setVocation(profile.vocation);
+        if (profile.level) setLevel(String(profile.level));
+        if (profile.defaults?.hunt_objective) setHuntObjective(profile.defaults.hunt_objective);
+        if (profile.defaults?.set_objective) setSetObjective(profile.defaults.set_objective);
+        if (profile.defaults?.party_size) setParty(String(profile.defaults.party_size));
+      })
+      .catch(() => undefined);
+  }, []);
 
   async function run() {
     setLoading(true); setError("");
     try {
+      const stats = savedProfile?.manual_stats ?? {};
+      const characterProfile = Object.fromEntries(
+        Object.entries({
+          weapon_family: stats.weapon_family,
+          effective_weapon_skill: stats.effective_weapon_skill,
+          effective_magic_level: stats.effective_magic_level,
+          effective_shielding: stats.effective_shielding,
+          effective_distance_skill: stats.effective_distance_skill,
+          effective_fist_skill: stats.effective_fist_skill,
+        }).filter(([, value]) => value !== undefined && value !== null && value !== ""),
+      );
+
       const response = await callHuntNexusApi<FinalResponse>({
         action: "final_optimizer",
         vocation,
@@ -29,6 +61,8 @@ function PlannerPage() {
         set_objective: setObjective,
         party_size: Number(party),
         hunt_limit: 3,
+        character_profile: characterProfile,
+        proficiency_selections: savedProfile?.proficiency_selections ?? {},
       });
       setResult(response.data ?? response);
     } catch (e) {
@@ -50,6 +84,11 @@ function PlannerPage() {
             <div className="text-xs uppercase tracking-[0.18em] text-cyan-400">Hunt Planner</div>
             <h1 className="text-2xl font-bold text-white">Monte o contexto do seu personagem</h1>
           </div>
+          {savedProfile?.character_name && (
+            <div className="ml-auto hidden rounded-full border border-emerald-400/15 bg-emerald-400/8 px-3 py-1 text-xs text-emerald-300 md:block">
+              {savedProfile.character_name} · {savedProfile.world_name || "RubinOT"}
+            </div>
+          )}
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
           <Field label="Vocação">
