@@ -27,10 +27,6 @@ const UniversalCharacterProfile = z.object({
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("health") }),
   z.object({
-    action: z.literal("character_lookup"),
-    name: z.string().trim().min(2).max(80),
-  }),
-  z.object({
     action: z.literal("player_profile_get"),
     client_id: z.string().uuid(),
   }),
@@ -227,100 +223,6 @@ export const Route = createFileRoute("/api/huntnexus")({
           switch (b.action) {
             case "health":
               return json({ data: await rpc("huntnexus_api_health") });
-            case "character_lookup": {
-              const normalizeVocation = (value: unknown) => {
-                if (typeof value === "number") {
-                  if ([1,5].includes(value)) return "MS";
-                  if ([2,6].includes(value)) return "ED";
-                  if ([3,7].includes(value)) return "RP";
-                  if ([4,8].includes(value)) return "EK";
-                  if ([9,10].includes(value)) return "EM";
-                  return "";
-                }
-                const lower = String(value ?? "").trim().toLowerCase();
-                if (!lower) return "";
-                if (["ek","rp","ed","ms","em"].includes(lower)) return lower.toUpperCase();
-                if (lower.includes("elite knight") || lower.includes("knight")) return "EK";
-                if (lower.includes("royal paladin") || lower.includes("paladin")) return "RP";
-                if (lower.includes("elder druid") || lower.includes("druid")) return "ED";
-                if (lower.includes("master sorcerer") || lower.includes("sorcerer")) return "MS";
-                if (lower.includes("monk")) return "EM";
-                return "";
-              };
-
-              const controller = new AbortController();
-              const timer = setTimeout(() => controller.abort(), 12000);
-              try {
-                const url = `https://rubinot.com.br/api/characters/search?name=${encodeURIComponent(b.name)}`;
-                const response = await fetch(url, {
-                  headers: {
-                    accept: "application/json, text/plain, */*",
-                    "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-                    referer: "https://rubinot.com.br/characters",
-                    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36",
-                  },
-                  signal: controller.signal,
-                });
-
-                if (!response.ok) {
-                  return json({
-                    data: null,
-                    source: "rubinot_official",
-                    lookup_status: response.status === 404 ? "not_found" : "unavailable",
-                    http_status: response.status,
-                  }, response.status === 404 ? 200 : 502);
-                }
-
-                const raw = await response.json() as {
-                  player?: {
-                    name?: string;
-                    level?: number;
-                    vocation?: string | number;
-                    world?: string;
-                    formerNames?: string[];
-                  };
-                  otherCharacters?: Array<{ name?: string; isOnline?: boolean }>;
-                };
-
-                const player = raw?.player;
-                if (!player) {
-                  return json({
-                    data: null,
-                    source: "rubinot_official",
-                    lookup_status: "not_found",
-                  });
-                }
-
-                const resolvedName = player.name?.trim() || b.name;
-                const online = (raw.otherCharacters ?? []).some(
-                  (item) => item.name?.toLowerCase() === resolvedName.toLowerCase() && item.isOnline === true,
-                );
-
-                return json({
-                  data: {
-                    character_name: resolvedName,
-                    level: Number(player.level) || null,
-                    vocation: normalizeVocation(player.vocation),
-                    vocation_raw: player.vocation ?? null,
-                    world_name: player.world?.trim() || "",
-                    online,
-                    former_names: (player.formerNames ?? []).map((x) => x.trim()).filter(Boolean),
-                  },
-                  source: "rubinot_official",
-                  source_url: `https://rubinot.com.br/characters?name=${encodeURIComponent(resolvedName)}`,
-                  lookup_status: "found",
-                  looked_up_at: new Date().toISOString(),
-                });
-              } catch (error) {
-                return json({
-                  data: null,
-                  source: "rubinot_official",
-                  lookup_status: error instanceof DOMException && error.name === "AbortError" ? "timeout" : "unavailable",
-                }, 502);
-              } finally {
-                clearTimeout(timer);
-              }
-            }
             case "player_profile_get":
               return json({
                 data: await rpc("huntnexus_player_profile_get", {
