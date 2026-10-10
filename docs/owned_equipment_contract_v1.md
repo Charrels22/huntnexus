@@ -94,3 +94,21 @@ Therefore HuntNexus does **not** draw invented edges or auto-activate predecesso
 
 Saved selections remain exact:
 `item_key -> [perk_order]`.
+
+
+## Owned build options
+
+`huntnexus_player_owned_build_options()` produces up to three owned-only build options for a hunt.
+
+Policy:
+
+1. Option 1 is always the registered Main Set.
+2. Options 2 and 3 may replace up to two Main Set slots with Backpack items.
+3. A Backpack item must first reach the contextual item Pareto frontier for that hunt/slot.
+4. A complete variant must pass universal loadout compatibility.
+5. If the Main Set and a variant have exactly comparable set vectors and the Main Set Pareto-dominates the variant, that variant is discarded.
+6. If a Backpack variant exactly dominates the Main Set, it is preferred among owned alternatives.
+7. After dominance, fewer replacements are preferred to keep the suggested variation close to the player's actual Main Set.
+8. External/non-owned catalog items are never inserted into these owned options.
+
+This is not a scalar ranking and does not claim a unique best set.
