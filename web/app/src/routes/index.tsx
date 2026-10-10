@@ -11,12 +11,12 @@ import {
   Swords,
   TrendingUp,
   Users,
-} from "lucide-react";
+  type LucideIcon,\n} from "lucide-react";
 import { OfficialAssetSlot } from "@/components/shell/app-shell";
 
 export const Route = createFileRoute("/")({ component: DashboardPage });
 
-const analyzerShortcuts = [
+const analyzerShortcuts: Array<{ title: string; text: string; icon: LucideIcon }> = [
   { title: "Hunt Analyse", text: "XP, loot, supplies e balance", icon: TrendingUp },
   { title: "Misc", text: "Consumo e dados auxiliares", icon: Gauge },
   { title: "Damage", text: "Dano, charms e recebido", icon: Swords },
@@ -62,19 +62,14 @@ function DashboardPage() {
       </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {[
-          ["Hunt Analyse", "XP, loot, supplies e balance", TrendingUp],
-          ["Misc", "Consumo e dados auxiliares", Gauge],
-          ["Damage", "Dano, charms e recebido", Swords],
-          ["Party Hunt", "Contribuição de cada player", Users],
-        ].map(([title, text, Icon]) => (
-          <Link key={String(title)} to="/session" className="hn-feature-card group">
+        {analyzerShortcuts.map(({ title, text, icon: Icon }) => (
+          <Link key={title} to="/session" className="hn-feature-card group">
             <div className="grid size-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300 transition group-hover:scale-105">
               <Icon className="size-5" />
             </div>
             <div>
-              <div className="font-semibold text-white">{title as string}</div>
-              <div className="mt-1 text-xs text-slate-500">{text as string}</div>
+              <div className="font-semibold text-white">{title}</div>
+              <div className="mt-1 text-xs text-slate-500">{text}</div>
             </div>
             <ArrowRight className="ml-auto size-4 text-slate-600 transition group-hover:translate-x-1 group-hover:text-cyan-300" />
           </Link>
