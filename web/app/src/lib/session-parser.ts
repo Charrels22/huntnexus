@@ -78,6 +78,8 @@ export type ParsedSessionImport = {
   };
   damage: {
     total_damage: number | null;
+    incoming_total_damage: number | null;
+    incoming_max_dps: number | null;
     incoming_by_element: Array<Record<string, unknown>>;
     incoming_by_source: Array<Record<string, unknown>>;
     charm_damage: Array<{
@@ -321,12 +323,39 @@ function parsePartyPlayers(textLines: string[]) {
   return players;
 }
 
+function partyHeaderLines(textLines: string[]) {
+  for (let i = 0; i < textLines.length; i++) {
+    const line = textLines[i];
+    if (!line || line.includes(":")) continue;
+
+    const next = textLines.slice(i + 1, i + 7);
+    const hasPlayerMetrics = next.some((candidate) => /^(Loot|Supplies|Balance|Damage|Healing)\s*:/i.test(candidate));
+    if (hasPlayerMetrics) return textLines.slice(0, i);
+  }
+
+  return textLines;
+}
+
 function parseInputAnalyzer(textLines: string[]) {
   const elements: Array<Record<string, unknown>> = [];
   const sources: Array<Record<string, unknown>> = [];
   let section: "elements" | "sources" | null = null;
+  let totalDamage: number | null = null;
+  let maxDps: number | null = null;
 
   for (const line of textLines) {
+    const totalMatch = line.match(/^Total\s*:\s*([\d,.]+)$/i);
+    if (totalMatch?.[1]) {
+      totalDamage = parseIntegerLike(totalMatch[1]);
+      continue;
+    }
+
+    const maxDpsMatch = line.match(/^Max[ -]?DPS\s*:\s*([\d,.]+)$/i);
+    if (maxDpsMatch?.[1]) {
+      maxDps = parseIntegerLike(maxDpsMatch[1]);
+      continue;
+    }
+
     if (/^(damage types|elements)\s*:?$/i.test(line)) {
       section = "elements";
       continue;
@@ -357,7 +386,7 @@ function parseInputAnalyzer(textLines: string[]) {
     }
   }
 
-  return { elements, sources };
+  return { elements, sources, totalDamage, maxDps };
 }
 
 function parseMisc(textLines: string[]) {
@@ -448,6 +477,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
   const creatures = parseKilledMonsters(huntLines);
   const lootedItems = parseLootedItems(huntLines);
   const partyPlayers = parsePartyPlayers(partyLines);
+  const partyHeader = partyHeaderLines(partyLines);
   const input = parseInputAnalyzer(inputLines);
   const miscStats = parseMisc(miscLines);
   const observedCharm = parseObservedCharmDamage(miscStats);
@@ -468,13 +498,13 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
   };
 
   const partyTotals = {
-    duration_seconds: parseDurationSeconds(partyLines),
-    loot_value: metric(partyLines, ["Loot"]),
-    supplies_value: metric(partyLines, ["Supplies"]),
-    balance_value: metric(partyLines, ["Balance"]),
-    total_damage: metric(partyLines, ["Damage"]),
-    total_healing: metric(partyLines, ["Healing"]),
-    loot_type_raw: textMetric(partyLines, ["Loot Type"]),
+    duration_seconds: parseDurationSeconds(partyHeader),
+    loot_value: metric(partyHeader, ["Loot"]),
+    supplies_value: metric(partyHeader, ["Supplies"]),
+    balance_value: metric(partyHeader, ["Balance"]),
+    total_damage: metric(partyHeader, ["Damage"]),
+    total_healing: metric(partyHeader, ["Healing"]),
+    loot_type_raw: textMetric(partyHeader, ["Loot Type"]),
   };
   const partySize = partyPlayers.length || (partyLines.length ? null : 1);
 
@@ -502,6 +532,8 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
     },
     damage: {
       total_damage: metrics.total_damage,
+      incoming_total_damage: input.totalDamage,
+      incoming_max_dps: input.maxDps,
       incoming_by_element: input.elements,
       incoming_by_source: input.sources,
       charm_damage: observedCharm.rows,
