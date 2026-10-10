@@ -117,6 +117,13 @@ function SessionImportPage() {
     setTagInput("");
   }
 
+  function acceptAnalyzerText(text: string) {
+    if (!text.trim()) return;
+    const detected = detectAnalyzerType(text) ?? activeTab;
+    patch(detected, text);
+    setActiveTab(detected);
+  }
+
   async function submitHunt() {
     const clientId = getOrCreateClientId();
     if (!clientId || !canPrepare || saving) return;
@@ -207,8 +214,7 @@ function SessionImportPage() {
                 const detected = detectAnalyzerType(pasted);
                 if (!detected || detected === activeTab) return;
                 e.preventDefault();
-                patch(detected, pasted);
-                setActiveTab(detected);
+                acceptAnalyzerText(pasted);
               }}
               placeholder={active.placeholder}
               spellCheck={false}
@@ -223,7 +229,7 @@ function SessionImportPage() {
             </div>
             <button
               type="button"
-              onClick={() => navigator.clipboard?.readText().then((text) => text && patch(activeTab, text)).catch(() => undefined)}
+              onClick={() => navigator.clipboard?.readText().then((text) => acceptAnalyzerText(text)).catch(() => undefined)}
               className="inline-flex items-center gap-2 text-slate-400 transition hover:text-cyan-200"
             >
               <ClipboardPaste className="size-3.5" />
