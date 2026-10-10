@@ -25,6 +25,118 @@ assert(
   `expected preview_v7, got ${health?.data?.recommendation_stage}`,
 );
 
+
+const importClientId = crypto.randomUUID();
+let importedSessionId = null;
+try {
+  const imported = await post({
+    action: "session_import_save",
+    client_id: importClientId,
+    blocks: {
+      hunt: [
+        "Session: 01:30h",
+        "Session data: From 2026-10-10, 10:00:00 to 2026-10-10, 11:30:00",
+        "XP Gain: 12,000,000",
+        "XP/h: 8,000,000",
+        "Loot: 1,500,000",
+        "Supplies: 500,000",
+        "Balance: 1,000,000",
+        "Damage: 6,000,000",
+        "Healing: 1,200,000",
+        "Killed Monsters:",
+        "100x cobra assassin",
+        "50x cobra scout",
+        "Looted Items:",
+      ].join("\n"),
+      party: [
+        "Session: 01:30h",
+        "Session data: From 2026-10-10, 10:00:00 to 2026-10-10, 11:30:00",
+        "Loot Type: Leader",
+        "Loot: 1,500,000",
+        "Supplies: 500,000",
+        "Balance: 1,000,000",
+        "Damage: 6,000,000",
+        "Healing: 1,200,000",
+        "Smoke One (Leader)",
+        "Loot: 1,000,000",
+        "Supplies: 250,000",
+        "Balance: 750,000",
+        "Damage: 3,500,000",
+        "Healing: 700,000",
+        "Smoke Two",
+        "Loot: 500,000",
+        "Supplies: 250,000",
+        "Balance: 250,000",
+        "Damage: 2,500,000",
+        "Healing: 500,000",
+      ].join("\n"),
+      input: [
+        "Damage Types:",
+        "physical: 120,000 (60%)",
+        "fire: 80,000 (40%)",
+        "Damage Sources:",
+        "cobra assassin: 150,000 (75%)",
+        "cobra scout: 50,000 (25%)",
+      ].join("\n"),
+      misc: [
+        "Mana Leech: 8%",
+        "Critical Hit: 10%",
+      ].join("\n"),
+    },
+    metadata: {
+      character: "Smoke Tester",
+      server: "RubinOT",
+      vocation: "EK",
+      level: "700",
+      location: "Cobra Bastion",
+      observation: "public smoke regression",
+      tags: ["smoke"],
+      type: "normal",
+      favorite: false,
+      publishHighscores: false,
+      rareDrops: "",
+    },
+  });
+
+  importedSessionId = imported?.data?.session_id;
+  assert(importedSessionId, "session import must return session_id");
+  assert(imported?.data?.status === "parsed", "session import must be parsed");
+  assert(imported?.data?.community_evidence_written === false, "private import must not write community evidence");
+  assert(imported?.parsed?.methodology?.stage === "session_parser_v1", "session parser stage regression");
+  assert(imported?.parsed?.hunt_analyse?.duration_seconds === 5400, "session duration parse regression");
+  assert(imported?.parsed?.hunt_analyse?.xp_gain === 12000000, "XP Gain parse regression");
+  assert(imported?.parsed?.hunt_analyse?.total_kills === 150, "killed monsters parse regression");
+  assert(imported?.parsed?.party_hunt?.players?.length === 2, "party player parse regression");
+  assert(imported?.parsed?.damage?.incoming_by_element?.length === 2, "input element parse regression");
+  assert(imported?.parsed?.damage?.incoming_by_source?.length === 2, "input source parse regression");
+
+  const personalList = await post({
+    action: "player_session_list",
+    client_id: importClientId,
+    limit: 10,
+  });
+  assert(personalList?.data?.summary?.returned === 1, "private session list regression");
+  assert(personalList?.data?.sessions?.[0]?.hunt_name === "Cobra Bastion", "private session hunt name regression");
+
+  const personalDetail = await post({
+    action: "player_session_detail",
+    client_id: importClientId,
+    session_id: importedSessionId,
+  });
+  assert(personalDetail?.data?.hunt_analyse?.xp_per_hour === 8000000, "private detail XP/h regression");
+  assert(personalDetail?.data?.party_hunt?.players?.length === 2, "private detail party regression");
+  assert(personalDetail?.data?.parser?.community_evidence_written === false, "private detail community isolation regression");
+} finally {
+  if (importedSessionId) {
+    const deleted = await post({
+      action: "player_session_delete",
+      client_id: importClientId,
+      session_id: importedSessionId,
+    });
+    assert(deleted?.data?.deleted === true, "private smoke session cleanup regression");
+  }
+}
+
 const profileContract = await post({
   action: "profile_contract",
   vocation: "EK",
@@ -344,6 +456,7 @@ console.log(
     {
       status: "ok",
       recommendation_stage: health.data.recommendation_stage,
+      private_session_import: "ok",
       top_hunt: first.ranking.hunt_name,
       ranking_score: first.ranking.ranking_score,
       confidence_score: first.ranking.confidence_score,
