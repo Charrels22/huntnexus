@@ -167,6 +167,7 @@ function SessionImportPage() {
 
       localStorage.removeItem(storageKey);
       sessionStorage.setItem("huntnexus.open-player-session", sessionId);
+      window.dispatchEvent(new Event("huntnexus:player-sessions-changed"));
       await navigate({ to: "/sessions" });
     } catch (e) {
       setSubmitError((e as Error).message || "Não foi possível salvar a hunt.");
