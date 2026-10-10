@@ -47,6 +47,10 @@ const Body = z.discriminatedUnion("action", [
     two_hand_active_perk_orders: PerkOrders.default([]),
   }),
   z.object({
+    action: z.literal("featured_hunts"),
+    limit: z.coerce.number().int().min(1).max(20).default(8),
+  }),
+  z.object({
     action: z.literal("hunt_detail"),
     hunt_key: z.string().min(1).max(200),
     vocation: Vocation,
@@ -187,6 +191,12 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_one_hand_active_perk_orders: b.one_hand_active_perk_orders,
                   p_two_hand_active_perk_orders: b.two_hand_active_perk_orders,
                   p_effective_magic_level: b.character_profile.effective_magic_level,
+                }),
+              });
+            case "featured_hunts":
+              return json({
+                data: await rpc("huntnexus_frontend_featured_hunts", {
+                  p_limit: b.limit,
                 }),
               });
             case "hunt_detail": {
