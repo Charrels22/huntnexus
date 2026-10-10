@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0103
+- schema/migrations aplicados até 0104
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1496,3 +1496,91 @@ The existing EK implementation remains as a regression fixture while generic cat
 6. combat/spell mechanics — level + special unlock + proficiency linkage core READY; equipment-specific spell modifier parsing / Wheel augment stages / rotations remain separate;
 7. vocation composition — next candidate;
 8. final optimizer.
+
+
+## Universal vocation composition
+
+- migration 0104 introduces the category-first vocation-composition layer.
+- new server-only table: `vocation_composition_rules`.
+- new functions:
+  - `huntnexus_vocation_profile_contract_universal(vocation)`;
+  - `huntnexus_vocation_composition_universal(vocation,level,unlock_keys,hunt_key)`;
+  - `huntnexus_vocation_composition_audit()`.
+- canonical vocation identity is now explicit and separate from raw catalog compatibility.
+- canonical primary-skill / weapon-family contracts:
+  - EK -> Sword/Axe/Club family choice;
+  - RP -> Distance Fighting, Bow/Crossbow;
+  - ED -> Magic Level, Rod;
+  - MS -> Magic Level, Wand;
+  - EM -> Fist Fighting, Fist weapons, Harmony resource.
+- Monk/EM now has a complete profile contract:
+  - effective_fist_skill;
+  - optional effective_magic_level for healing/spell comparison;
+  - optional dynamic Harmony state;
+  - no longer falls through to an empty vocation-specific object as the legacy v2 contract did.
+- common profile semantics remain:
+  - effective displayed stats are preferred;
+  - do not re-add Loyalty/Guild Ascension/VIP/equipment/Weapon Proficiency bonuses already included in supplied effective stats.
+- weapon output is intentionally split into:
+  1. canonical families;
+  2. explicit vocation-compatible families from source restrictions;
+  3. unrestricted catalog families;
+  4. raw family eligibility status.
+- unrestricted items never redefine vocation identity.
+- current explicit level-700 examples:
+  - EK: Sword 85 / Axe 79 / Club 71 explicit level-eligible items;
+  - RP: Bow 41 / Crossbow 37;
+  - ED: Rod 45 plus 4 Wands explicitly compatible in the source catalog;
+  - MS: Wand 50;
+  - EM: Fist 34.
+- equipment composition is summarized by canonical slot using current level/vocation eligibility.
+- spell composition uses the unlock-aware spell contract from 0103.
+- level-700 spell state with no special unlock keys:
+  - EK: 11 catalog / 10 eligible / 1 incomplete;
+  - RP: 6 / 6 / 0;
+  - ED: 14 / 13 / 1;
+  - MS: 13 / 13 / 0;
+  - EM: 16 / 11 / 5.
+- EM resource key is `harmony`; other current vocation rules have no separate resource key.
+- community HuntAnalyser remains Tier C evidence only:
+  - EK observed players=54;
+  - ED=53;
+  - RP=47;
+  - MS=31;
+  - EM=16.
+- community evidence never changes canonical vocation identity.
+- optional hunt observation hook reuses observed incoming damage + community Imbuement evidence:
+  - Cobra Bastion / EK validated;
+  - Gloom Pillars / ED validated;
+  - Grounds of Undeath / EM validated.
+- no cross-vocation comparison or score is introduced.
+- `huntnexus_vocation_composition_audit()`, stage `vocation_composition_audit_v1`:
+  - vocation_rules=5;
+  - represented_vocations=5;
+  - vocations_with_spell_catalog=5;
+  - vocations_with_community_players=5;
+  - monk_profile_contract_ready=true;
+  - profile_contract_ready=true;
+  - weapon_identity_contract_ready=true;
+  - equipment_slot_summary_ready=true;
+  - spell_unlock_composition_ready=true;
+  - hunt_observation_hook_ready=true;
+  - cross_vocation_ranking_ready=false;
+  - final_optimizer_ready=false.
+- focused regression `tests/sql/phase43_universal_vocation_composition.sql`: status=ok.
+- migration commit: `c008b37ea0346db44cadcef493050ef298bdf5d4`.
+- regression commit: `76eaf114ecad283d3c0def22c08cf102f3497c1a`.
+- security advisor after 0104:
+  - 14 informational `rls_enabled_no_policy` findings; new `vocation_composition_rules` is intentionally server-only deny-by-default;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+### Category-first status after 0104
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY;
+4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
+5. slot/restriction compatibility — universal loadout validation READY;
+6. combat/spell mechanics — level + special unlock + proficiency linkage core READY;
+7. vocation composition — universal factual composition READY;
+8. final optimizer — next.
