@@ -341,7 +341,7 @@ export const Route = createFileRoute("/api/huntnexus")({
               });
             case "player_owned_build_options":
               return json({
-                data: await rpc("huntnexus_player_owned_build_options", {
+                data: await rpc("huntnexus_player_owned_build_options_v2", {
                   p_client_id: b.client_id,
                   p_hunt_key: b.hunt_key,
                   p_vocation: b.vocation,
