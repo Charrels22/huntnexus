@@ -273,27 +273,25 @@ function Analyse({ data }: { data: any }) {
 
 function Misc({ data }: { data: any }) {
   const misc = data.misc ?? {};
-  const equipment = Array.isArray(misc.equipment) ? misc.equipment : [];
+  const lootedItems = Array.isArray(misc.looted_items) ? misc.looted_items : [];
   const stats = Array.isArray(misc.combat_stats) ? misc.combat_stats : [];
   const creatures = Array.isArray(misc.creatures) ? misc.creatures : [];
   return (
     <div className="space-y-6">
       <PanelHeader eyebrow="Misc" title="Contexto da sessão" subtitle="Equipamento, stats observados e criaturas." />
       <div className="grid gap-5 xl:grid-cols-3">
-        <Block title="Equipment">
-          {equipment.length ? (
-            <div className="grid grid-cols-2 gap-2">
-              {equipment.map((e:any, i:number) => (
-                <div key={`${e.player_id}-${e.slot_key}-${i}`} className="grid grid-cols-[52px_1fr] items-center gap-2 rounded-xl border border-white/6 bg-slate-950/45 p-2">
-                  <CanonicalSprite kind="item" name={e.item_name_raw || slugToName(e.item_key)} size="sm" />
-                  <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-wide text-slate-600">{e.slot_key}</div>
-                    <div className="mt-1 truncate text-sm font-semibold text-slate-200">{e.item_name_raw || slugToName(e.item_key) || "—"}</div>
-                  </div>
+        <Block title="Looted Items">
+          {lootedItems.length ? (
+            <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+              {lootedItems.slice(0,80).map((item:any, i:number) => (
+                <div key={`${item.item_name_raw}-${i}`} className="grid grid-cols-[52px_1fr_auto] items-center gap-2 rounded-xl border border-white/6 bg-slate-950/45 p-2">
+                  <CanonicalSprite kind="item" name={item.item_name_raw} size="sm" />
+                  <div className="min-w-0 truncate text-sm font-semibold text-slate-200">{item.item_name_raw}</div>
+                  <div className="text-xs font-black text-cyan-200">x{formatNumber(Number(item.amount || 0))}</div>
                 </div>
               ))}
             </div>
-          ) : <Muted>Nenhum equipment normalizado nesta sessão.</Muted>}
+          ) : <Muted>Nenhum item de loot reconhecido nesta sessão.</Muted>}
         </Block>
 
         <Block title="Combat Stats">
