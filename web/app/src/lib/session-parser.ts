@@ -33,6 +33,7 @@ export function detectAnalyzerType(text: string): AnalyzerType | null {
 
 export type HuntAnalyzerMetrics = {
   duration_seconds: number | null;
+  raw_xp_gain: number | null;
   xp_gain: number | null;
   xp_per_hour: number | null;
   raw_xp_per_hour: number | null;
@@ -40,7 +41,9 @@ export type HuntAnalyzerMetrics = {
   supplies_value: number | null;
   balance_value: number | null;
   total_damage: number | null;
+  damage_per_hour: number | null;
   total_healing: number | null;
+  healing_per_hour: number | null;
 };
 
 export type ParsedSessionImport = {
@@ -83,6 +86,7 @@ export type ParsedSessionImport = {
       balance_value: number | null;
       total_damage: number | null;
       total_healing: number | null;
+      loot_type_raw: string | null;
     };
     players: Array<Record<string, unknown>>;
   };
@@ -351,6 +355,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
 
   const metrics: HuntAnalyzerMetrics = {
     duration_seconds: parseDurationSeconds(primary),
+    raw_xp_gain: metric(huntLines, ["Raw XP Gain"]),
     xp_gain: metric(huntLines, ["XP Gain"]),
     xp_per_hour: metric(huntLines, ["XP/h"]),
     raw_xp_per_hour: metric(huntLines, ["Raw XP/h", "Raw XP/hour"]),
@@ -358,7 +363,9 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
     supplies_value: metric(primary, ["Supplies"]),
     balance_value: metric(primary, ["Balance"]),
     total_damage: metric(primary, ["Damage"]),
+    damage_per_hour: metric(primary, ["Damage/h", "Damage/hour"]),
     total_healing: metric(primary, ["Healing"]),
+    healing_per_hour: metric(primary, ["Healing/h", "Healing/hour"]),
   };
 
   const partyTotals = {
@@ -368,6 +375,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
     balance_value: metric(partyLines, ["Balance"]),
     total_damage: metric(partyLines, ["Damage"]),
     total_healing: metric(partyLines, ["Healing"]),
+    loot_type_raw: textMetric(partyLines, ["Loot Type"]),
   };
   const partySize = partyPlayers.length || (partyLines.length ? null : 1);
 
