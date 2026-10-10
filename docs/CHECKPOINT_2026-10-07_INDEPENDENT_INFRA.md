@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0102
+- schema/migrations aplicados até 0103
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1396,4 +1396,103 @@ The existing EK implementation remains as a regression fixture while generic cat
 5. slot/restriction compatibility — universal loadout validation READY;
 6. combat/spell mechanics — universal factual core READY; special unlocks + modifier linkage remain;
 7. vocation composition;
+8. final optimizer.
+
+
+## Special spell unlocks + proficiency modifier linkage
+
+- migration 0103 extends COMBAT/SPELLS with two missing contracts:
+  1. special unlock requirements separate from level;
+  2. exact/generic Weapon Proficiency modifier linkage to spells.
+- current universal spell catalog:
+  - 60 spells;
+  - 5 vocations;
+  - 16 Monk spells.
+- newly added special/unlinked combat spells:
+  - Mystic Repulse;
+  - Forceful Uppercut;
+  - Focus Harmony;
+  - Spiritual Outburst;
+  - Avatar of Balance;
+  - Ice Burst;
+  - Executioner's Throw;
+  - Great Death Beam;
+  - Groundshaker;
+  - Heal Friend.
+- current special unlock requirements: 7.
+- quest-shrine requirements:
+  - Mystic Repulse -> The Way of the Monk, Shrine 3 / Shrine of Respect;
+  - Forceful Uppercut -> Shrine 8 / Shrine of Knowledge;
+  - Focus Harmony -> Shrine 10 / Shrine of Eternity.
+- Wheel Revelation requirements:
+  - Spiritual Outburst;
+  - Avatar of Balance;
+  - Ice Burst via Twin Bursts;
+  - Executioner's Throw.
+- eligibility semantics:
+  - insufficient level -> `blocked`;
+  - level satisfied but required unlock not provided -> `incomplete`;
+  - all known requirements satisfied -> `eligible`;
+  - missing unlock state is never assumed unlocked.
+- EM 300 validation:
+  - no unlocks supplied -> 11 eligible / 5 incomplete;
+  - all five Monk special unlock keys supplied -> 16 eligible / 0 incomplete.
+- ED 100 Ice validation:
+  - no Twin Bursts unlock -> 5 eligible / 1 incomplete;
+  - Twin Bursts unlock supplied -> 6 eligible / 0 incomplete.
+- EK 700 attack validation:
+  - no Executioner's Throw Revelation -> 5 eligible / 1 incomplete;
+  - Revelation supplied -> 6 eligible / 0 incomplete.
+- Harmony mechanics extended:
+  - Mystic Repulse -> Builder, amount unspecified;
+  - Forceful Uppercut -> Builder, amount unspecified;
+  - Focus Harmony -> `set_max`;
+  - Spiritual Outburst -> `spender_all`.
+- `spell_resource_mechanics` action contract now supports `set_max` / amount mode `max`.
+- new server-only `spell_unlock_requirements`.
+- new server-only `vw_spell_modifier_links_universal`.
+- Weapon Proficiency modifier linkage semantics:
+  - exact spell-key modifier -> exact link;
+  - generic `spells`, `healing_spells`, elemental spell/rune scopes -> selector only;
+  - bestiary values accidentally stored in legacy `spell_key` are explicitly excluded as non-spell scope.
+- exact Weapon Proficiency links after 0103:
+  - 82 resolved;
+  - 0 unresolved.
+- generic selector rows: 69.
+- excluded legacy bestiary pseudo-spell keys: 3.
+- new `huntnexus_spell_modifier_context_universal(spell_key)`:
+  - returns exact Weapon Proficiency modifiers;
+  - returns applicable generic selectors separately;
+  - does not mark any modifier active;
+  - does not compute final damage.
+- examples:
+  - Divine Caldera -> 10 exact modifiers from Grand Sanguine Bow/Crossbow;
+  - Sweeping Takedown -> 5 exact modifiers from Grand Sanguine Claws;
+  - Ice Burst -> 2 exact modifiers from Soulhexer.
+- equipment-specific spell modifiers remain intentionally pending:
+  - current `item_effects` does not encode spell-specific equipment links reliably;
+  - no equipment-to-spell relation is inferred from free text.
+- `huntnexus_spell_category_audit()` upgraded to `spell_category_audit_v2`:
+  - special_unlock_rules_ready=true;
+  - proficiency_spell_linkage_ready=true;
+  - equipment_specific_modifier_links_ready=false;
+  - catalog_exhaustive=false;
+  - rotation_model_ready=false;
+  - final_damage_formula_ready=false.
+- focused regression `tests/sql/phase42_special_spell_unlocks_modifier_linkage.sql`: status=ok.
+- migration commit: `b69e8f5d773caa56564f95c49804caa35cc50788`.
+- regression commit: `75d583d5bf16979093a0513375c008e35e858c2a`.
+- security advisor after 0103:
+  - 13 informational `rls_enabled_no_policy` findings; new `spell_unlock_requirements` is intentionally server-only deny-by-default;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+### Category-first status after 0103
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY;
+4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
+5. slot/restriction compatibility — universal loadout validation READY;
+6. combat/spell mechanics — level + special unlock + proficiency linkage core READY; equipment-specific spell modifier parsing / Wheel augment stages / rotations remain separate;
+7. vocation composition — next candidate;
 8. final optimizer.
