@@ -1,981 +1,124 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- API returns untyped jsonb previews */
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { AlertTriangle, Loader2, ShieldAlert } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  Activity,
+  ArrowRight,
+  Coins,
+  Compass,
+  Flame,
+  Gauge,
+  ShieldCheck,
+  Sparkles,
+  Swords,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import { OfficialAssetSlot } from "@/components/shell/app-shell";
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "HuntNexus — Hunts e Bosses explicáveis" },
-      { name: "description", content: "Recomendações explicáveis de hunts e bosses com dados factuais, sessões observadas e regras versionadas do RubinOT." },
-      { property: "og:title", content: "HuntNexus — Hunts e Bosses explicáveis" },
-      { property: "og:description", content: "Recomendações explicáveis de hunts e bosses com dados factuais, sessões observadas e regras versionadas do RubinOT." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex" },
-    ],
-  }),
-  component: HomePage,
-});
+export const Route = createFileRoute("/")({ component: DashboardPage });
 
-const VOCATIONS = [
-  { v: "EK", label: "Elite Knight (EK)" },
-  { v: "RP", label: "Royal Paladin (RP)" },
-  { v: "ED", label: "Elder Druid (ED)" },
-  { v: "MS", label: "Master Sorcerer (MS)" },
+const hunts = [
+  { key: "cobra-bastion", name: "Cobra Bastion", vocation: "EK", xp: "—", profit: "—", confidence: "Dados reais", risk: "Fire / Physical" },
+  { key: "iksupan-last-stand", name: "Iksupan Last Stand", vocation: "RP", xp: "—", profit: "—", confidence: "Dados reais", risk: "Mixed" },
+  { key: "nimmersatts-breeding-ground", name: "Nimmersatt's Breeding Ground", vocation: "ED", xp: "—", profit: "—", confidence: "Dados reais", risk: "Mixed" },
+  { key: "grounds-of-undeath", name: "Grounds of Undeath", vocation: "EM", xp: "13.1M", profit: "2.64M", confidence: "2 sessões", risk: "Physical / Fire / Death" },
 ];
-const PARTY = [
-  { v: "1", label: "Solo" }, { v: "2", label: "Duo" }, { v: "3", label: "Trio" },
-  { v: "4", label: "x4" }, { v: "5", label: "x5+" },
-];
-const BLOCKED_TEXT = "O HuntNexus não apresenta uma build final enquanto a mecânica atual da sala não estiver reconciliada.";
 
-async function callApi(body: Record<string, unknown>): Promise<any> {
-  const res = await fetch("/api/huntnexus", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.detail ?? data?.error ?? `HTTP ${res.status}`);
-  return data;
-}
-
-const fmt = (n: unknown, digits = 0) =>
-  typeof n === "number" ? n.toLocaleString("pt-BR", { maximumFractionDigits: digits }) : "—";
-const arr = (x: unknown): any[] => (Array.isArray(x) ? x : []);
-const parsePerkOrders = (value: string) =>
-  Array.from(new Set(
-    value.split(/[\s,;]+/)
-      .map((x) => Number(x))
-      .filter((x) => Number.isInteger(x) && x >= 1 && x <= 100)
-  )).slice(0, 20);
-
-const metricLabel = (key: string) => {
-  const base: Record<string, string> = {
-    effective_attack_proxy: "ataque proxy",
-    candidate_item_skill_bonus: "bônus de skill do set",
-    weighted_protection: "proteção ponderada",
-    imbue_capacity: "capacidade de imbue",
-  };
-  if (base[key]) return base[key];
-  return key
-    .replace(/^proficiency\//, "")
-    .replaceAll("/", " · ")
-    .replaceAll("_", " ");
-};
-
-function HomePage() {
+function DashboardPage() {
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-4 py-10">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-semibold tracking-tight">HuntNexus</h1>
-        <p className="text-muted-foreground">
-          Recomendações explicáveis usando dados factuais, sessões observadas e regras versionadas do RubinOT.
-        </p>
-      </header>
-      <Tabs defaultValue="hunts">
-        <TabsList>
-          <TabsTrigger value="hunts">Hunts</TabsTrigger>
-          <TabsTrigger value="bosses">Bosses</TabsTrigger>
-        </TabsList>
-        <TabsContent value="hunts" className="mt-4"><HuntsTab /></TabsContent>
-        <TabsContent value="bosses" className="mt-4"><BossesTab /></TabsContent>
-      </Tabs>
-    </main>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
-}
-
-function VocationSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger><SelectValue /></SelectTrigger>
-      <SelectContent>{VOCATIONS.map((o) => <SelectItem key={o.v} value={o.v}>{o.label}</SelectItem>)}</SelectContent>
-    </Select>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-md border px-3 py-2">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-medium tabular-nums">{value}</div>
-    </div>
-  );
-}
-
-function SpellList({ title, spells }: { title: string; spells: any[] }) {
-  if (!spells.length) return null;
-  return (
-    <div className="space-y-1">
-      <div className="text-sm font-medium">{title}</div>
-      <ul className="space-y-1 text-sm">
-        {spells.map((s, i) => (
-          <li key={s.spell_key ?? i} className="flex flex-wrap items-baseline gap-x-2">
-            <span>{s.name}</span>
-            {s.words && <code className="text-xs text-muted-foreground">{s.words}</code>}
-            {s.element && <Badge variant="outline">{s.element}</Badge>}
-            {s.cooldown_seconds != null && <span className="text-xs text-muted-foreground">cd {s.cooldown_seconds}s</span>}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function ImbueSummary({ label, data }: { label: string; data: any }) {
-  if (!data || Number(data.imbue_slots ?? 0) < 1) return null;
-  const candidates = [
-    ...arr(data.protection_candidates),
-    ...arr(data.skill_candidates),
-    ...arr(data.core_offense_sustain_candidates),
-  ];
-  const names = Array.from(new Set(candidates.map((x) => x.name).filter(Boolean)));
-  return (
-    <li className="text-sm">
-      <span className="text-muted-foreground">{label}:</span>{" "}
-      <span className="font-medium">{data.name}</span>{" "}
-      <Badge variant="outline">{data.imbue_slots} slot{Number(data.imbue_slots) === 1 ? "" : "s"}</Badge>
-      {names.length > 0 && (
-        <span className="ml-2 text-xs text-muted-foreground">
-          {names.slice(0, 5).join(", ")}{names.length > 5 ? ` +${names.length - 5}` : ""}
-        </span>
-      )}
-    </li>
-  );
-}
-
-function ErrorBox({ msg }: { msg: string }) {
-  return (
-    <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erro</AlertTitle><AlertDescription>{msg}</AlertDescription></Alert>
-  );
-}
-
-function ProficiencyImpact({ data }: { data: any }) {
-  const v = data?.impact_vector ?? {};
-  const unresolved = arr(data?.unresolved_inputs);
-  const parts = [
-    Number(v.flat_skill_bonus) ? `skill +${fmt(Number(v.flat_skill_bonus), 0)}` : null,
-    Number(v.flat_attack_bonus) ? `attack +${fmt(Number(v.flat_attack_bonus), 0)}` : null,
-    Number(v.global_critical_chance_percent) ? `crit chance +${fmt(Number(v.global_critical_chance_percent), 2)}%` : null,
-    Number(v.global_critical_extra_damage_percent) ? `crit dmg +${fmt(Number(v.global_critical_extra_damage_percent), 2)}%` : null,
-    Number(v.global_life_leech_percent) ? `life leech +${fmt(Number(v.global_life_leech_percent), 2)}%` : null,
-    Number(v.global_mana_leech_percent) ? `mana leech +${fmt(Number(v.global_mana_leech_percent), 2)}%` : null,
-    Number(v.auto_attack_skill_derived_damage_term) ? `termo auto +${fmt(Number(v.auto_attack_skill_derived_damage_term), 2)}` : null,
-    Number(v.spell_skill_derived_damage_term) ? `termo spells +${fmt(Number(v.spell_skill_derived_damage_term), 2)}` : null,
-    Number(v.auto_attack_magic_level_derived_damage_term) ? `termo auto/ML +${fmt(Number(v.auto_attack_magic_level_derived_damage_term), 2)}` : null,
-    Number(v.spell_magic_level_derived_damage_term) ? `termo spells/ML +${fmt(Number(v.spell_magic_level_derived_damage_term), 2)}` : null,
-    Number(v.healing_magic_level_derived_term) ? `termo healing/ML +${fmt(Number(v.healing_magic_level_derived_term), 2)}` : null,
-  ].filter(Boolean);
-
-  if (!parts.length && !unresolved.length) return null;
-  return (
-    <div className="mt-2 space-y-1">
-      <div className="flex flex-wrap gap-1">
-        {parts.map((p) => <Badge key={p} variant="secondary">{p}</Badge>)}
-      </div>
-      {unresolved.length > 0 && (
-        <div className="text-xs text-muted-foreground">
-          Falta dado para: {unresolved.join(", ")}.
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ---------------- HUNTS ---------------- */
-
-function HuntsTab() {
-  const [vocation, setVocation] = useState("EK");
-  const [level, setLevel] = useState("300");
-  const [objective, setObjective] = useState("balanced");
-  const [party, setParty] = useState("1");
-  const [profileContract, setProfileContract] = useState<any>(null);
-  const [weaponFamily, setWeaponFamily] = useState("none");
-  const [weaponSkill, setWeaponSkill] = useState("");
-  const [magicLevel, setMagicLevel] = useState("");
-  const [shielding, setShielding] = useState("");
-  const [perkSelections, setPerkSelections] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
-
-  useEffect(() => {
-    let active = true;
-    callApi({ action: "profile_contract", vocation })
-      .then((r) => { if (active) setProfileContract(r.data); })
-      .catch(() => { if (active) setProfileContract(null); });
-    if (vocation !== "EK") {
-      setWeaponFamily("none");
-      setWeaponSkill("");
-      setMagicLevel("");
-      setShielding("");
-      setPerkSelections({});
-    }
-    return () => { active = false; };
-  }, [vocation]);
-
-  async function run() {
-    setLoading(true); setError(null);
-    try {
-      const characterProfile = vocation === "EK" && weaponFamily !== "none"
-        ? {
-            weapon_family: weaponFamily,
-            ...(Number(weaponSkill) > 0 ? { effective_weapon_skill: Number(weaponSkill) } : {}),
-            ...(magicLevel !== "" && Number(magicLevel) >= 0 ? { effective_magic_level: Number(magicLevel) } : {}),
-            ...(shielding !== "" && Number(shielding) >= 0 ? { effective_shielding: Number(shielding) } : {}),
-          }
-        : undefined;
-      const recommendation = await callApi({
-        action: "recommend",
-        vocation,
-        level: Number(level),
-        objective,
-        party_size: Number(party),
-        ...(characterProfile ? {
-          character_profile: characterProfile,
-          proficiency_selections: Object.fromEntries(
-            Object.entries(perkSelections)
-              .map(([itemKey, value]) => [itemKey, parsePerkOrders(value)])
-              .filter(([, orders]) => (orders as number[]).length > 0),
-          ),
-        } : {}),
-      });
-      setResult(recommendation);
-    } catch (e) { setError((e as Error).message); setResult(null); }
-    finally { setLoading(false); }
-  }
-
-  const results = arr(result?.data?.results);
-  const warnings = arr(result?.warnings);
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="space-y-4 pt-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <Field label="Vocação"><VocationSelect value={vocation} onChange={setVocation} /></Field>
-            <Field label="Level"><Input type="number" min={1} value={level} onChange={(e) => setLevel(e.target.value)} /></Field>
-            <Field label="Objetivo">
-              <Select value={objective} onValueChange={setObjective}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="xp">XP</SelectItem><SelectItem value="profit">Profit</SelectItem><SelectItem value="balanced">Balanced</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Party size">
-              <Select value={party} onValueChange={setParty}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PARTY.map((p) => <SelectItem key={p.v} value={p.v}>{p.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            <div className="flex items-end">
-              <Button className="w-full" onClick={run} disabled={loading || Number(level) < 1}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Analisar hunts
-              </Button>
+    <div className="mx-auto max-w-[1450px] space-y-6">
+      <section className="hn-hero overflow-hidden rounded-3xl border border-white/8 p-5 md:p-7">
+        <div className="grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
+          <div className="space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/15 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-200">
+              <Sparkles className="size-3.5" />
+              HuntNexus Optimizer
             </div>
-          </div>
-
-          {vocation === "EK" && (
-            <div className="space-y-3 rounded-md border bg-muted/20 p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="text-sm font-medium">Perfil de combate EK</div>
-                <Badge variant="outline">opcional</Badge>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Field label="Família de arma">
-                  <Select
-                    value={weaponFamily}
-                    onValueChange={(value) => {
-                      setWeaponFamily(value);
-                      setPerkSelections({});
-                    }}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Não informar</SelectItem>
-                      {arr(profileContract?.vocation_specific?.weapon_family?.values).map((family) => (
-                        <SelectItem key={family} value={family}>
-                          {family === "sword" ? "Sword" : family === "axe" ? "Axe" : family === "club" ? "Club" : family}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Skill efetivo">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={1000}
-                    placeholder="ex.: 120"
-                    value={weaponSkill}
-                    disabled={weaponFamily === "none"}
-                    onChange={(e) => setWeaponSkill(e.target.value)}
-                  />
-                </Field>
-                <Field label="Magic Level efetivo">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={1000}
-                    placeholder="opcional"
-                    value={magicLevel}
-                    disabled={weaponFamily === "none"}
-                    onChange={(e) => setMagicLevel(e.target.value)}
-                  />
-                </Field>
-                <Field label="Shielding efetivo">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={1000}
-                    placeholder="opcional"
-                    value={shielding}
-                    disabled={weaponFamily === "none"}
-                    onChange={(e) => setShielding(e.target.value)}
-                  />
-                </Field>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {profileContract?.input_principle ??
-                  "Use os valores efetivos mostrados pelo cliente. O perfil não é obrigatório."}
-                {weaponFamily !== "none" &&
-                  " Os perks são preenchidos depois, por arma candidata real. Perk order é a ordem preservada da fonte, não o nível da proficiência."}
+            <div>
+              <h1 className="max-w-3xl text-3xl font-black tracking-tight text-white md:text-5xl">
+                Descubra onde caçar e o que usar sem transformar tudo em uma planilha.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
+                Hunt, set, spells, proficiency e evidência da comunidade em uma experiência feita para jogador.
               </p>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {error && <ErrorBox msg={error} />}
-
-      {warnings.length > 0 && (
-        <Alert><AlertTriangle className="h-4 w-4" /><AlertTitle>Alterações RubinOT pendentes ({warnings.length})</AlertTitle>
-          <AlertDescription>
-            <ul className="list-disc pl-4">{warnings.map((w, i) => <li key={i}>{w.summary ?? w.notes ?? JSON.stringify(w)}{w.patch_version ? ` (${w.patch_version})` : ""}</li>)}</ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {result && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">
-            Dados observados são evidência comunitária, não garantia.
-          </p>
-          {weaponFamily !== "none" && results.length > 0 && (
-            <Button variant="outline" size="sm" onClick={run} disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Atualizar contexto dos perks
-            </Button>
-          )}
+            <div className="flex flex-wrap gap-3">
+              <Link to="/planner" className="hn-primary-button">
+                <Compass className="size-4" /> Encontrar hunt
+              </Link>
+              <Link to="/session" className="hn-secondary-button">
+                <Activity className="size-4" /> Analisar sessão
+              </Link>
+            </div>
+          </div>
+          <OfficialAssetSlot label="Arte oficial/canônica da área em destaque" />
         </div>
-      )}
+      </section>
 
-      {result && results.length === 0 && (
-        <p className="text-sm text-muted-foreground">Nenhuma hunt com sessões observadas para esses filtros.</p>
-      )}
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          ["Hunt Analyse", "XP, loot, supplies e balance", TrendingUp],
+          ["Misc", "Consumo e dados auxiliares", Gauge],
+          ["Damage", "Dano, charms e recebido", Swords],
+          ["Party Hunt", "Contribuição de cada player", Users],
+        ].map(([title, text, Icon]) => (
+          <Link key={String(title)} to="/session" className="hn-feature-card group">
+            <div className="grid size-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300 transition group-hover:scale-105">
+              <Icon className="size-5" />
+            </div>
+            <div>
+              <div className="font-semibold text-white">{title as string}</div>
+              <div className="mt-1 text-xs text-slate-500">{text as string}</div>
+            </div>
+            <ArrowRight className="ml-auto size-4 text-slate-600 transition group-hover:translate-x-1 group-hover:text-cyan-300" />
+          </Link>
+        ))}
+      </section>
 
-      {results.map((r, i) => (
-        <HuntResult
-          key={r.ranking?.hunt_key ?? i}
-          rank={i + 1}
-          r={r}
-          handContext={r.hand_context_comparison ?? null}
-          perkSelections={perkSelections}
-          onPerkSelectionChange={(itemKey, value) =>
-            setPerkSelections((prev) => ({ ...prev, [itemKey]: value }))
-          }
-        />
-      ))}
+      <section>
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Base real</div>
+            <h2 className="mt-1 text-2xl font-bold text-white">Hunts que já conseguimos explicar</h2>
+          </div>
+          <Link to="/planner" className="text-sm text-cyan-300 hover:text-cyan-200">Abrir planner →</Link>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {hunts.map((hunt) => (
+            <article key={hunt.key} className="hn-hunt-card">
+              <OfficialAssetSlot label="Imagem oficial da hunt" compact />
+              <div className="space-y-4 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-lg font-bold text-white">{hunt.name}</div>
+                    <div className="mt-1 text-xs text-slate-500">{hunt.vocation} · regressão validada</div>
+                  </div>
+                  <span className="rounded-full border border-emerald-400/15 bg-emerald-400/8 px-2 py-1 text-[10px] text-emerald-300">
+                    {hunt.confidence}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Metric icon={Flame} label="XP/h" value={hunt.xp} />
+                  <Metric icon={Coins} label="Profit/h" value={hunt.profit} />
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <ShieldCheck className="size-3.5 text-cyan-400" /> {hunt.risk}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
 
-function HuntResult({
-  rank,
-  r,
-  handContext,
-  perkSelections,
-  onPerkSelectionChange,
-}: {
-  rank: number;
-  r: any;
-  handContext?: any;
-  perkSelections: Record<string, string>;
-  onPerkSelectionChange: (itemKey: string, value: string) => void;
-}) {
-  const k = r.ranking ?? {};
-  const incoming = arr(r.defensive_candidates?.incoming_damage);
-  const defensive = arr(r.defensive_candidates?.candidates);
-  const imbues = arr(r.imbuement_candidates?.defensive_priority);
-  const observedImbues = arr(r.imbuement_candidates?.community_observed_usage);
-  const sp = r.spell_candidates ?? {};
-  const setPreview = r.loadout_set_preview ?? {};
-  const selectedSlots = Object.entries(setPreview.selected_slots ?? {}) as Array<[string, any]>;
-  const oneHand = setPreview.hand_options?.one_handed;
-  const twoHand = setPreview.hand_options?.two_handed;
-  const handAnalysis = setPreview.hand_analysis ?? {};
-  const oneAnalysis = arr(handAnalysis.one_handed?.offense_options)[0] ?? {};
-  const twoAnalysis = arr(handAnalysis.two_handed?.offense_options)[0] ?? {};
-  const excludedWeapons = arr(handAnalysis.excluded_from_sustained_hunt);
-  const imbuePreview = setPreview.imbuement_preview ?? {};
-  const fixedImbues = Object.entries(imbuePreview.fixed_slots ?? {}) as Array<[string, any]>;
-  const characterProfile = setPreview.character_profile ?? {};
-  const characterProfileAnalysis = setPreview.character_profile_analysis ?? {};
-  const actualProficiency = r.actual_weapon_proficiency ?? {};
-  const oneProficiencyImpact = actualProficiency.one_handed ?? {};
-  const twoProficiencyImpact = actualProficiency.two_handed ?? {};
-  const oneProficiencyReference = actualProficiency.one_handed_reference ?? {};
-  const twoProficiencyReference = actualProficiency.two_handed_reference ?? {};
-  const oneProficiencyEffects = arr(oneProficiencyImpact.resolved_effects);
-  const twoProficiencyEffects = arr(twoProficiencyImpact.resolved_effects);
-  const oneProficiencyItemKey = oneProficiencyImpact.item_key ?? "";
-  const twoProficiencyItemKey = twoProficiencyImpact.item_key ?? "";
-  const oneProficiencyTree = Boolean(actualProficiency.coverage?.one_handed_tree_available);
-  const twoProficiencyTree = Boolean(actualProficiency.coverage?.two_handed_tree_available);
-  const contextComparison = handContext?.comparison ?? {};
-  const contextDimensions = arr(contextComparison.dimensions);
-  const contextDifferences = contextDimensions.filter((d) => d.better && d.better !== "tie");
-  const contextSummary = contextComparison.dimension_summary ?? {};
+function Metric({ icon: Icon, label, value }: { icon: typeof Flame; label: string; value: string }) {
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
-          <span className="text-muted-foreground">#{rank}</span>{k.hunt_name}
-        </CardTitle>
-        <CardDescription className="flex flex-wrap gap-2">
-          <Badge variant="secondary">score {fmt(k.ranking_score, 3)}</Badge>
-          <Badge variant="outline">confiança {fmt(k.confidence_score, 3)}</Badge>
-          <Badge variant="outline">{k.session_count ?? 0} sessões</Badge>
-          {k.level_evidence_label && <Badge variant="outline">{k.level_evidence_label}</Badge>}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Raw XP/h (mediana)" value={fmt(k.median_raw_xp_per_hour)} />
-          <Stat label="XP/h (mediana)" value={fmt(k.median_xp_per_hour)} />
-          <Stat label="Balance/h (mediana)" value={fmt(k.median_balance_per_hour)} />
-          <Stat label="Elemento mais forte observado" value={k.strongest_observed_element ?? "—"} />
-        </div>
-
-        {selectedSlots.length > 0 && (
-          <div className="space-y-2 rounded-md border p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="text-sm font-medium">Set sugerido (preview)</div>
-              <Badge variant="outline">não final</Badge>
-              {characterProfileAnalysis.applied && characterProfile.weapon_family && (
-                <Badge variant="secondary">
-                  perfil {characterProfile.weapon_family}
-                  {characterProfile.effective_weapon_skill ? ` · skill ${characterProfile.effective_weapon_skill}` : ""}
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {setPreview.methodology?.objective_policy ?? "Seleção por evidência, mantendo as dimensões separadas."}
-            </p>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {selectedSlots.map(([slot, item]) => (
-                <div key={slot} className="rounded-md bg-muted/40 px-3 py-2 text-sm">
-                  <div className="text-xs text-muted-foreground">{slot}</div>
-                  <div className="font-medium">{item.name}</div>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {Number(item.defensive_score) > 0 && <Badge variant="outline">def {fmt(item.defensive_score, 2)}</Badge>}
-                    {Number(item.offensive_skill_total) > 0 && <Badge variant="outline">off {fmt(item.offensive_skill_total, 0)}</Badge>}
-                    {Number(item.imbue_slots) > 0 && <Badge variant="outline">{item.imbue_slots} imbue</Badge>}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {(oneHand?.available || twoHand?.available) && (
-              <div className="space-y-2 pt-1">
-                <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                  Configuração de mãos
-                  {setPreview.recommended_hand_configuration ? (
-                    <Badge variant="secondary">
-                      dominância: {setPreview.recommended_hand_configuration === "two_handed" ? "2 mãos" : "1 mão + off-hand"}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary">trade-off aberto</Badge>
-                  )}
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {oneHand?.available && (
-                    <div className="rounded-md border px-3 py-2 text-sm">
-                      <div className="text-xs text-muted-foreground">1 mão + off-hand</div>
-                      <div className="font-medium">{oneHand.main_hand?.name ?? "—"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {oneHand.off_hand?.name ? `Off-hand: ${oneHand.off_hand.name}` : "Sem off-hand candidato"}
-                      </div>
-                      {oneAnalysis.weapon && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          <Badge variant="outline">atk proxy {fmt(oneAnalysis.weapon.effective_attack_proxy, 2)}</Badge>
-                          <Badge variant="outline">skill +{fmt(oneAnalysis.matching_weapon_skill_bonus, 0)}</Badge>
-                          {oneAnalysis.displayed_effective_weapon_skill != null && (
-                            <Badge variant="outline">skill exibido {fmt(oneAnalysis.displayed_effective_weapon_skill, 0)}</Badge>
-                          )}
-                          {oneAnalysis.effective_shielding_with_offhand != null && (
-                            <Badge variant="outline">shield {fmt(oneAnalysis.effective_shielding_with_offhand, 0)}</Badge>
-                          )}
-                          <Badge variant="outline">prot {fmt(oneAnalysis.weighted_protection, 2)}</Badge>
-                          <Badge variant="outline">{oneAnalysis.imbue_capacity ?? 0} imbue</Badge>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {twoHand?.available && (
-                    <div className="rounded-md border px-3 py-2 text-sm">
-                      <div className="text-xs text-muted-foreground">2 mãos</div>
-                      <div className="font-medium">{twoHand.item?.name ?? "—"}</div>
-                      {twoAnalysis.item_key && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          <Badge variant="outline">atk proxy {fmt(twoAnalysis.effective_attack_proxy, 2)}</Badge>
-                          <Badge variant="outline">skill +{fmt(twoAnalysis.weapon_skill_bonus, 0)}</Badge>
-                          {twoAnalysis.displayed_effective_weapon_skill != null && (
-                            <Badge variant="outline">skill exibido {fmt(twoAnalysis.displayed_effective_weapon_skill, 0)}</Badge>
-                          )}
-                          <Badge variant="outline">prot {fmt(twoAnalysis.weighted_protection, 2)}</Badge>
-                          <Badge variant="outline">{twoAnalysis.imbue_capacity ?? 0} imbue</Badge>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {!setPreview.recommended_hand_configuration && (
-                  <p className="text-xs text-muted-foreground">
-                    Nenhuma configuração domina a outra em ataque efetivo, skill compatível, proteção observada e capacidade de imbue; o HuntNexus mantém o trade-off explícito.
-                  </p>
-                )}
-                {characterProfileAnalysis.applied && (
-                  <p className="text-xs text-muted-foreground">
-                    O perfil restringe armas à família treinada. Skill e shielding efetivos entram como contexto; ainda não são convertidos em DPS/mitigação final.
-                  </p>
-                )}
-
-                {excludedWeapons.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Fora da hunt sustentada: {excludedWeapons.map((x) => `${x.name} (${x.reason})`).join(", ")}.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {handContext?.methodology?.stage === "ek_hand_context_comparison_v1" && (
-              <div className="space-y-2 border-t pt-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-sm font-medium">Comparação contextual 1 mão × 2 mãos</div>
-                  <Badge variant="outline">Pareto · sem score combinado</Badge>
-                  {contextComparison.contextual_pareto_dominance ? (
-                    <Badge variant="secondary">
-                      dominância contextual: {contextComparison.contextual_pareto_dominance === "two_handed" ? "2 mãos" : "1 mão"}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary">trade-off contextual aberto</Badge>
-                  )}
-                  {contextComparison.extended_comparison_ready ? (
-                    <Badge variant="outline">proficiency aplicada ao par atual</Badge>
-                  ) : contextComparison.status === "proficiency_weapon_mismatch" ? (
-                    <Badge variant="outline">proficiency ainda não cobre o par atual</Badge>
-                  ) : (
-                    <Badge variant="outline">comparação base</Badge>
-                  )}
-                  {!contextComparison.extended_comparison_ready && contextComparison.base_pareto_dominance && (
-                    <Badge variant="secondary">
-                      dominância base: {contextComparison.base_pareto_dominance === "two_handed" ? "2 mãos" : "1 mão"}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Badge variant="outline">1 mão melhor: {contextSummary.one_handed_better ?? 0}</Badge>
-                  <Badge variant="outline">2 mãos melhor: {contextSummary.two_handed_better ?? 0}</Badge>
-                  <Badge variant="outline">empates: {contextSummary.ties ?? 0}</Badge>
-                  <Badge variant="outline">{contextSummary.comparable_dimensions ?? 0} dimensões</Badge>
-                </div>
-                {contextDifferences.length > 0 && (
-                  <div className="grid gap-1 text-xs sm:grid-cols-2">
-                    {contextDifferences.slice(0, 10).map((d: any) => (
-                      <div key={d.metric_key} className="rounded-md bg-muted/40 px-2 py-1.5">
-                        <span className="font-medium">{metricLabel(d.metric_key)}</span>
-                        <span className="text-muted-foreground">
-                          {" "}· 1M {fmt(Number(d.one_handed), 3)} vs 2M {fmt(Number(d.two_handed), 3)}
-                        </span>
-                        <Badge variant="outline" className="ml-2">
-                          {d.better === "two_handed" ? "2M" : "1M"}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Proteção, ataque proxy, bônus de skill do set, slots de imbue e efeitos de proficiency ficam em dimensões separadas. Escopos diferentes não são somados entre si.
-                </p>
-              </div>
-            )}
-
-            {(oneProficiencyItemKey || twoProficiencyItemKey) && (
-              <div className="space-y-2 border-t pt-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-sm font-medium">Weapon Proficiency por arma</div>
-                  <Badge variant="outline">não altera ranking</Badge>
-                  <Badge variant="outline">item_key vinculado</Badge>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {[
-                    {
-                      label: "1 mão",
-                      itemKey: oneProficiencyItemKey,
-                      name: handContext?.one_handed?.weapon_name,
-                      tree: oneProficiencyTree,
-                      impact: oneProficiencyImpact,
-                      reference: oneProficiencyReference,
-                      effects: oneProficiencyEffects,
-                    },
-                    {
-                      label: "2 mãos",
-                      itemKey: twoProficiencyItemKey,
-                      name: handContext?.two_handed?.weapon_name,
-                      tree: twoProficiencyTree,
-                      impact: twoProficiencyImpact,
-                      reference: twoProficiencyReference,
-                      effects: twoProficiencyEffects,
-                    },
-                  ].map((x) => (
-                    <div key={x.label} className="space-y-2 rounded-md border px-3 py-2 text-sm">
-                      <div>
-                        <div className="text-xs text-muted-foreground">{x.label}</div>
-                        <div className="font-medium">{x.name ?? x.itemKey ?? "—"}</div>
-                        {x.itemKey && <code className="text-xs text-muted-foreground">{x.itemKey}</code>}
-                      </div>
-                      {x.tree ? (
-                        <>
-                          <details className="rounded-md border bg-muted/20">
-                            <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
-                              Selecionar perks ({arr(x.reference?.perks).length})
-                            </summary>
-                            <div className="max-h-72 space-y-1 overflow-y-auto border-t p-2">
-                              {arr(x.reference?.perks).map((perk: any) => {
-                                const order = Number(perk.perk_order);
-                                const selected = parsePerkOrders(perkSelections[x.itemKey] ?? "").includes(order);
-                                return (
-                                  <label
-                                    key={order}
-                                    className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="mt-1 h-4 w-4"
-                                      checked={selected}
-                                      onChange={(e) => {
-                                        const current = parsePerkOrders(perkSelections[x.itemKey] ?? "");
-                                        const next = e.target.checked
-                                          ? Array.from(new Set([...current, order])).sort((a, b) => a - b)
-                                          : current.filter((n) => n !== order);
-                                        onPerkSelectionChange(x.itemKey, next.join(","));
-                                      }}
-                                    />
-                                    <span className="min-w-0">
-                                      <span className="mr-2 font-mono text-xs text-muted-foreground">#{order}</span>
-                                      <span>{perk.description}</span>
-                                      <span className="ml-2 text-xs text-muted-foreground">
-                                        {perk.scope}{perk.spell_key ? ` · ${perk.spell_key}` : ""}
-                                      </span>
-                                    </span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </details>
-                          <div className="flex flex-wrap gap-1">
-                            <Badge variant="outline">
-                              {Number(x.impact?.active_perk_count ?? 0) > 0
-                                ? `${x.impact.active_perk_count} perks ativos`
-                                : "árvore catalogada · referência"}
-                            </Badge>
-                            {actualProficiency.selection_binding?.[
-                              x.label === "1 mão" ? "one_handed_selection_source" : "two_handed_selection_source"
-                            ] === "item_key" && <Badge variant="secondary">seleção desta arma</Badge>}
-                          </div>
-                          {x.effects.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {x.effects.map((e: any, i: number) => (
-                                <Badge key={i} variant="secondary">
-                                  {e.scope}{e.spell_key ? `/${e.spell_key}` : ""}: {e.effect_family} +{fmt(e.value, 2)}{e.unit === "percent" ? "%" : ""}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          <ProficiencyImpact data={x.impact} />
-                        </>
-                      ) : (
-                        <Badge variant="outline">árvore ainda não catalogada</Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Marque os perks que você possui e use “Atualizar contexto dos perks”. Cada seleção fica vinculada ao item exato; perks de uma arma nunca são reaproveitados em outra.
-                </p>
-              </div>
-            )}
-
-            {imbuePreview.methodology?.stage && (
-              <div className="space-y-2 border-t pt-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-sm font-medium">Imbuements compatíveis (preview)</div>
-                  <Badge variant="outline">sem prioridade entre categorias</Badge>
-                </div>
-                <ul className="space-y-1">
-                  {fixedImbues.map(([slot, data]) => (
-                    <ImbueSummary key={slot} label={slot} data={data} />
-                  ))}
-                  <ImbueSummary
-                    label="1 mão"
-                    data={imbuePreview.hand_options?.one_handed?.main_hand}
-                  />
-                  <ImbueSummary
-                    label="Off-hand"
-                    data={imbuePreview.hand_options?.one_handed?.off_hand}
-                  />
-                  <ImbueSummary
-                    label="2 mãos"
-                    data={imbuePreview.hand_options?.two_handed}
-                  />
-                </ul>
-                <p className="text-xs text-muted-foreground">
-                  Compatibilidade respeita categoria e quantidade de slots. Proteções elementais são ordenadas pelo dano recebido observado; Strike, leech e skill continuam sem peso artificial entre si.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {incoming.length > 0 && (
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Dano recebido observado por elemento</div>
-            <div className="flex flex-wrap gap-2">
-              {incoming.map((d, i) => (
-                <Badge key={i} variant="outline">
-                  {d.element}: {typeof d.weight === "number" ? `${Math.round(d.weight * 100)}%` : fmt(d.share ?? d.damage_share ?? d.total_damage ?? d.median_damage ?? d.damage, 3)}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {defensive.length > 0 && (
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Candidatos defensivos</div>
-            <ul className="grid gap-1 text-sm sm:grid-cols-2">
-              {defensive.map((d, i) => (
-                <li key={d.item_key ?? i}><span className="text-muted-foreground">{d.slot}:</span> {d.name} <span className="text-xs text-muted-foreground">({fmt(d.weighted_protection_score, 2)})</span></li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {imbues.length > 0 && (
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Imbuements defensivos prioritários</div>
-            <div className="flex flex-wrap gap-2">{imbues.map((m, i) => <Badge key={m.imbuement_key ?? i} variant="secondary">{m.name}{m.element ? ` · ${m.element}` : ""}</Badge>)}</div>
-          </div>
-        )}
-
-        {observedImbues.length > 0 && (
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="text-sm font-medium">Uso comunitário observado</div>
-              <Badge variant="outline">Tier C · não altera prioridade</Badge>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {observedImbues.map((m, i) => (
-                <Badge key={m.imbuement_key ?? i} variant="outline">
-                  {m.name}: {m.observed_profiles}/{m.eligible_profiles}
-                  {Number(m.avg_instances_when_observed) > 1
-                    ? ` · média ${fmt(Number(m.avg_instances_when_observed), 1)}x`
-                    : ""}
-                </Badge>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Evidência de perfis públicos do HuntAnalyser. Serve como contexto de uso real e não como regra factual do RubinOT.
-            </p>
-          </div>
-        )}
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SpellList title="Magias candidatas — alvo único" spells={arr(sp.single_target_attacks)} />
-          <SpellList title="Magias candidatas — múltiplos alvos" spells={arr(sp.multi_target_attacks)} />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ---------------- BOSSES ---------------- */
-
-function BossesTab() {
-  const [query, setQuery] = useState("");
-  const [bosses, setBosses] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState<any>(null);
-  const [vocation, setVocation] = useState("MS");
-  const [level, setLevel] = useState("300");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
-
-  useEffect(() => {
-    const t = setTimeout(async () => {
-      setSearching(true);
-      try { setBosses(arr((await callApi({ action: "search_bosses", query, limit: 20 })).data)); }
-      catch (e) { setError((e as Error).message); }
-      finally { setSearching(false); }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [query]);
-
-  async function run() {
-    if (!selected) return;
-    setLoading(true); setError(null);
-    try { setResult(await callApi({ action: "boss_build", boss_key: selected.boss_key, vocation, level: Number(level) })); }
-    catch (e) { setError((e as Error).message); setResult(null); }
-    finally { setLoading(false); }
-  }
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="space-y-4 pt-6">
-          <Field label="Buscar boss">
-            <Input placeholder="ex.: Magma Bubble, Soul War…" value={query} onChange={(e) => setQuery(e.target.value)} />
-          </Field>
-          <div className="max-h-56 overflow-y-auto rounded-md border">
-            {searching && <div className="p-3 text-sm text-muted-foreground">Buscando…</div>}
-            {!searching && bosses.length === 0 && <div className="p-3 text-sm text-muted-foreground">Nenhum boss encontrado.</div>}
-            {bosses.map((b) => (
-              <button
-                key={b.boss_key}
-                type="button"
-                onClick={() => { setSelected(b); setResult(null); }}
-                className={`flex w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-accent ${selected?.boss_key === b.boss_key ? "bg-accent" : ""}`}
-              >
-                <span>{b.name}</span>
-                {b.final_build_blocked && <Badge variant="destructive">bloqueado</Badge>}
-              </button>
-            ))}
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Vocação"><VocationSelect value={vocation} onChange={setVocation} /></Field>
-            <Field label="Level"><Input type="number" min={1} value={level} onChange={(e) => setLevel(e.target.value)} /></Field>
-            <div className="flex items-end">
-              <Button className="w-full" onClick={run} disabled={!selected || loading || Number(level) < 1}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Analisar boss
-              </Button>
-            </div>
-          </div>
-          {selected && <p className="text-xs text-muted-foreground">Selecionado: {selected.name}</p>}
-        </CardContent>
-      </Card>
-
-      {error && <ErrorBox msg={error} />}
-      {result && <BossResult data={result.data} warnings={arr(result.warnings)} />}
+    <div className="rounded-xl border border-white/6 bg-white/[0.025] p-3">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-slate-500">
+        <Icon className="size-3" /> {label}
+      </div>
+      <div className="mt-1 text-sm font-bold text-slate-100">{value}</div>
     </div>
-  );
-}
-
-function BossResult({ data, warnings }: { data: any; warnings: any[] }) {
-  const rd = data?.readiness ?? {};
-  const blocked = rd.final_build_blocked === true;
-  const finalAvailable = data?.final_build_available === true && !blocked;
-  const guards = arr(rd.guards);
-  const elements = arr(data?.boss_profile?.element_profile);
-  const sp = data?.spell_evidence ?? {};
-  const restricted = arr(sp.boss_restricted_spells);
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
-          {rd.name ?? data?.boss_profile?.boss?.name}
-          {blocked && (
-            <Badge variant="destructive" className="gap-1 text-sm"><ShieldAlert className="h-4 w-4" />Build final bloqueada</Badge>
-          )}
-        </CardTitle>
-        <CardDescription><Badge variant="outline">{rd.readiness_status ?? "—"}</Badge></CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {!finalAvailable && (
-          <Alert variant={blocked ? "destructive" : "default"}>
-            <ShieldAlert className="h-4 w-4" />
-            <AlertTitle>Sem build final</AlertTitle>
-            <AlertDescription>{BLOCKED_TEXT}</AlertDescription>
-          </Alert>
-        )}
-
-        {guards.length > 0 && (
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Guards</div>
-            <ul className="space-y-1 text-sm">
-              {guards.map((g, i) => (
-                <li key={g.guard_key ?? i}><Badge variant="outline" className="mr-2">{g.patch_version ?? "—"}</Badge>{g.reason}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {elements.length > 0 && (
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Perfil elemental do boss</div>
-            <div className="flex flex-wrap gap-2">
-              {elements.map((e) => <Badge key={e.element} variant="outline">{e.element}: {fmt(e.avg_modifier_percent)}%</Badge>)}
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <div className="text-xs text-muted-foreground">Evidência de magias — não é uma build nem rotação final.</div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <SpellList title="Magias candidatas — alvo único" spells={arr(sp.single_target_attacks)} />
-            <SpellList title="Magias candidatas — múltiplos alvos" spells={arr(sp.multi_target_attacks)} />
-          </div>
-        </div>
-
-        {restricted.length > 0 && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Magias restritas neste boss</AlertTitle>
-            <AlertDescription>
-              <ul className="list-disc pl-4">{restricted.map((s, i) => <li key={s.spell_key ?? i}>{s.name}{s.words ? ` (${s.words})` : ""}{s.reason ? ` — ${s.reason}` : ""}</li>)}</ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {warnings.length > 0 && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Avisos globais de boss do RubinOT ({warnings.length})</AlertTitle>
-            <AlertDescription>
-              <ul className="list-disc pl-4">
-                {warnings.map((w, i) => <li key={i}>{w.summary}{w.patch_version ? ` (${w.patch_version})` : ""}{w.reconciliation_status ? ` — ${w.reconciliation_status}` : ""}</li>)}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
   );
 }
