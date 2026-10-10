@@ -46,6 +46,7 @@ function HuntDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [personalReview, setPersonalReview] = useState<any>(null);
+  const [ownedBuildOptions, setOwnedBuildOptions] = useState<any>(null);
   const [loadingPersonalReview, setLoadingPersonalReview] = useState(false);
 
   useEffect(() => {
@@ -78,26 +79,65 @@ function HuntDetailPage() {
       action: "player_profile_get",
       client_id: clientId,
     })
-      .then((profileResponse) => {
+      .then(async (profileResponse) => {
         if (!active) return null;
-        const proficiencySelections = profileResponse?.data?.profile?.proficiency_selections ?? {};
 
-        return callHuntNexusApi<any>({
-          action: "player_inventory_hunt_review",
-          client_id: clientId,
-          hunt_key: huntKey,
-          vocation: search.vocation,
-          level: search.level,
-          proficiency_selections: proficiencySelections,
-          frontier_limit: 12,
-        });
+        const profile = profileResponse?.data?.profile ?? {};
+        const proficiencySelections = profile?.proficiency_selections ?? {};
+        const stats = profile?.manual_stats ?? {};
+        const weaponFamily = stats.weapon_family;
+        const familyBaseSkill =
+          weaponFamily === "sword" ? stats.sword :
+          weaponFamily === "axe" ? stats.axe :
+          weaponFamily === "club" ? stats.club :
+          (weaponFamily === "bow" || weaponFamily === "crossbow") ? stats.distance :
+          weaponFamily === "fist" ? stats.fist :
+          undefined;
+
+        const characterProfile = Object.fromEntries(
+          Object.entries({
+            weapon_family: weaponFamily,
+            effective_weapon_skill: validFinalStat(familyBaseSkill, stats.effective_weapon_skill),
+            effective_magic_level: validFinalStat(stats.magic_level, stats.effective_magic_level),
+            effective_shielding: validFinalStat(stats.shielding, stats.effective_shielding),
+            effective_distance_skill: validFinalStat(stats.distance, stats.effective_distance_skill),
+            effective_fist_skill: validFinalStat(stats.fist, stats.effective_fist_skill),
+          }).filter(([, value]) => value !== undefined && value !== null && value !== ""),
+        );
+
+        return Promise.all([
+          callHuntNexusApi<any>({
+            action: "player_inventory_hunt_review",
+            client_id: clientId,
+            hunt_key: huntKey,
+            vocation: search.vocation,
+            level: search.level,
+            proficiency_selections: proficiencySelections,
+            frontier_limit: 12,
+          }),
+          callHuntNexusApi<any>({
+            action: "player_owned_build_options",
+            client_id: clientId,
+            hunt_key: huntKey,
+            vocation: search.vocation,
+            level: search.level,
+            proficiency_selections: proficiencySelections,
+            character_profile: characterProfile,
+            option_limit: 3,
+          }),
+        ]);
       })
-      .then((reviewResponse) => {
-        if (!active || !reviewResponse) return;
+      .then((responses) => {
+        if (!active || !responses) return;
+        const [reviewResponse, optionsResponse] = responses;
         setPersonalReview(reviewResponse?.data ?? null);
+        setOwnedBuildOptions(optionsResponse?.data ?? null);
       })
       .catch(() => {
-        if (active) setPersonalReview(null);
+        if (active) {
+          setPersonalReview(null);
+          setOwnedBuildOptions(null);
+        }
       })
       .finally(() => {
         if (active) setLoadingPersonalReview(false);
@@ -179,7 +219,7 @@ function HuntDetailPage() {
         {tab === "creatures" && <Creatures monsters={monsters} observed={data.observed} />}
         {tab === "map" && <MapPanel hunt={hunt} media={media} />}
         {tab === "damage" && <Damage defensive={data.defensive} />}
-        {tab === "setup" && <Setup selection={data.set_selection} personalReview={personalReview} loadingPersonalReview={loadingPersonalReview} />}
+        {tab === "setup" && <Setup selection={data.set_selection} personalReview={personalReview} ownedBuildOptions={ownedBuildOptions} loadingPersonalReview={loadingPersonalReview} />}
         {tab === "spells" && <Spells spells={data.spells} composition={data.vocation_composition} />}
         {tab === "imbuements" && <Imbuements data={data.imbuements} />}
         {tab === "community" && <Community observed={data.observed} />}
@@ -292,17 +332,46 @@ function Damage({ defensive }: { defensive:any }) {
   );
 }
 
-function Setup({ selection, personalReview, loadingPersonalReview }: { selection:any; personalReview:any; loadingPersonalReview:boolean }) {
+function Setup({ selection, personalReview, ownedBuildOptions, loadingPersonalReview }: { selection:any; personalReview:any; ownedBuildOptions:any; loadingPersonalReview:boolean }) {
   const sets = Array.isArray(selection?.selected_sets) ? selection.selected_sets : [];
   const mainSet = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
   const ownedAlternatives = Array.isArray(personalReview?.owned_alternatives) ? personalReview.owned_alternatives : [];
   const frontierCandidates = Array.isArray(personalReview?.frontier_candidates) ? personalReview.frontier_candidates : [];
   const backpackCandidates = frontierCandidates.filter((item:any) => item.ownership === "backpack");
   const externalCandidates = frontierCandidates.filter((item:any) => item.ownership === "external");
+  const ownedOptions = Array.isArray(ownedBuildOptions?.options) ? ownedBuildOptions.options : [];
 
   return (
     <div>
       <SectionTitle title="Setup da hunt" subtitle="Seu Set Main permanece como baseline; BP e itens externos aparecem separados." />
+
+      <div className="mt-5 rounded-2xl border border-amber-400/15 bg-amber-400/[0.025] p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-sm font-bold text-white">Opções com os seus itens</div>
+            <div className="mt-1 text-xs text-slate-500">
+              A 1ª opção é o Set Main. A 2ª/3ª só usam peças da BP que passaram pelo filtro contextual e não ficaram dominadas pelo Main quando comparáveis.
+            </div>
+          </div>
+          <span className="rounded-full border border-white/7 px-2.5 py-1 text-[10px] text-slate-500">
+            {ownedBuildOptions?.summary?.discarded_as_main_dominated ?? 0} variações descartadas
+          </span>
+        </div>
+
+        {loadingPersonalReview ? (
+          <div className="grid min-h-[150px] place-items-center">
+            <Loader2 className="size-5 animate-spin text-cyan-300" />
+          </div>
+        ) : ownedOptions.length ? (
+          <div className="mt-4 grid gap-3 xl:grid-cols-3">
+            {ownedOptions.map((option:any) => (
+              <OwnedBuildOptionCard key={option.option_order} option={option} personalReview={personalReview} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 text-sm text-slate-500">Cadastre o Set Main no Profile para gerar opções personalizadas.</div>
+        )}
+      </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
         <Panel title="Seu Set Main">
@@ -492,6 +561,68 @@ function Community({ observed }: { observed:any }) {
       </div>
     </div>
   );
+}
+
+function OwnedBuildOptionCard({ option, personalReview }: { option:any; personalReview:any }) {
+  const selection = option?.selection ?? {};
+  const replacements = Array.isArray(option?.replacements) ? option.replacements : [];
+  const mainRows = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
+  const ownedRows = Array.isArray(personalReview?.owned_alternatives) ? personalReview.owned_alternatives : [];
+  const itemByKey = new Map(
+    [...mainRows, ...ownedRows].map((item:any) => [item.item_key, item]),
+  );
+  const slots = Object.entries(selection);
+
+  return (
+    <div className={`rounded-2xl border p-4 ${option.option_type === "main" ? "border-amber-400/45 bg-amber-400/[0.08]" : "border-white/7 bg-slate-950/45"}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-black text-white">{option.option_order}ª opção</div>
+          <div className="mt-1 text-[11px] text-slate-500">
+            {option.option_type === "main" ? "Set Main / em uso" : "Variação com itens da BP"}
+          </div>
+        </div>
+        {option.option_type === "main" ? (
+          <span className="rounded-full bg-amber-300 px-2.5 py-1 text-[10px] font-black text-slate-950">Em uso</span>
+        ) : option.dominates_main ? (
+          <span className="rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-2.5 py-1 text-[10px] text-emerald-300">supera Main</span>
+        ) : (
+          <span className="rounded-full border border-cyan-400/20 bg-cyan-400/[0.06] px-2.5 py-1 text-[10px] text-cyan-200">alternativa</span>
+        )}
+      </div>
+
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {slots.map(([slot,itemKey]) => {
+          const row:any = itemByKey.get(String(itemKey));
+          return (
+            <div key={slot} className="rounded-xl border border-white/6 bg-black/20 p-2 text-center">
+              <CanonicalSprite kind="item" name={row?.item_name || slugToName(String(itemKey))} size="sm" />
+              <div className="mt-1 truncate text-[9px] uppercase tracking-wide text-slate-600">{slot}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {replacements.length > 0 && (
+        <div className="mt-3 text-[11px] leading-5 text-slate-500">
+          Usa da BP: <span className="text-cyan-200">{replacements.map((r:any) => r.item_name).join(", ")}</span>
+        </div>
+      )}
+
+      <div className="mt-2 text-[10px] leading-4 text-slate-600">{option.reason}</div>
+    </div>
+  );
+}
+
+function validFinalStat(baseValue: unknown, finalValue: unknown) {
+  const base = Number(baseValue);
+  const finalNumber = Number(finalValue);
+  const hasBase = baseValue !== undefined && baseValue !== null && baseValue !== "" && Number.isFinite(base);
+  const hasFinal = finalValue !== undefined && finalValue !== null && finalValue !== "" && Number.isFinite(finalNumber);
+
+  if (!hasFinal) return hasBase ? base : undefined;
+  if (!hasBase) return finalNumber;
+  return finalNumber >= base ? finalNumber : base;
 }
 
 function SectionTitle({ title, subtitle }: { title:string; subtitle:string }) { return <div><div className="text-xs uppercase tracking-[.18em] text-cyan-400">Hunt Detail</div><h2 className="mt-1 text-2xl font-bold text-white">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div>; }
