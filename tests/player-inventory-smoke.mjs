@@ -116,11 +116,22 @@ try {
     option_limit: 3,
   });
 
-  assert(ownedOptions?.data?.methodology?.stage === "player_owned_build_options_v1", "owned build stage regression");
+  assert(ownedOptions?.data?.methodology?.stage === "player_owned_build_options_v2", "owned build stage regression");
   assert(ownedOptions?.data?.methodology?.main_set_is_option_1 === true, "Main must be option 1");
   assert(ownedOptions?.data?.methodology?.external_items_used_in_owned_options === false, "external item leaked into owned options");
   assert(ownedOptions?.data?.options?.[0]?.option_type === "main", "option 1 type regression");
   assert(ownedOptions?.data?.options?.[0]?.selection?.weapon === "soultainter", "option 1 weapon regression");
+  const explainedVariant = (ownedOptions?.data?.options ?? []).find((option) =>
+    option.option_type === "owned_variant" &&
+    (option.replacement_details ?? []).some((detail) => detail.to_item_key === "amber-wand")
+  );
+  assert(explainedVariant, "explained Amber Wand variant missing");
+  const amberDetail = explainedVariant.replacement_details.find((detail) => detail.to_item_key === "amber-wand");
+  assert(amberDetail?.to_context?.item?.item_key === "amber-wand", "Amber Wand explanation item regression");
+  assert(
+    amberDetail?.to_context?.effect_profile?.groups?.protection?.ice === 6,
+    "Amber Wand factual protection explanation regression",
+  );
   assert(
     !(ownedOptions?.data?.options ?? []).some((option) =>
       option.option_type === "owned_variant" &&
