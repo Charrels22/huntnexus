@@ -74,6 +74,28 @@ const Body = z.discriminatedUnion("action", [
     frontier_limit: z.coerce.number().int().min(1).max(30).default(12),
   }),
   z.object({
+    action: z.literal("player_hunt_build_choice_get"),
+    client_id: z.string().uuid(),
+    hunt_key: z.string().min(1).max(200),
+    vocation: z.string().max(20),
+  }),
+  z.object({
+    action: z.literal("player_hunt_build_choice_save"),
+    client_id: z.string().uuid(),
+    hunt_key: z.string().min(1).max(200),
+    vocation: z.string().max(20),
+    level: z.coerce.number().int().min(1).max(5000),
+    selection: z.record(z.string(), z.string()).default({}),
+    option_type: z.enum(["main","owned_variant"]),
+    replacements: z.array(z.record(z.string(), z.unknown())).default([]),
+  }),
+  z.object({
+    action: z.literal("player_hunt_build_choice_delete"),
+    client_id: z.string().uuid(),
+    hunt_key: z.string().min(1).max(200),
+    vocation: z.string().max(20),
+  }),
+  z.object({
     action: z.literal("player_owned_build_options"),
     client_id: z.string().uuid(),
     hunt_key: z.string().min(1).max(200),
@@ -337,6 +359,34 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_level: b.level,
                   p_proficiency_selections: b.proficiency_selections,
                   p_frontier_limit: b.frontier_limit,
+                }),
+              });
+            case "player_hunt_build_choice_get":
+              return json({
+                data: await rpc("huntnexus_player_hunt_build_choice_get", {
+                  p_client_id: b.client_id,
+                  p_hunt_key: b.hunt_key,
+                  p_vocation: b.vocation,
+                }),
+              });
+            case "player_hunt_build_choice_save":
+              return json({
+                data: await rpc("huntnexus_player_hunt_build_choice_save", {
+                  p_client_id: b.client_id,
+                  p_hunt_key: b.hunt_key,
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_selection: b.selection,
+                  p_option_type: b.option_type,
+                  p_replacements: b.replacements,
+                }),
+              });
+            case "player_hunt_build_choice_delete":
+              return json({
+                data: await rpc("huntnexus_player_hunt_build_choice_delete", {
+                  p_client_id: b.client_id,
+                  p_hunt_key: b.hunt_key,
+                  p_vocation: b.vocation,
                 }),
               });
             case "player_owned_build_options":
