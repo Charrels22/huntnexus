@@ -73,6 +73,7 @@ function HuntDetailPage() {
   const hunt = data.factual?.hunt ?? {};
   const perf = data.observed?.performance ?? {};
   const monsters = Array.isArray(data.factual?.monsters) ? data.factual.monsters : [];
+  const media = data.media ?? {};
   const setSummary = data.set_selection?.summary ?? {};
 
   return (
@@ -100,7 +101,13 @@ function HuntDetailPage() {
           <div className="relative grid min-h-64 place-items-center overflow-hidden border-l border-white/7 bg-slate-950/55 p-8">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,.10),transparent_55%)]" />
             <div className="relative z-10">
-              <CanonicalSpriteGroup names={monsters.slice(0,4).map((m:any) => m.name)} />
+              {media.hero_image_name ? (
+                <div className="flex justify-center">
+                  <CanonicalSprite kind="creature" name={media.hero_image_name} size="lg" className="scale-125" />
+                </div>
+              ) : (
+                <CanonicalSpriteGroup names={monsters.slice(0,4).map((m:any) => m.name)} />
+              )}
               <div className="mt-6 text-center text-[10px] uppercase tracking-[0.18em] text-slate-600">
                 sprites canônicos da hunt
               </div>
@@ -124,7 +131,7 @@ function HuntDetailPage() {
       <section className="rounded-3xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
         {tab === "overview" && <Overview data={data} />}
         {tab === "creatures" && <Creatures monsters={monsters} observed={data.observed} />}
-        {tab === "map" && <MapPanel hunt={hunt} />}
+        {tab === "map" && <MapPanel hunt={hunt} media={media} />}
         {tab === "damage" && <Damage defensive={data.defensive} />}
         {tab === "setup" && <Setup selection={data.set_selection} />}
         {tab === "spells" && <Spells spells={data.spells} composition={data.vocation_composition} />}
@@ -191,12 +198,12 @@ function Creatures({ monsters, observed }: { monsters:any[]; observed:any }) {
   );
 }
 
-function MapPanel({ hunt }: { hunt:any }) {
+function MapPanel({ hunt, media }: { hunt:any; media:any }) {
   return (
     <div>
       <SectionTitle title="Map" subtitle="Minimap real do Tibia centralizado na coordenada factual da hunt." />
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
-        <CanonicalTibiaMap location={hunt.location} label={hunt.name || "Hunt"} />
+        <CanonicalTibiaMap location={media?.mapper_location || hunt.location} label={hunt.name || "Hunt"} />
         <Panel title="Localização">
           <div className="space-y-3">
             <Metric label="Cidade" value={hunt.city || "—"} />
