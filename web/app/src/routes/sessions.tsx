@@ -427,7 +427,15 @@ function Damage({ data }: { data: any }) {
       <div className="grid gap-3 sm:grid-cols-3">
         <Kpi icon={Swords} label="Damage dealt" value={formatCompact(d.total_damage)} />
         <Kpi icon={ShieldAlert} label="Elementos recebidos" value={String(elements.length)} />
-        <Kpi icon={Activity} label="Charm damage" value={d.charm_damage_available ? "Disponível" : "Ainda não normalizado"} />
+        <Kpi
+          icon={Activity}
+          label="Charm damage"
+          value={
+            d.charm_damage_available
+              ? formatCompact(d.charm_damage_total ?? d.charm_damage_per_hour)
+              : "Não observado"
+          }
+        />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
@@ -458,9 +466,31 @@ function Damage({ data }: { data: any }) {
         </Block>
       </div>
 
-      {!d.charm_damage_available && (
-        <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.04] p-4 text-sm text-amber-100/80">
-          Charm damage existe como requisito do produto, mas ainda não há campo normalizado no banco atual. O HuntNexus não exibe zero nem inventa contribuição enquanto esse parsing não estiver disponível.
+      {d.charm_damage_available ? (
+        <div className="rounded-2xl border border-emerald-400/12 bg-emerald-400/[0.035] p-4">
+          <div className="text-sm font-semibold text-emerald-200">Charm damage observado</div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <Mini label="Total observado" value={formatCompact(d.charm_damage_total)} />
+            <Mini label="Charm damage/h" value={formatCompact(d.charm_damage_per_hour)} />
+          </div>
+          {Array.isArray(d.charm_damage) && d.charm_damage.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {d.charm_damage.map((row:any, i:number) => (
+                <DataRow
+                  key={`${row.source_name_raw || "charm"}-${i}`}
+                  label={row.source_name_raw || "Charm"}
+                  value={formatCompact(row.damage)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-white/7 bg-slate-950/35 p-4 text-sm text-slate-500">
+          <div className="font-semibold text-slate-300">Charm damage não observado nesta importação</div>
+          <div className="mt-1 text-xs leading-5 text-slate-600">
+            O Hunt Analyzer padrão não fornece um total de charm damage. O HuntNexus mantém esse dado como não observado em vez de exibir zero ou estimar contribuição sem charms atribuídos e fórmula RubinOT validada.
+          </div>
         </div>
       )}
     </div>
