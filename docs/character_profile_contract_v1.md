@@ -114,3 +114,30 @@ Example:
 - final/effective Magic Level = 112
 
 If a saved final value is numerically below its corresponding base value, Hunt Planner treats it as inconsistent and falls back to the base value rather than degrading the optimizer context.
+
+
+## Registered Profile header
+
+The large onboarding hero is an empty-state only.
+
+When a valid character profile exists, the Profile header becomes a compact identity panel containing:
+- character name
+- vocation
+- level
+- world
+- weapon family / Magic Level context
+- canonical item sprites from the registered Main Set
+
+No generic fantasy artwork is substituted for Tibia assets.
+
+## Proficiency visual nodes
+
+Compatible weapon trees remain collapsed by default.
+
+When opened:
+- perk nodes use the corresponding Tibia/TibiaWiki proficiency icon when a verified icon mapping exists;
+- spell-specific perks may show the spell icon plus the augment icon;
+- description remains available as text/hover support;
+- exact tree edges are not drawn until node-to-level/topology evidence is stored.
+
+Current official documentation confirms that a proficiency tree has one to seven levels and only one perk per level may be active, but the flattened source rows currently stored by HuntNexus do not prove the level assignment of every perk. HuntNexus therefore does not infer those assignments.
