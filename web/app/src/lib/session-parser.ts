@@ -112,7 +112,12 @@ function parseKilledMonsters(textLines: string[]) {
   const start = textLines.findIndex((line) => /^Killed Monsters:?$/i.test(line));
   if (start < 0) return [];
 
-  const out: Array<{ monster_name_raw: string; kills: number }> = [];
+  const out: Array<{
+    monster_name_raw: string;
+    monster_key: string | null;
+    resolution_status: "raw_name";
+    kills: number;
+  }> = [];
   for (let i = start + 1; i < textLines.length; i++) {
     const line = textLines[i];
     if (!line) continue;
