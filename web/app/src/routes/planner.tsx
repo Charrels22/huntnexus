@@ -42,14 +42,23 @@ function PlannerPage() {
     setLoading(true); setError("");
     try {
       const stats = savedProfile?.manual_stats ?? {};
+      const weaponFamily = stats.weapon_family;
+      const familyBaseSkill =
+        weaponFamily === "sword" ? stats.sword :
+        weaponFamily === "axe" ? stats.axe :
+        weaponFamily === "club" ? stats.club :
+        weaponFamily === "distance" ? stats.distance :
+        weaponFamily === "fist" ? stats.fist :
+        undefined;
+
       const characterProfile = Object.fromEntries(
         Object.entries({
-          weapon_family: stats.weapon_family,
-          effective_weapon_skill: stats.effective_weapon_skill,
-          effective_magic_level: stats.effective_magic_level,
-          effective_shielding: stats.effective_shielding,
-          effective_distance_skill: stats.effective_distance_skill,
-          effective_fist_skill: stats.effective_fist_skill,
+          weapon_family: weaponFamily,
+          effective_weapon_skill: stats.effective_weapon_skill ?? familyBaseSkill,
+          effective_magic_level: stats.effective_magic_level ?? stats.magic_level,
+          effective_shielding: stats.effective_shielding ?? stats.shielding,
+          effective_distance_skill: stats.effective_distance_skill ?? stats.distance,
+          effective_fist_skill: stats.effective_fist_skill ?? stats.fist,
         }).filter(([, value]) => value !== undefined && value !== null && value !== ""),
       );
 
