@@ -89,3 +89,28 @@ An existing session draft always takes precedence over Profile defaults.
 ## Future account migration
 
 Browser-scoped identity can later be replaced by authenticated user/character identity without changing the Profile payload contract.
+
+
+## Weapon Proficiency UI
+
+Profile now loads item-bound proficiency trees from:
+
+- `huntnexus_player_profile_proficiency_catalog(vocation, level, weapon_family)`
+
+Rules:
+- selections are stored by exact `item_key -> [perk_order]`;
+- no selection inheritance is assumed;
+- no perk dependency/topology is inferred when the source only provides flattened source order;
+- only vocation/family/level-compatible trees are presented;
+- Planner forwards the exact saved selections to the universal optimizer.
+
+## Effective stat guard
+
+Fields labeled as effective/final values mean the complete final stat, not only the bonus.
+
+Example:
+- base Magic Level 110
+- +2 equipment bonus
+- final/effective Magic Level = 112
+
+If a saved final value is numerically below its corresponding base value, Hunt Planner treats it as inconsistent and falls back to the base value rather than degrading the optimizer context.
