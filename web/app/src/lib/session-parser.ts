@@ -80,7 +80,14 @@ export type ParsedSessionImport = {
     total_damage: number | null;
     incoming_by_element: Array<Record<string, unknown>>;
     incoming_by_source: Array<Record<string, unknown>>;
-    charm_damage: unknown[];
+    charm_damage: Array<{
+      source_name_raw: string;
+      damage: number;
+      damage_per_hour: number | null;
+    }>;
+    charm_damage_total: number | null;
+    charm_damage_per_hour: number | null;
+    charm_damage_status: "observed" | "not_observed";
     charm_damage_available: boolean;
   };
   party_hunt: {
@@ -115,7 +122,7 @@ export type ParsedSessionImport = {
     warnings: string[];
   };
   methodology: {
-    stage: "session_parser_v1";
+    stage: "session_parser_v2";
     raw_blocks_preserved: true;
     unknown_values_invented: false;
     community_evidence_written: false;
@@ -374,6 +381,49 @@ function parseMisc(textLines: string[]) {
   return stats;
 }
 
+function parseObservedCharmDamage(miscStats: Array<{
+  stat_key: string;
+  stat_name_raw: string;
+  numeric_value: number | null;
+  raw_value: string;
+  unit: string;
+}>) {
+  const totalKeys = new Set([
+    "charm_damage",
+    "charms_damage",
+    "damage_from_charms",
+    "charm_dmg",
+  ]);
+  const perHourKeys = new Set([
+    "charm_damage_h",
+    "charm_damage_hour",
+    "charm_damage_per_hour",
+    "charms_damage_h",
+    "charms_damage_per_hour",
+  ]);
+
+  const totalRow = miscStats.find((row) => totalKeys.has(row.stat_key) && row.numeric_value != null);
+  const perHourRow = miscStats.find((row) => perHourKeys.has(row.stat_key) && row.numeric_value != null);
+
+  const rows = miscStats
+    .filter((row) => /^charm_[a-z0-9_]+_damage$/.test(row.stat_key) && !totalKeys.has(row.stat_key))
+    .filter((row) => row.numeric_value != null)
+    .map((row) => ({
+      source_name_raw: row.stat_name_raw,
+      damage: Number(row.numeric_value),
+      damage_per_hour: null,
+    }));
+
+  const observed = totalRow != null || perHourRow != null || rows.length > 0;
+
+  return {
+    rows,
+    total: totalRow?.numeric_value ?? (rows.length ? rows.reduce((sum, row) => sum + row.damage, 0) : null),
+    perHour: perHourRow?.numeric_value ?? null,
+    observed,
+  };
+}
+
 function slug(value: string) {
   return value
     .normalize("NFD")
@@ -400,6 +450,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
   const partyPlayers = parsePartyPlayers(partyLines);
   const input = parseInputAnalyzer(inputLines);
   const miscStats = parseMisc(miscLines);
+  const observedCharm = parseObservedCharmDamage(miscStats);
 
   const metrics: HuntAnalyzerMetrics = {
     duration_seconds: parseDurationSeconds(primary),
@@ -453,8 +504,11 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
       total_damage: metrics.total_damage,
       incoming_by_element: input.elements,
       incoming_by_source: input.sources,
-      charm_damage: [],
-      charm_damage_available: false,
+      charm_damage: observedCharm.rows,
+      charm_damage_total: observedCharm.total,
+      charm_damage_per_hour: observedCharm.perHour,
+      charm_damage_status: observedCharm.observed ? "observed" : "not_observed",
+      charm_damage_available: observedCharm.observed,
     },
     party_hunt: {
       party_size: partySize,
@@ -466,7 +520,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
       misc: miscStats.length > 0 || creatures.length > 0 || lootedItems.length > 0,
       damage: metrics.total_damage != null || input.elements.length > 0 || input.sources.length > 0,
       party_hunt: partyPlayers.length > 1,
-      charm_damage: false,
+      charm_damage: observedCharm.observed,
     },
     validation: {
       has_primary_hunt_analyzer: huntLines.length > 0,
@@ -480,7 +534,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
       warnings,
     },
     methodology: {
-      stage: "session_parser_v1",
+      stage: "session_parser_v2",
       raw_blocks_preserved: true,
       unknown_values_invented: false,
       community_evidence_written: false,
