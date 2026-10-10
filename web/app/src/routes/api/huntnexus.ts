@@ -47,6 +47,15 @@ const Body = z.discriminatedUnion("action", [
     two_hand_active_perk_orders: PerkOrders.default([]),
   }),
   z.object({
+    action: z.literal("hunt_detail"),
+    hunt_key: z.string().min(1).max(200),
+    vocation: Vocation,
+    level: Level,
+    set_objective: z.enum(["offense", "defense", "sustain", "utility", "balanced"]).default("balanced"),
+    proficiency_selections: ProficiencySelections.default({}),
+    character_profile: UniversalCharacterProfile.default({}),
+  }),
+  z.object({
     action: z.literal("session_list"),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     hunt_key: z.string().min(1).max(200).nullable().optional(),
@@ -180,6 +189,52 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_effective_magic_level: b.character_profile.effective_magic_level,
                 }),
               });
+            case "hunt_detail": {
+              const [factual, observed, defensive, imbuements, setSelection, composition, spells] = await Promise.all([
+                rpc("huntnexus_hunt_factual_profile", { p_hunt_key: b.hunt_key }),
+                rpc("huntnexus_hunt_observed_profile", { p_hunt_key: b.hunt_key }),
+                rpc("huntnexus_hunt_defensive_profile", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
+                rpc("huntnexus_imbuement_hunt_context_universal", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
+                rpc("huntnexus_optimizer_set_selection_universal", {
+                  p_hunt_key: b.hunt_key,
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_set_objective: b.set_objective,
+                  p_hand_per_source: 3,
+                  p_per_body_slot: 2,
+                  p_set_limit: 100,
+                  p_frontier_limit: 100,
+                  p_selection_limit: 20,
+                  p_proficiency_selections: b.proficiency_selections,
+                  p_character_profile: b.character_profile,
+                }),
+                rpc("huntnexus_vocation_composition_universal", {
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_unlocked_requirement_keys: [],
+                  p_hunt_key: b.hunt_key,
+                }),
+                rpc("huntnexus_spell_candidates_with_unlocks_universal", {
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_unlocked_requirement_keys: [],
+                  p_attack_type: null,
+                  p_element: null,
+                  p_limit: 250,
+                }),
+              ]);
+              return json({
+                data: {
+                  factual,
+                  observed,
+                  defensive,
+                  imbuements,
+                  set_selection: setSelection,
+                  vocation_composition: composition,
+                  spells,
+                },
+              });
+            }
             case "session_list":
               return json({
                 data: await rpc("huntnexus_session_analyzer_list", {
