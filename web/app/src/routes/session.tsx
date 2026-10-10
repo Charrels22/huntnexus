@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
-import { detectAnalyzerType } from "@/lib/session-parser";
+import { detectAnalyzerType, parseSessionImport } from "@/lib/session-parser";
 
 export const Route = createFileRoute("/session")({ component: SessionImportPage });
 
@@ -90,6 +90,15 @@ function SessionImportPage() {
   const active = analyzerTabs.find((tab) => tab.key === activeTab)!;
   const analyzerCount = useMemo(
     () => [draft.hunt, draft.party, draft.input, draft.misc].filter((value) => value.trim()).length,
+    [draft.hunt, draft.party, draft.input, draft.misc],
+  );
+  const preview = useMemo(
+    () => parseSessionImport({
+      hunt: draft.hunt,
+      party: draft.party,
+      input: draft.input,
+      misc: draft.misc,
+    }),
     [draft.hunt, draft.party, draft.input, draft.misc],
   );
   const canPrepare = draft.hunt.trim().length > 0;
@@ -239,6 +248,38 @@ function SessionImportPage() {
           </div>
         </div>
       </section>
+
+      {analyzerCount > 0 && (
+        <section className="rounded-3xl border border-cyan-400/10 bg-cyan-400/[0.025] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Leitura detectada</div>
+              <div className="mt-1 text-lg font-bold text-white">
+                {preview.validation.recognized_metric_count} métricas reconhecidas
+              </div>
+            </div>
+            <span className={`rounded-full border px-3 py-1 text-xs ${preview.validation.warnings.length ? "border-amber-400/20 bg-amber-400/8 text-amber-200" : "border-emerald-400/20 bg-emerald-400/8 text-emerald-200"}`}>
+              {preview.validation.warnings.length ? `${preview.validation.warnings.length} ponto(s) para revisar` : "Pronto para salvar"}
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            <PreviewMetric label="Duração" value={formatDurationPreview(preview.hunt_analyse.duration_seconds)} />
+            <PreviewMetric label="XP/h" value={formatCompactPreview(preview.hunt_analyse.xp_per_hour)} />
+            <PreviewMetric label="Balance" value={formatCompactPreview(preview.hunt_analyse.balance_value)} />
+            <PreviewMetric label="Damage" value={formatCompactPreview(preview.hunt_analyse.total_damage)} />
+            <PreviewMetric label="Healing" value={formatCompactPreview(preview.hunt_analyse.total_healing)} />
+            <PreviewMetric label="Kills" value={String(preview.hunt_analyse.total_kills || 0)} />
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
+            <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.creature_rows} criaturas</span>
+            <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.party_player_rows} players da party</span>
+            <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.incoming_element_rows} elementos recebidos</span>
+            <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.incoming_source_rows} fontes de dano</span>
+          </div>
+        </section>
+      )}
 
       <section className="overflow-hidden rounded-2xl border border-white/8 bg-slate-950/45">
         <button
@@ -410,4 +451,32 @@ function Toggle({ active, onClick, children }: { active: boolean; onClick: () =>
       {children}
     </button>
   );
+}
+
+
+function PreviewMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/6 bg-slate-950/45 p-3">
+      <div className="text-[10px] uppercase tracking-wide text-slate-600">{label}</div>
+      <div className="mt-1 text-sm font-bold text-slate-200">{value}</div>
+    </div>
+  );
+}
+
+function formatCompactPreview(value: unknown) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(2) + "M";
+  if (abs >= 1_000) return sign + Math.round(abs / 1_000) + "k";
+  return String(Math.round(n));
+}
+
+function formatDurationPreview(value: unknown) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return h ? h + "h " + String(m).padStart(2, "0") + "m" : m + "m";
 }
