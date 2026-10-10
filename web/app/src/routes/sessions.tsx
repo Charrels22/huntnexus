@@ -16,12 +16,7 @@ import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 import { getOrCreateClientId } from "@/lib/client-id";
 
-export const Route = createFileRoute("/sessions")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    personal: typeof search.personal === "string" ? search.personal : undefined,
-  }),
-  component: SessionHistoryPage,
-});
+export const Route = createFileRoute("/sessions")({ component: SessionHistoryPage });
 
 const tabs = [
   { key: "analyse", label: "Hunt Analyse", icon: BarChart3 },
@@ -33,7 +28,6 @@ const tabs = [
 type TabKey = (typeof tabs)[number]["key"];
 
 function SessionHistoryPage() {
-  const search = Route.useSearch();
   const [tab, setTab] = useState<TabKey>("analyse");
   const [sessions, setSessions] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -57,9 +51,11 @@ function SessionHistoryPage() {
       const rows = Array.isArray(response?.data?.sessions) ? response.data.sessions : [];
       setSessions(rows);
 
-      const requested = search.personal && rows.some((row: any) => row.session_id === search.personal)
-        ? search.personal
+      const requestedId = sessionStorage.getItem("huntnexus.open-player-session");
+      const requested = requestedId && rows.some((row: any) => row.session_id === requestedId)
+        ? requestedId
         : null;
+      if (requested) sessionStorage.removeItem("huntnexus.open-player-session");
       setSelectedId((current) => requested || current || rows[0]?.session_id || "");
     } catch (e) {
       setError((e as Error).message);
@@ -89,7 +85,7 @@ function SessionHistoryPage() {
     }
   }
 
-  useEffect(() => { void loadSessions(); }, [search.personal]);
+  useEffect(() => { void loadSessions(); }, []);
   useEffect(() => { if (selectedId) void loadDetail(selectedId); }, [selectedId]);
 
   const selected = useMemo(
