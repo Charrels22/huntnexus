@@ -232,6 +232,7 @@ const Body = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("final_optimizer"),
+    client_id: z.string().uuid().nullable().optional(),
     vocation: Vocation,
     level: Level,
     hunt_objective: z.enum(["xp", "profit", "balanced"]).default("balanced"),
@@ -574,25 +575,37 @@ export const Route = createFileRoute("/api/huntnexus")({
               ]);
               return json({ data, warnings: Array.isArray(warnings) ? warnings : [] });
             }
-            case "final_optimizer":
+            case "final_optimizer": {
+              const params = {
+                p_vocation: b.vocation,
+                p_level: b.level,
+                p_hunt_objective: b.hunt_objective,
+                p_set_objective: b.set_objective,
+                p_party_size: b.party_size,
+                p_hunt_limit: b.hunt_limit,
+                p_hand_per_source: b.hand_per_source,
+                p_per_body_slot: b.per_body_slot,
+                p_set_limit: b.set_limit,
+                p_frontier_limit: b.frontier_limit,
+                p_selection_limit: b.selection_limit,
+                p_unlocked_requirement_keys: b.unlocked_requirement_keys,
+                p_proficiency_selections: b.proficiency_selections,
+                p_character_profile: b.character_profile,
+              };
+
+              if (b.client_id) {
+                return json({
+                  data: await rpc("huntnexus_optimizer_final_personalized", {
+                    p_client_id: b.client_id,
+                    ...params,
+                  }),
+                });
+              }
+
               return json({
-                data: await rpc("huntnexus_optimizer_final_universal", {
-                  p_vocation: b.vocation,
-                  p_level: b.level,
-                  p_hunt_objective: b.hunt_objective,
-                  p_set_objective: b.set_objective,
-                  p_party_size: b.party_size,
-                  p_hunt_limit: b.hunt_limit,
-                  p_hand_per_source: b.hand_per_source,
-                  p_per_body_slot: b.per_body_slot,
-                  p_set_limit: b.set_limit,
-                  p_frontier_limit: b.frontier_limit,
-                  p_selection_limit: b.selection_limit,
-                  p_unlocked_requirement_keys: b.unlocked_requirement_keys,
-                  p_proficiency_selections: b.proficiency_selections,
-                  p_character_profile: b.character_profile,
-                }),
+                data: await rpc("huntnexus_optimizer_final_universal", params),
               });
+            }
             case "boss_build": {
               const [data, warnings] = await Promise.all([
                 rpc("huntnexus_boss_build_preview", { p_boss_key: b.boss_key, p_vocation: b.vocation, p_level: b.level }),
