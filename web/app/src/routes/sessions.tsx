@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -14,8 +14,14 @@ import {
 } from "lucide-react";
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 import { CanonicalSprite } from "@/components/shared/canonical-sprite";
+import { getOrCreateClientId } from "@/lib/client-id";
 
-export const Route = createFileRoute("/sessions")({ component: SessionHistoryPage });
+export const Route = createFileRoute("/sessions")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    personal: typeof search.personal === "string" ? search.personal : undefined,
+  }),
+  component: SessionHistoryPage,
+});
 
 const tabs = [
   { key: "analyse", label: "Hunt Analyse", icon: BarChart3 },
@@ -27,6 +33,7 @@ const tabs = [
 type TabKey = (typeof tabs)[number]["key"];
 
 function SessionHistoryPage() {
+  const search = Route.useSearch();
   const [tab, setTab] = useState<TabKey>("analyse");
   const [sessions, setSessions] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -36,13 +43,24 @@ function SessionHistoryPage() {
   const [error, setError] = useState("");
 
   async function loadSessions() {
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+
     setLoadingList(true);
     setError("");
     try {
-      const response = await callHuntNexusApi<any>({ action: "session_list", limit: 30 });
+      const response = await callHuntNexusApi<any>({
+        action: "player_session_list",
+        client_id: clientId,
+        limit: 50,
+      });
       const rows = Array.isArray(response?.data?.sessions) ? response.data.sessions : [];
       setSessions(rows);
-      if (!selectedId && rows[0]?.session_id) setSelectedId(rows[0].session_id);
+
+      const requested = search.personal && rows.some((row: any) => row.session_id === search.personal)
+        ? search.personal
+        : null;
+      setSelectedId((current) => requested || current || rows[0]?.session_id || "");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -51,11 +69,17 @@ function SessionHistoryPage() {
   }
 
   async function loadDetail(sessionId: string) {
-    if (!sessionId) return;
+    const clientId = getOrCreateClientId();
+    if (!clientId || !sessionId) return;
+
     setLoadingDetail(true);
     setError("");
     try {
-      const response = await callHuntNexusApi<any>({ action: "session_detail", session_id: sessionId });
+      const response = await callHuntNexusApi<any>({
+        action: "player_session_detail",
+        client_id: clientId,
+        session_id: sessionId,
+      });
       setDetail(response?.data ?? null);
     } catch (e) {
       setError((e as Error).message);
@@ -65,7 +89,7 @@ function SessionHistoryPage() {
     }
   }
 
-  useEffect(() => { void loadSessions(); }, []);
+  useEffect(() => { void loadSessions(); }, [search.personal]);
   useEffect(() => { if (selectedId) void loadDetail(selectedId); }, [selectedId]);
 
   const selected = useMemo(
@@ -104,14 +128,14 @@ function SessionHistoryPage() {
             >
               {sessions.map((s) => (
                 <option key={s.session_id} value={s.session_id}>
-                  {decodeHtml(s.hunt_name_raw || s.hunt_key || "Hunt")} · {formatDuration(s.duration_seconds)} · {formatCompact(s.xp_per_hour)} XP/h
+                  {decodeHtml(s.hunt_name || "Hunt sem local")} · {formatDuration(s.duration_seconds)} · {formatCompact(s.xp_per_hour)} XP/h
                 </option>
               ))}
             </select>
             {selected && (
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <Meta label="Party" value={Number(selected.party_size || 1) > 1 ? `x${selected.party_size}` : "Solo"} />
-                <Meta label="Qualidade" value={selected.structural_quality_score != null ? formatNumber(Number(selected.structural_quality_score), 2) : "—"} />
+                <Meta label="Vocação" value={selected.vocation || "—"} />
+                <Meta label="Status" value={selected.status === "parsed" ? "Processada" : "Revisar"} />
               </div>
             )}
           </div>
@@ -150,7 +174,13 @@ function SessionHistoryPage() {
         )}
 
         {!loadingDetail && !detail && (
-          <Empty title="Nenhuma sessão aberta" text="Escolha uma sessão real do banco para começar a análise." />
+          <div className="grid min-h-[320px] place-items-center text-center">
+            <div>
+              <div className="text-xl font-bold text-white">Nenhuma hunt cadastrada</div>
+              <p className="mt-2 max-w-md text-sm text-slate-500">Cole seus analyzers no Session Analyzer e salve a primeira hunt.</p>
+              <Link to="/session" className="hn-primary-button mt-4">Cadastrar hunt</Link>
+            </div>
+          </div>
         )}
 
         {!loadingDetail && detail && tab === "analyse" && <Analyse data={detail} />}
