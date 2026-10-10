@@ -1,0 +1,31 @@
+name: HuntNexus Player Session Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/player-session-import-smoke.mjs"
+      - "web/app/src/lib/session-parser.ts"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - "db/migrations/0115_player_session_imports.sql"
+      - "db/migrations/0116_player_session_delete.sql"
+      - ".github/workflows/huntnexus-player-session-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Player session import regression smoke
+        run: node tests/player-session-import-smoke.mjs
