@@ -75,8 +75,10 @@ Main areas:
 
 ### Quick actions
 - Find a Hunt
-- Analyze Session
+- Cadastrar Hunt
 - Compare Loadouts
+
+Do not place Hunt Analyse / Misc / Damage / Party Hunt as standalone Dashboard shortcuts. They belong inside a saved session.
 
 ### Recommended Hunts
 Image-rich cards with:
@@ -210,23 +212,51 @@ Tabs:
 # /session — Session Analyzer
 
 Purpose:
-Analyze a hunt the player actually participated in.
+Cadastrar/importar uma hunt em que o player participou.
 
-This is the Hunt Analyzer equivalent in HuntNexus layout.
+This is an intake flow, not the analysis-result screen.
 
-Data ingestion:
-- paste/import supported Hunt Analyzer session information
-- load previously stored session
-- future automatic imports if supported
+Primary import inputs:
+- Hunt Analyzer
+- Party Hunt
+- Input Analyzer
+- Miscellaneous
 
-The four main tabs are the same conceptual categories as the source analyzer:
+Additional optional context:
+- character
+- server
+- vocation
+- level
+- location/hunt
+- observation
+- tags
+- hunt type
+- favorite
+- publish/highscore preference
+- rare drops
+
+Flow:
+
+1. Paste/import analyzer blocks
+2. Detect/validate data
+3. Add optional metadata
+4. Save/register hunt
+5. Open saved session analysis
+
+Important:
+Hunt Analyse / Misc / Damage / Party Hunt are views of a saved/registered session. They must not be the initial Session Analyzer landing screen.
+
+---
+
+# /sessions — Session History and Analysis
+
+Purpose:
+List saved sessions and open the full analysis of one registered hunt.
+
+Inside a selected session show:
 
 ## Hunt Analyse
-
-Primary session economy/performance.
-
-Show:
-- session duration
+- duration
 - raw XP
 - XP/h
 - loot
@@ -234,80 +264,39 @@ Show:
 - balance/profit
 - profit/h
 - kills
-- relevant bonuses
-- comparison with player's history when available
-
-Visuals:
-- KPI counters
-- XP timeline
-- profit timeline
-- session efficiency cards
-- history comparison
+- bonuses when supported
 
 ## Misc
-
-Auxiliary session data.
-
-Show whichever source fields are available, including:
 - consumables
 - supplies
 - healing/mana usage
-- loot details
-- tasks / auxiliary counters
-- session metadata
-
-Do not invent unsupported fields.
+- equipment
+- auxiliary session metadata
 
 ## Damage
-
-Combat analysis for the player's session.
-
-Show:
 - damage dealt
 - damage received
 - damage/h
-- damage by element
-- damage by spell/source when available
-- charm damage
-- charm contribution
-- incoming damage by element
-- healing when present
-- largest/most relevant sources
-
-Visuals:
-- damage donut
-- stacked element bars
-- dealt vs received
-- charm contribution cards
-- source/spell breakdown
+- damage by element/source
+- charm damage when normalized
+- incoming damage
+- healing
 
 ## Party Hunt
-
-Only when party data exists.
-
-Show:
 - party members
-- vocation
-- level when available
+- vocation/level when available
 - damage contribution
 - healing contribution
-- XP/share relevant data
-- contribution percentages
-- party total
-- individual comparisons
+- share/contribution percentages
 
 Visuals:
-- member cards
+- KPI cards
+- charts
 - contribution bars
-- party composition
-- damage/healing comparison
+- item/creature sprites
+- trend/history comparison
 
-Important:
-Hunt Analyse / Misc / Damage / Party Hunt are not recommendation categories. They are views over an actual player hunt session.
 
----
-
-# /sessions — Session History
 
 Purpose:
 Player history and progression.
@@ -590,15 +579,21 @@ Milestone FE-01:
 2. Dashboard
 3. Hunt Planner
 4. Hunt Detail shell
-5. Session Analyzer shell with exact tabs:
+5. Session Analyzer intake flow:
+   - Hunt Analyzer
+   - Party Hunt
+   - Input Analyzer
+   - Miscellaneous
+   - additional session metadata
+6. Saved Session analysis:
    - Hunt Analyse
    - Misc
    - Damage
    - Party Hunt
-6. Official/canonical asset pipeline placeholder
-7. Reusable charts/cards
-8. Real final optimizer API adapter
-9. Session Analyzer data adapter against existing HuntNexus session tables
-10. Responsive desktop-first layout
+7. Official/canonical asset pipeline placeholder
+8. Reusable charts/cards
+9. Real final optimizer API adapter
+10. Session Analyzer data adapter against existing HuntNexus session tables
+11. Responsive desktop-first layout
 
 No publishing during this milestone.
