@@ -385,7 +385,23 @@ function Damage({ defensive }: { defensive:any }) {
   );
 }
 
-function Setup({ selection, personalReview, ownedBuildOptions, loadingPersonalReview }: { selection:any; personalReview:any; ownedBuildOptions:any; loadingPersonalReview:boolean }) {
+function Setup({
+  selection,
+  personalReview,
+  ownedBuildOptions,
+  huntBuildChoice,
+  savingBuildChoice,
+  onChooseBuild,
+  loadingPersonalReview,
+}: {
+  selection:any;
+  personalReview:any;
+  ownedBuildOptions:any;
+  huntBuildChoice:any;
+  savingBuildChoice:boolean;
+  onChooseBuild:(option:any) => Promise<void>;
+  loadingPersonalReview:boolean;
+}) {
   const [selectedOwnedOption, setSelectedOwnedOption] = useState(1);
   const sets = Array.isArray(selection?.selected_sets) ? selection.selected_sets : [];
   const mainSet = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
@@ -424,7 +440,10 @@ function Setup({ selection, personalReview, ownedBuildOptions, loadingPersonalRe
                 option={option}
                 personalReview={personalReview}
                 selected={selectedOwnedOption === option.option_order}
+                chosen={sameBuildSelection(huntBuildChoice?.selection, option.selection)}
+                savingChoice={savingBuildChoice}
                 onSelect={() => setSelectedOwnedOption(option.option_order)}
+                onChoose={() => void onChooseBuild(option)}
               />
             ))}
           </div>
@@ -634,12 +653,18 @@ function OwnedBuildOptionCard({
   option,
   personalReview,
   selected,
+  chosen,
+  savingChoice,
   onSelect,
+  onChoose,
 }: {
   option:any;
   personalReview:any;
   selected:boolean;
+  chosen:boolean;
+  savingChoice:boolean;
   onSelect:() => void;
+  onChoose:() => void;
 }) {
   const selection = option?.selection ?? {};
   const replacements = Array.isArray(option?.replacements) ? option.replacements : [];
@@ -653,10 +678,14 @@ function OwnedBuildOptionCard({
   const replacementSlots = new Set(replacements.map((item:any) => item.selection_key));
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className={`group w-full rounded-2xl border p-4 text-left transition ${
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onSelect();
+      }}
+      className={`group w-full cursor-pointer rounded-2xl border p-4 text-left transition ${
         selected
           ? option.option_type === "main"
             ? "border-amber-300/70 bg-amber-400/[0.10] shadow-[0_0_0_1px_rgba(252,211,77,.08)]"
@@ -672,8 +701,10 @@ function OwnedBuildOptionCard({
           </div>
         </div>
 
-        {option.option_type === "main" ? (
-          <span className="rounded-full bg-amber-300 px-2.5 py-1 text-[10px] font-black text-slate-950">Em uso</span>
+        {chosen ? (
+          <span className="rounded-full border border-emerald-300/25 bg-emerald-300 px-2.5 py-1 text-[10px] font-black text-slate-950">Nesta hunt</span>
+        ) : option.option_type === "main" ? (
+          <span className="rounded-full bg-amber-300 px-2.5 py-1 text-[10px] font-black text-slate-950">Main</span>
         ) : option.dominates_main ? (
           <span className="rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-2.5 py-1 text-[10px] text-emerald-300">supera Main</span>
         ) : (
@@ -732,7 +763,28 @@ function OwnedBuildOptionCard({
       <div className="mt-3 border-t border-white/6 pt-3 text-[10px] leading-4 text-slate-600">
         {humanOwnedBuildReason(option)}
       </div>
-    </button>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="text-[9px] text-slate-700">
+          {chosen ? "Selecionada apenas para esta hunt" : "Não altera seu Set Main"}
+        </span>
+        <button
+          type="button"
+          disabled={chosen || savingChoice}
+          onClick={(event) => {
+            event.stopPropagation();
+            onChoose();
+          }}
+          className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition ${
+            chosen
+              ? "cursor-default border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-300"
+              : "border-cyan-400/15 bg-cyan-400/[0.04] text-cyan-200 hover:border-cyan-300/30 hover:bg-cyan-400/[0.08]"
+          } disabled:opacity-60`}
+        >
+          {chosen ? "Em uso nesta hunt" : savingChoice ? "Salvando..." : "Usar nesta hunt"}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -956,6 +1008,13 @@ function buildSlotLabel(slot:string) {
     feet:"Boots",
     ammunition:"Ammo",
   } as Record<string,string>)[slot] ?? slot;
+}
+
+function sameBuildSelection(a:any, b:any) {
+  if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
+  const aEntries = Object.entries(a).sort(([ka],[kb]) => ka.localeCompare(kb));
+  const bEntries = Object.entries(b).sort(([ka],[kb]) => ka.localeCompare(kb));
+  return JSON.stringify(aEntries) === JSON.stringify(bEntries);
 }
 
 function humanOwnedBuildReason(option:any) {
