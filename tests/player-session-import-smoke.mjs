@@ -20,8 +20,46 @@ async function post(body) {
 
 const clientId = crypto.randomUUID();
 let sessionId = null;
+let inventoryIds = [];
 
 try {
+  const mainItem = await post({
+    action: "player_inventory_put",
+    client_id: clientId,
+    storage_kind: "main",
+    item_key: "soulshredder",
+    quantity: 1,
+  });
+  assert(mainItem?.data?.saved === true, "session smoke Main save regression");
+
+  const bpItem = await post({
+    action: "player_inventory_put",
+    client_id: clientId,
+    storage_kind: "backpack",
+    item_key: "falcon-longsword",
+    quantity: 1,
+  });
+  assert(bpItem?.data?.saved === true, "session smoke BP save regression");
+
+  inventoryIds = [mainItem.data.inventory_id, bpItem.data.inventory_id];
+
+  const choice = await post({
+    action: "player_hunt_build_choice_save",
+    client_id: clientId,
+    hunt_key: "cobra-bastion",
+    vocation: "EK",
+    level: 700,
+    selection: { weapon: "falcon-longsword" },
+    option_type: "owned_variant",
+    replacements: [
+      {
+        selection_key: "weapon",
+        item_key: "falcon-longsword",
+        item_name: "Falcon Longsword",
+      },
+    ],
+  });
+  assert(choice?.data?.saved === true, "session smoke hunt build choice regression");
   const imported = await post({
     action: "session_import_save",
     client_id: clientId,
@@ -130,6 +168,28 @@ try {
   assert(detail?.data?.session?.hunt_key === "cobra-bastion", "hunt key detail regression");
   assert(detail?.data?.party_hunt?.players?.length === 2, "detail party regression");
   assert(detail?.data?.parser?.community_evidence_written === false, "detail privacy regression");
+  assert(detail?.data?.parser?.loadout_snapshot_immutable === true, "loadout snapshot immutability contract regression");
+  assert(detail?.data?.loadout_snapshot?.source === "saved_hunt_choice", "loadout snapshot source regression");
+  assert(detail?.data?.loadout_snapshot?.selection?.weapon === "falcon-longsword", "loadout snapshot weapon regression");
+
+  const bpInventoryId = inventoryIds[1];
+  const removedBp = await post({
+    action: "player_inventory_remove",
+    client_id: clientId,
+    inventory_id: bpInventoryId,
+  });
+  assert(removedBp?.data?.deleted === true, "session smoke BP removal regression");
+  inventoryIds = inventoryIds.filter((id) => id !== bpInventoryId);
+
+  const detailAfterInventoryChange = await post({
+    action: "player_session_detail",
+    client_id: clientId,
+    session_id: sessionId,
+  });
+  assert(
+    detailAfterInventoryChange?.data?.loadout_snapshot?.selection?.weapon === "falcon-longsword",
+    "historical loadout snapshot changed after BP removal",
+  );
 
   console.log(JSON.stringify({
     status: "ok",
@@ -140,6 +200,8 @@ try {
     damage_elements: parsed.damage.incoming_by_element.length,
     damage_sources: parsed.damage.incoming_by_source.length,
     looted_items: parsed.misc.looted_items.length,
+    loadout_snapshot_source: detail.data.loadout_snapshot.source,
+    loadout_snapshot_weapon: detail.data.loadout_snapshot.selection.weapon,
   }, null, 2));
 } finally {
   if (sessionId) {
@@ -149,5 +211,20 @@ try {
       session_id: sessionId,
     });
     assert(deleted?.data?.deleted === true, "smoke cleanup regression");
+  }
+
+  await post({
+    action: "player_hunt_build_choice_delete",
+    client_id: clientId,
+    hunt_key: "cobra-bastion",
+    vocation: "EK",
+  });
+
+  for (const inventoryId of inventoryIds) {
+    await post({
+      action: "player_inventory_remove",
+      client_id: clientId,
+      inventory_id: inventoryId,
+    });
   }
 }
