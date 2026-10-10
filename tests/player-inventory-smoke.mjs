@@ -126,7 +126,7 @@ try {
   });
 
   assert(
-    personalizedPlanner?.data?.methodology?.stage === "optimizer_final_personalized_v1",
+    personalizedPlanner?.data?.methodology?.stage === "optimizer_final_personalized_api_v1",
     "personalized planner stage regression",
   );
   assert(
