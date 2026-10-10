@@ -74,6 +74,7 @@ const Body = z.discriminatedUnion("action", [
       vocation: z.string().max(20).default(""),
       level: z.string().max(10).default(""),
       location: z.string().max(200).default(""),
+      hunt_key: z.string().max(200).default(""),
       observation: z.string().max(1000).default(""),
       tags: z.array(z.string().max(60)).max(20).default([]),
       type: z.enum(["normal", "bounty"]).default("normal"),
