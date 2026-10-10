@@ -54,11 +54,11 @@ function PlannerPage() {
       const characterProfile = Object.fromEntries(
         Object.entries({
           weapon_family: weaponFamily,
-          effective_weapon_skill: stats.effective_weapon_skill ?? familyBaseSkill,
-          effective_magic_level: stats.effective_magic_level ?? stats.magic_level,
-          effective_shielding: stats.effective_shielding ?? stats.shielding,
-          effective_distance_skill: stats.effective_distance_skill ?? stats.distance,
-          effective_fist_skill: stats.effective_fist_skill ?? stats.fist,
+          effective_weapon_skill: validFinalStat(familyBaseSkill, stats.effective_weapon_skill),
+          effective_magic_level: validFinalStat(stats.magic_level, stats.effective_magic_level),
+          effective_shielding: validFinalStat(stats.shielding, stats.effective_shielding),
+          effective_distance_skill: validFinalStat(stats.distance, stats.effective_distance_skill),
+          effective_fist_skill: validFinalStat(stats.fist, stats.effective_fist_skill),
         }).filter(([, value]) => value !== undefined && value !== null && value !== ""),
       );
 
@@ -207,4 +207,16 @@ function formatMetric(value: unknown) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
   return String(Math.round(value));
+}
+
+
+function validFinalStat(baseValue: unknown, finalValue: unknown) {
+  const base = Number(baseValue);
+  const finalNumber = Number(finalValue);
+  const hasBase = baseValue !== undefined && baseValue !== null && baseValue !== "" && Number.isFinite(base);
+  const hasFinal = finalValue !== undefined && finalValue !== null && finalValue !== "" && Number.isFinite(finalNumber);
+
+  if (!hasFinal) return hasBase ? base : undefined;
+  if (!hasBase) return finalNumber;
+  return finalNumber >= base ? finalNumber : base;
 }
