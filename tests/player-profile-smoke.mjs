@@ -19,6 +19,7 @@ async function post(body) {
 
 const clientId = crypto.randomUUID();
 
+try {
 const saved = await post({
   action: "player_profile_save",
   client_id: clientId,
@@ -84,3 +85,10 @@ console.log(JSON.stringify({
   eligible_wand_trees: catalog.data.summary.eligible_tree_count,
   amber_selection: loaded.data.profile.proficiency_selections["amber-wand"],
 }, null, 2));
+} finally {
+  const deleted = await post({
+    action: "player_profile_delete",
+    client_id: clientId,
+  });
+  assert(deleted?.data?.deleted === true, "profile smoke cleanup regression");
+}
