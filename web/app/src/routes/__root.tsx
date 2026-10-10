@@ -6,7 +6,7 @@ import {
   createRootRoute,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import type { ReactNode } from "react";\nimport { AppShell } from "@/components/shell/app-shell";
 
 import appCss from "../styles.css?url";
 
