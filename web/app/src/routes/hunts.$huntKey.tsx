@@ -693,35 +693,192 @@ function OwnedBuildComparison({ option, personalReview }: { option:any; personal
   }
 
   const replacements = Array.isArray(option.replacements) ? option.replacements : [];
+  const details = Array.isArray(option.replacement_details) ? option.replacement_details : [];
   const mainRows = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
   const mainBySlot = new Map(mainRows.map((item:any) => [item.selection_key, item]));
 
   return (
     <div className="mt-4 rounded-xl border border-cyan-400/10 bg-cyan-400/[0.025] p-3">
       <div className="text-xs font-semibold text-cyan-100">O que muda nesta opção</div>
-      <div className="mt-2 grid gap-2 md:grid-cols-2">
+      <div className="mt-3 space-y-3">
         {replacements.map((replacement:any) => {
           const previous:any = mainBySlot.get(replacement.selection_key);
+          const detail = details.find((item:any) => item.selection_key === replacement.selection_key);
+          const toHighlights = effectContextHighlights(detail?.to_context);
+          const fromHighlights = effectContextHighlights(detail?.from_context);
+          const incomingAvailable = detail?.to_context?.incoming_damage?.available === true;
+
           return (
-            <div key={replacement.selection_key} className="flex items-center gap-2 rounded-lg border border-white/6 bg-black/15 px-2.5 py-2">
-              <CanonicalSprite kind="item" name={previous?.item_name || slugToName(String(previous?.item_key || ""))} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="text-[9px] uppercase tracking-wide text-slate-600">{buildSlotLabel(replacement.selection_key)}</div>
-                <div className="truncate text-[10px] text-slate-500">{previous?.item_name || "Main"}</div>
+            <div key={replacement.selection_key} className="rounded-xl border border-white/6 bg-black/15 p-3">
+              <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr] md:items-center">
+                <div className="flex items-center gap-2">
+                  <CanonicalSprite kind="item" name={previous?.item_name || slugToName(String(previous?.item_key || ""))} size="sm" />
+                  <div className="min-w-0">
+                    <div className="text-[9px] uppercase tracking-wide text-slate-600">{buildSlotLabel(replacement.selection_key)} · Main</div>
+                    <div className="truncate text-xs font-semibold text-slate-400">{previous?.item_name || "Main"}</div>
+                  </div>
+                </div>
+
+                <span className="hidden text-sm font-black text-cyan-300 md:block">→</span>
+
+                <div className="flex items-center gap-2 md:justify-end">
+                  <CanonicalSprite kind="item" name={replacement.item_name} size="sm" />
+                  <div className="min-w-0 md:text-right">
+                    <div className="text-[9px] uppercase tracking-wide text-cyan-500">BP · candidata</div>
+                    <div className="truncate text-xs font-semibold text-cyan-100">{replacement.item_name}</div>
+                  </div>
+                </div>
               </div>
-              <span className="text-xs text-cyan-300">→</span>
-              <CanonicalSprite kind="item" name={replacement.item_name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="text-[9px] uppercase tracking-wide text-cyan-500">BP</div>
-                <div className="truncate text-[10px] font-semibold text-cyan-100">{replacement.item_name}</div>
+
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                <BuildAttributeBlock
+                  title="Main traz"
+                  highlights={fromHighlights}
+                  empty="Sem efeitos normalizados adicionais."
+                />
+                <BuildAttributeBlock
+                  title="Peça da BP traz"
+                  highlights={toHighlights}
+                  empty="Sem efeitos normalizados adicionais."
+                  accent
+                />
               </div>
+
+              {!incomingAvailable && hasProtectionHighlight(toHighlights) && (
+                <div className="mt-2 rounded-lg border border-amber-400/10 bg-amber-400/[0.035] px-2.5 py-2 text-[10px] leading-4 text-amber-100/60">
+                  Esta peça possui proteção elemental, mas não há dano observado suficiente nesta hunt para afirmar que essa proteção é superior à do Main.
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-      <div className="mt-2 text-[10px] leading-4 text-slate-600">{humanOwnedBuildReason(option)}</div>
+      <div className="mt-3 text-[10px] leading-4 text-slate-600">{humanOwnedBuildReason(option)}</div>
     </div>
   );
+}
+
+function BuildAttributeBlock({
+  title,
+  highlights,
+  empty,
+  accent = false,
+}: {
+  title:string;
+  highlights:string[];
+  empty:string;
+  accent?:boolean;
+}) {
+  return (
+    <div>
+      <div className={`text-[9px] font-semibold uppercase tracking-wide ${accent ? "text-cyan-500" : "text-slate-600"}`}>{title}</div>
+      {highlights.length ? (
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {highlights.slice(0,8).map((label) => (
+            <span
+              key={label}
+              className={`rounded-full border px-2 py-1 text-[9px] ${
+                accent
+                  ? "border-cyan-400/15 bg-cyan-400/[0.045] text-cyan-100"
+                  : "border-white/7 bg-white/[0.025] text-slate-400"
+              }`}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-1 text-[10px] text-slate-700">{empty}</div>
+      )}
+    </div>
+  );
+}
+
+function effectContextHighlights(context:any) {
+  if (!context || typeof context !== "object") return [];
+
+  const groups = context?.effect_profile?.groups ?? {};
+  const out:string[] = [];
+
+  const protection = groups?.protection;
+  if (protection && typeof protection === "object" && !Array.isArray(protection)) {
+    for (const [element,value] of Object.entries(protection)) {
+      const n = Number(value);
+      if (Number.isFinite(n)) out.push(`Proteção ${labelElement(element)} ${formatSigned(n, "%")}`);
+    }
+  }
+
+  const vulnerabilities = Array.isArray(groups?.vulnerabilities) ? groups.vulnerabilities : [];
+  for (const effect of vulnerabilities) {
+    const value = Number(effect?.value);
+    if (Number.isFinite(value)) out.push(`${friendlyEffectKey(effect?.effect_key)} ${formatSigned(value, unitSuffix(effect?.unit))}`);
+  }
+
+  for (const groupName of ["magic_skill","skill","offense","leech","magic_shield","movement","special"]) {
+    const values = Array.isArray(groups?.[groupName]) ? groups[groupName] : [];
+    for (const effect of values) {
+      const value = Number(effect?.value);
+      const label = friendlyEffectKey(effect?.effect_key);
+      if (Number.isFinite(value)) out.push(`${label} ${formatSigned(value, unitSuffix(effect?.unit))}`);
+      else if (label) out.push(label);
+    }
+  }
+
+  const activePerks = Array.isArray(context?.effect_profile?.proficiency?.active_effects)
+    ? context.effect_profile.proficiency.active_effects
+    : [];
+  for (const perk of activePerks) {
+    if (perk?.description) out.push(`Perk: ${perk.description}`);
+  }
+
+  return [...new Set(out)].filter(Boolean);
+}
+
+function hasProtectionHighlight(highlights:string[]) {
+  return highlights.some((label) => label.startsWith("Proteção "));
+}
+
+function labelElement(value:string) {
+  return ({
+    physical:"Physical",
+    fire:"Fire",
+    ice:"Ice",
+    earth:"Earth",
+    energy:"Energy",
+    death:"Death",
+    holy:"Holy",
+  } as Record<string,string>)[value] ?? slugToName(value);
+}
+
+function friendlyEffectKey(value:unknown) {
+  const key = String(value ?? "");
+  const known:Record<string,string> = {
+    magic_level:"Magic Level",
+    energy_magic_level:"Energy Magic Level",
+    death_magic_level:"Death Magic Level",
+    fire_magic_level:"Fire Magic Level",
+    ice_magic_level:"Ice Magic Level",
+    earth_magic_level:"Earth Magic Level",
+    holy_magic_level:"Holy Magic Level",
+    critical_chance:"Critical Chance",
+    critical_extra_damage:"Critical Extra Damage",
+    life_leech:"Life Leech",
+    mana_leech:"Mana Leech",
+    magic_shield_capacity:"Magic Shield",
+    speed:"Speed",
+  };
+  return known[key] ?? slugToName(key.replaceAll("_","-"));
+}
+
+function unitSuffix(unit:unknown) {
+  const value = String(unit ?? "").toLowerCase();
+  if (value === "percent" || value === "%") return "%";
+  if (value === "levels" || value === "level") return "";
+  return "";
+}
+
+function formatSigned(value:number, suffix = "") {
+  return `${value > 0 ? "+" : ""}${formatNumber(value,2)}${suffix}`;
 }
 
 function orderedBuildSlots(selection:any) {
