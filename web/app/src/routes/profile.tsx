@@ -605,57 +605,77 @@ function ProfilePage() {
         )}
 
         {proficiencyTrees.length > 0 && (
-          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+          <div className="mt-5 space-y-3">
             {proficiencyTrees.map((tree) => {
               const selected = new Set(proficiencySelections[tree.item_key] ?? []);
+              const isOpen = openTreeKey === tree.item_key;
+
               return (
                 <article key={tree.item_key} className="overflow-hidden rounded-2xl border border-white/7 bg-slate-950/45">
-                  <div className="flex items-center gap-3 border-b border-white/7 p-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenTreeKey((current) => current === tree.item_key ? null : tree.item_key)}
+                    className="flex w-full items-center gap-3 p-4 text-left transition hover:bg-white/[0.025]"
+                  >
                     <CanonicalSprite kind="item" name={tree.item_name} size="md" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-bold text-white">{tree.item_name}</div>
                       <div className="mt-1 text-[11px] text-slate-500">
-                        Level {tree.level_required ?? "—"} · {tree.perk_count} perks catalogados
+                        Level {tree.level_required ?? "—"} · {tree.perk_count} perks · {selected.size} ativos
                       </div>
                     </div>
-                    <div className="rounded-full border border-white/7 px-2.5 py-1 text-[10px] text-slate-400">
-                      {selected.size} ativos
-                    </div>
-                  </div>
+                    <ChevronDown className={`size-4 shrink-0 text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                  </button>
 
-                  <div className="space-y-2 p-3">
-                    {tree.perks.map((perk) => {
-                      const active = selected.has(perk.perk_order);
-                      return (
-                        <button
-                          key={perk.perk_order}
-                          type="button"
-                          onClick={() => togglePerk(tree.item_key, perk.perk_order)}
-                          className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition ${
-                            active
-                              ? "border-cyan-400/25 bg-cyan-400/[0.07]"
-                              : "border-white/6 bg-white/[0.02] hover:border-white/12"
-                          }`}
-                        >
-                          <span className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border ${
-                            active
-                              ? "border-cyan-300 bg-cyan-300 text-slate-950"
-                              : "border-white/15 text-transparent"
-                          }`}>
-                            <Check className="size-3.5" />
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block text-xs font-semibold text-slate-200">
-                              Perk {perk.perk_order}
-                            </span>
-                            <span className="mt-0.5 block text-xs leading-5 text-slate-500">
-                              {perk.description_raw || perk.effect_key}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {isOpen && (
+                    <div className="border-t border-white/7 p-4">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Mapa de perks</div>
+                          <div className="mt-1 text-[11px] text-slate-500">Ordem preservada da fonte. Conexões exatas ainda não são inferidas.</div>
+                        </div>
+                        <span className="rounded-full border border-white/7 px-2.5 py-1 text-[10px] text-slate-500">
+                          {tree.levels_declared ?? "?"} níveis declarados
+                        </span>
+                      </div>
+
+                      <div className="relative overflow-hidden rounded-2xl border border-white/6 bg-[#07101b] p-4">
+                        <div className="pointer-events-none absolute left-6 right-6 top-1/2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                        <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                          {tree.perks.map((perk) => {
+                            const active = selected.has(perk.perk_order);
+                            return (
+                              <button
+                                key={perk.perk_order}
+                                type="button"
+                                onClick={() => togglePerk(tree.item_key, perk.perk_order)}
+                                title={perk.description_raw || perk.effect_key}
+                                className={`group relative min-h-[112px] rounded-2xl border p-3 text-left transition ${
+                                  active
+                                    ? "border-emerald-400/45 bg-emerald-400/[0.08]"
+                                    : "border-white/8 bg-slate-950/75 hover:border-cyan-400/25 hover:bg-cyan-400/[0.035]"
+                                }`}
+                              >
+                                <span className={`absolute right-2 top-2 grid size-5 place-items-center rounded-full border ${
+                                  active
+                                    ? "border-emerald-300 bg-emerald-300 text-slate-950"
+                                    : "border-white/12 bg-slate-950 text-transparent"
+                                }`}>
+                                  <Check className="size-3.5" />
+                                </span>
+                                <span className="grid size-9 place-items-center rounded-xl border border-white/8 bg-black/25 text-xs font-black text-slate-300">
+                                  {perk.perk_order}
+                                </span>
+                                <span className="mt-3 block pr-5 text-xs font-semibold leading-5 text-slate-200">
+                                  {perk.description_raw || perk.effect_key}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </article>
               );
             })}
