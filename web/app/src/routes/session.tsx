@@ -274,6 +274,7 @@ function SessionImportPage() {
 
           <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.creature_rows} criaturas</span>
+            <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.looted_item_rows} itens de loot</span>
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.party_player_rows} players da party</span>
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.incoming_element_rows} elementos recebidos</span>
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.incoming_source_rows} fontes de dano</span>
