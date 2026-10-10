@@ -47,7 +47,7 @@ function PlannerPage() {
         weaponFamily === "sword" ? stats.sword :
         weaponFamily === "axe" ? stats.axe :
         weaponFamily === "club" ? stats.club :
-        weaponFamily === "distance" ? stats.distance :
+        (weaponFamily === "bow" || weaponFamily === "crossbow") ? stats.distance :
         weaponFamily === "fist" ? stats.fist :
         undefined;
 
