@@ -191,6 +191,19 @@ try {
     "historical loadout snapshot changed after BP removal",
   );
 
+  const buildPerformance = await post({
+    action: "player_session_build_performance",
+    client_id: clientId,
+    hunt_key: "cobra-bastion",
+    vocation: "EK",
+  });
+  assert(buildPerformance?.data?.methodology?.stage === "player_session_build_performance_v1", "build performance stage regression");
+  assert(buildPerformance?.data?.methodology?.causal_effect_inferred === false, "build performance causal inference regression");
+  assert(buildPerformance?.data?.summary?.sessions === 1, "build performance session count regression");
+  assert(buildPerformance?.data?.summary?.distinct_builds === 1, "build performance build count regression");
+  assert(buildPerformance?.data?.builds?.[0]?.sample_status === "single_session", "build performance sample warning regression");
+  assert(buildPerformance?.data?.builds?.[0]?.selection?.weapon === "falcon-longsword", "build performance snapshot grouping regression");
+
   console.log(JSON.stringify({
     status: "ok",
     stage: "player_session_import_public_smoke",
@@ -202,6 +215,7 @@ try {
     looted_items: parsed.misc.looted_items.length,
     loadout_snapshot_source: detail.data.loadout_snapshot.source,
     loadout_snapshot_weapon: detail.data.loadout_snapshot.selection.weapon,
+    build_performance_sample_status: buildPerformance.data.builds[0].sample_status,
   }, null, 2));
 } finally {
   if (sessionId) {
