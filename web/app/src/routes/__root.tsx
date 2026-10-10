@@ -72,7 +72,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <AppShell>{children}</AppShell>
         <Scripts />
       </body>
     </html>
