@@ -123,7 +123,12 @@ function parseKilledMonsters(textLines: string[]) {
     if (kills == null) continue;
     const monsterName = match[2];
     if (!monsterName) continue;
-    out.push({ monster_name_raw: monsterName.trim(), kills });
+    out.push({
+      monster_name_raw: monsterName.trim(),
+      monster_key: null,
+      resolution_status: "raw_name",
+      kills,
+    });
   }
   return out;
 }
@@ -215,7 +220,7 @@ function parseInputAnalyzer(textLines: string[]) {
 }
 
 function parseMisc(textLines: string[]) {
-  const stats: Array<{ key: string; name_raw: string; numeric_value: number | null; raw_value: string }> = [];
+  const stats: Array<{ stat_key: string; stat_name_raw: string; numeric_value: number | null; raw_value: string; unit: string }> = [];
   for (const line of textLines) {
     const match = line.match(/^(.+?)\s*:\s*(.+)$/);
     if (!match) continue;
@@ -225,10 +230,11 @@ function parseMisc(textLines: string[]) {
     const name = rawName.trim();
     const raw = rawValue.trim();
     stats.push({
-      key: slug(name),
-      name_raw: name,
+      stat_key: slug(name),
+      stat_name_raw: name,
       numeric_value: parseDecimalLike(raw),
       raw_value: raw,
+      unit: raw.includes("%") ? "percent" : "raw",
     });
   }
   return stats;
@@ -272,6 +278,16 @@ export function parseSessionImport(blocks: SessionImportBlocks) {
     total_healing: metric(primary, ["Healing"]),
   };
 
+  const partyTotals = {
+    duration_seconds: parseDurationSeconds(partyLines),
+    loot_value: metric(partyLines, ["Loot"]),
+    supplies_value: metric(partyLines, ["Supplies"]),
+    balance_value: metric(partyLines, ["Balance"]),
+    total_damage: metric(partyLines, ["Damage"]),
+    total_healing: metric(partyLines, ["Healing"]),
+  };
+  const partySize = partyPlayers.length || (partyLines.length ? null : 1);
+
   const recognizedMetricCount = Object.values(metrics).filter((value) => value != null).length;
   const warnings: string[] = [];
   if (!huntLines.length) warnings.push("hunt_analyzer_missing");
@@ -286,6 +302,7 @@ export function parseSessionImport(blocks: SessionImportBlocks) {
       session_from_raw: range.from_raw,
       session_to_raw: range.to_raw,
       total_kills: creatures.reduce((sum, row) => sum + row.kills, 0),
+      party_size: partySize,
     },
     misc: {
       creatures,
@@ -300,7 +317,8 @@ export function parseSessionImport(blocks: SessionImportBlocks) {
       charm_damage_available: false,
     },
     party_hunt: {
-      party_size: partyPlayers.length || (partyLines.length ? null : 1),
+      party_size: partySize,
+      totals: partyTotals,
       players: partyPlayers,
     },
     availability: {
