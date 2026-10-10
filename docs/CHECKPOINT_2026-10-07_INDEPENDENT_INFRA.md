@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0105
+- schema/migrations aplicados até 0106
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1671,3 +1671,122 @@ The existing EK implementation remains as a regression fixture while generic cat
 6. combat/spell mechanics — core READY;
 7. vocation composition — universal factual composition READY;
 8. final optimizer — candidate envelope READY; Pareto/frontier + concrete set selection next.
+
+
+## Universal optimizer Pareto / frontier
+
+- migration 0106 adds the factual Pareto layer on top of the universal optimizer candidate envelope.
+- new functions:
+  - `huntnexus_optimizer_item_vector_universal(item_key,hunt_key,vocation)`;
+  - `huntnexus_optimizer_pareto_frontier_universal(hunt_key,vocation,level,item_domain,selector_key,limit)`;
+  - `huntnexus_optimizer_frontier_envelope_universal(vocation,level,objective,party_size,hunt_limit,frontier_limit,unlock_keys)`.
+- `huntnexus_optimizer_audit()` upgraded to `optimizer_audit_v2`.
+- Pareto design:
+  - no synthetic cross-metric score;
+  - all included dimensions have explicit higher-is-better direction;
+  - one item dominates another only when:
+    1. both are in the same item family;
+    2. both expose the same dimension keyset;
+    3. the first is >= on every dimension;
+    4. the first is > on at least one dimension.
+  - if a structural dimension is missing on either item, the pair is incomparable.
+- base item vector dimensions may include:
+  - armor;
+  - defense;
+  - defense modifier;
+  - range;
+  - Imbuement slot capacity;
+  - per-element weapon attack components for melee/Fist/Throwing-style weapons;
+  - vocation-relevant skill / Magic Level dimensions;
+  - damage reflection;
+  - magic-shield capacity;
+  - life leech;
+  - speed;
+  - attack modifier;
+  - cleave;
+  - critical extra damage;
+  - critical hit chance;
+  - hit modifier;
+  - perfect-shot damage;
+  - protection values only for incoming-damage elements actually observed in the selected hunt/vocation context.
+- absent listed effects are factual zero; genuinely unknown structural core values remain absent and are not imputed.
+- intentionally excluded from Pareto dominance:
+  - special effects without universal direction;
+  - Weapon Proficiency perks unless explicitly activated;
+  - community usage frequency;
+  - item price/economy;
+  - final DPS/healing.
+- elemental weapon components remain separate dimensions:
+  - Fire, Ice, Earth, Energy, Death, Holy and Physical are never collapsed into one weapon score.
+  - therefore many elemental alternatives correctly remain incomparable until an offensive hunt-context policy is available.
+- current level-700 validation:
+  - EK / Cobra Bastion / Sword: 185 eligible -> 47 frontier / 138 dominated;
+  - RP / Iksupan Last Stand / Bow: 57 -> 12 / 45;
+  - ED / Nimmersatt's Breeding Ground / Rod: 54 -> 10 / 44;
+  - MS / Podzilla / Wand: 72 -> 9 / 63;
+  - EM / Grounds of Undeath / Fist: 34 -> 5 / 29.
+- equipment examples:
+  - EK / Cobra Bastion / Body: 84 eligible -> 13 frontier / 71 dominated;
+  - RP / Head: 79 -> 7 / 72;
+  - ED / Offhand: 81 -> 13 / 68;
+  - MS / Body: 74 -> 6 / 68;
+  - EM / Feet: 32 -> 9 / 23.
+- EM/Fist frontier currently contains:
+  - Eldritch Crescent Moon Spade;
+  - Gilded Eldritch Crescent Moon Spade;
+  - Grand Sanguine Claws;
+  - Lion Claws;
+  - Sanguine Claws.
+- Grand Sanguine Claws is a regression anchor:
+  - physical attack component 45;
+  - 3 Imbuement slots;
+  - Fist Fighting +4;
+  - Magic Level +2;
+  - remains on the frontier and dominates 29 eligible Fist candidates in the current Grounds of Undeath context.
+- EK Body regression anchor:
+  - Spiritthorn Armor remains on the Cobra Bastion frontier.
+- universal frontier envelope validated for all 5 vocations:
+  - EK -> 3 canonical weapon-frontier groups + 7 equipment-frontier groups;
+  - RP -> 2 + 7;
+  - ED -> 1 + 7;
+  - MS -> 1 + 7;
+  - EM -> 1 + 7.
+- frontier envelope decision state:
+  - hunt_ranked=true;
+  - pareto_frontier_applied=true;
+  - concrete_sets_generated=false;
+  - set_validation_applied=false;
+  - set_selected=false;
+  - final_optimizer_applied=false.
+- `huntnexus_optimizer_audit()` v2:
+  - candidate_envelope_ready=true;
+  - item_vector_ready=true;
+  - pareto_frontier_ready=true;
+  - frontier_envelope_ready=true;
+  - concrete_set_generation_ready=false;
+  - set_validation_ready=false;
+  - set_selection_ready=false;
+  - final_optimizer_ready=false.
+- next optimizer step:
+  1. generate bounded concrete set combinations from the Pareto frontiers;
+  2. validate every set through `huntnexus_loadout_compatibility_universal`;
+  3. preserve Weapon Proficiency as explicit-selection context;
+  4. do not rank offense/sustain/skill Imbuements across types without a factual policy;
+  5. only after validation design final set selection without a fake universal scalar.
+- focused regression `tests/sql/phase45_universal_optimizer_pareto_frontier.sql`: status=ok.
+- migration commit: `c5cc13d38d4d66f9b2df2a0973888be3846da3cb`.
+- regression commit: `b26adcc34f8d3d3dc28c7ddda5f0c4b1ee28fb44`.
+- security advisor after 0106:
+  - unchanged 14 intentional server-only `rls_enabled_no_policy` INFO findings;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+### Category-first status after 0106
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY;
+4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
+5. slot/restriction compatibility — universal loadout validation READY;
+6. combat/spell mechanics — core READY;
+7. vocation composition — universal factual composition READY;
+8. final optimizer — candidate envelope + Pareto/frontier READY; concrete set generation + validation next.
