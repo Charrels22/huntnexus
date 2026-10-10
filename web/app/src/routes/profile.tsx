@@ -706,9 +706,9 @@ function ProfilePage() {
                                 type="button"
                                 onClick={() => togglePerk(tree.item_key, perk.perk_order)}
                                 title={perk.description_raw || perk.effect_key}
-                                className={`group relative min-h-[112px] rounded-2xl border p-3 text-left transition ${
+                                className={`group relative min-h-[126px] rounded-2xl border p-3 text-center transition ${
                                   active
-                                    ? "border-emerald-400/45 bg-emerald-400/[0.08]"
+                                    ? "border-emerald-400/50 bg-emerald-400/[0.08] shadow-[0_0_0_1px_rgba(52,211,153,.06)]"
                                     : "border-white/8 bg-slate-950/75 hover:border-cyan-400/25 hover:bg-cyan-400/[0.035]"
                                 }`}
                               >
@@ -719,12 +719,17 @@ function ProfilePage() {
                                 }`}>
                                   <Check className="size-3.5" />
                                 </span>
-                                <span className="grid size-9 place-items-center rounded-xl border border-white/8 bg-black/25 text-xs font-black text-slate-300">
-                                  {perk.perk_order}
-                                </span>
-                                <span className="mt-3 block pr-5 text-xs font-semibold leading-5 text-slate-200">
+
+                                <div className="mx-auto grid size-16 place-items-center rounded-2xl border border-white/8 bg-black/25">
+                                  <ProficiencyPerkIcon perk={perk} />
+                                </div>
+
+                                <div className="mt-2 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                                  Perk {perk.perk_order}
+                                </div>
+                                <div className="mt-1 line-clamp-2 text-[11px] font-semibold leading-4 text-slate-300">
                                   {perk.description_raw || perk.effect_key}
-                                </span>
+                                </div>
                               </button>
                             );
                           })}
@@ -966,6 +971,66 @@ function ProfilePage() {
       </div>
     </div>
   );
+}
+
+function ProficiencyPerkIcon({ perk }: { perk: ProficiencyPerk }) {
+  const files = proficiencyIconFiles(perk.effect_key);
+  return (
+    <div className="relative grid size-14 place-items-center">
+      <span className="absolute inset-0 grid place-items-center text-lg font-black text-slate-600">
+        {perk.perk_order}
+      </span>
+      {files.map((file, index) => (
+        <img
+          key={file}
+          src={tibiaWikiFile(file)}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className={`relative z-10 max-h-12 max-w-12 object-contain [image-rendering:pixelated] ${files.length > 1 && index > 0 ? "absolute bottom-0 right-0 max-h-7 max-w-7" : ""}`}
+          onError={(event) => { event.currentTarget.style.display = "none"; }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function tibiaWikiFile(filename: string) {
+  return `https://www.tibiawiki.com.br/wiki/Special:Redirect/file/${encodeURIComponent(filename).replace(/%20/g, "_")}`;
+}
+
+function proficiencyIconFiles(effectKey: string) {
+  const exact: Record<string,string[]> = {
+    critical_extra_damage: ["Proficiency Type Critical Dmg.gif"],
+    critical_chance: ["Proficiency Type Critical Chance.gif"],
+    magic_level_bonus: ["Proficiency Type Skill Magic.gif"],
+    mana_on_kill: ["Proficiency Type Mana On Kill.gif"],
+    death_magic_level_bonus: ["Proficiency Type Magic Boost Death.gif"],
+    energy_magic_level_bonus: ["Proficiency Type Magic Boost Energy.gif"],
+    fire_magic_level_bonus: ["Proficiency Type Magic Boost Fire.gif"],
+    death_spells_runes_critical_chance: ["Proficiency Type Element Critical Chance Death.gif"],
+    death_spells_runes_critical_extra_damage: ["Proficiency Type Element Critical Dmg Death.gif"],
+    energy_spells_runes_critical_chance: ["Proficiency Type Element Critical Chance Energy.gif"],
+    energy_spells_runes_critical_extra_damage: ["Proficiency Type Element Critical Dmg Energy.gif"],
+    fire_spells_runes_critical_chance: ["Proficiency Type Element Critical Chance Fire.gif"],
+    fire_spells_runes_critical_extra_damage: ["Proficiency Type Element Critical Dmg Fire.gif"],
+    offensive_rune_critical_chance: ["Proficiency Type Rune Critical Chance.gif"],
+    offensive_rune_critical_extra_damage: ["Proficiency Type Rune Critical Dmg.gif"],
+    magic_level_spell_extra_damage_percent: ["Proficiency Type Perc Spell Dmg Magic.gif"],
+    bestiary_demon_damage: ["Proficiency Type Bestiary Dmg Demon.gif"],
+    bestiary_inkborn_damage: ["Proficiency Type Bestiary Dmg Inkborn.gif"],
+    bestiary_magical_damage: ["Proficiency Type Bestiary Dmg Magical.gif"],
+    powerful_foe_damage: ["Proficiency Type Powerful Foe Bonus.gif"],
+    great_death_beam_critical_chance: ["Proficiency Spell Great Death Beam.gif","Proficiency Augment Critical Chance.gif"],
+    great_death_beam_critical_extra_damage: ["Proficiency Spell Great Death Beam.gif","Proficiency Augment Critical Dmg.gif"],
+    great_fire_wave_critical_extra_damage: ["Proficiency Spell Great Fire Wave.gif","Proficiency Augment Critical Dmg.gif"],
+    energy_wave_base_damage: ["Proficiency Spell Energy Wave.gif","Proficiency Augment Damage.gif"],
+    hells_core_base_damage: ["Proficiency Spell Hells Core.gif","Proficiency Augment Damage.gif"],
+    hells_core_critical_extra_damage: ["Proficiency Spell Hells Core.gif","Proficiency Augment Critical Dmg.gif"],
+    rage_of_the_skies_critical_extra_damage: ["Proficiency Spell Rage of the Skies.gif","Proficiency Augment Critical Dmg.gif"],
+    rage_of_the_skies_mana_leech: ["Proficiency Spell Rage of the Skies.gif","Proficiency Augment Mana Leech.gif"],
+  };
+  return exact[effectKey] ?? [];
 }
 
 function CharacterMeta({ label, value }: { label: string; value: string }) {
