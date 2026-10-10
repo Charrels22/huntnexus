@@ -1,3 +1,4 @@
+// FE-02 private session import smoke checkpoint.
 const endpoint =
   process.env.HUNTNEXUS_ENDPOINT ??
   "https://huntnexus.charr3ls22.workers.dev/api/huntnexus";
