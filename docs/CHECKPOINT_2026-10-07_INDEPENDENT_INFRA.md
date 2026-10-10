@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0101
+- schema/migrations aplicados até 0102
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1300,5 +1300,100 @@ The existing EK implementation remains as a regression fixture while generic cat
 4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
 5. slot/restriction compatibility — universal loadout validation READY;
 6. combat/spell mechanics — next;
+7. vocation composition;
+8. final optimizer.
+
+
+## Universal spell / combat contract + Monk core
+
+- migration 0102 adds:
+  - current Monk core spells into `spell_definitions`;
+  - server-only `spell_resource_mechanics`;
+  - server-only `vw_spell_catalog_universal`;
+  - `huntnexus_spell_candidates_universal(vocation,level,spell_group,element,limit)`;
+  - `huntnexus_spell_category_audit()`.
+- current universal spell catalog:
+  - 50 spells;
+  - 5 represented vocations;
+  - 33 attack;
+  - 9 healing;
+  - 8 support.
+- current per-vocation coverage:
+  - ED: 12;
+  - EK: 9;
+  - EM: 11;
+  - MS: 12;
+  - RP: 6.
+- Monk core added in this block:
+  - Swift Jab;
+  - Tiger Clash;
+  - Double Jab;
+  - Restore Balance;
+  - Flurry of Blows;
+  - Sweeping Takedown;
+  - Chained Penance;
+  - Spirit Mend;
+  - Thousand Fist Blows;
+  - Devastating Knockout;
+  - Mass Spirit Mend.
+- Monk source facts come from current TibiaWiki BR individual spell pages.
+- Monk attack scaling is preserved as `weapon + fist fighting`; healing scales with Magic Level.
+- Harmony resource mechanics normalized:
+  - 5 Builder entries with source-unspecified amount;
+  - 3 Spender-all entries;
+  - Mass Spirit Mend explicitly records `none` because the current 2026 version is no longer a Spender.
+- no Harmony amount is invented where the source only says the spell increases Harmony.
+- Base Power semantics:
+  - retained as factual relative spell power reference;
+  - never treated as final damage/healing;
+  - no DPS or rotation score applied.
+- element modes:
+  - explicit elemental/physical;
+  - weapon-derived for EK weapon spells;
+  - none for healing/support.
+- candidate eligibility currently applies:
+  - vocation;
+  - minimum level;
+  - optional spell group;
+  - optional element.
+- explicit limitations:
+  - current catalog is a curated combat-relevant subset, not the complete Magical Archive;
+  - Shrine/Quest/Wheel unlock rules are not yet modeled in universal eligibility;
+  - Monk spells that need additional unlock rules were intentionally excluded from this first core slice;
+  - no rotation model or final combat formula.
+- validation examples:
+  - EM 150 -> all 11 current core spells eligible;
+  - EM 60 attack -> level gating remains active;
+  - EK 100 attack -> Annihilation blocked by level 110;
+  - MS 100 fire attack -> four Fire spells, all eligible;
+  - unsupported vocation -> explicit error.
+- `huntnexus_spell_category_audit()`, stage `spell_category_audit_v1`:
+  - catalog_spells=50;
+  - represented_vocations=5;
+  - monk_spells=11;
+  - spells_with_base_power=42;
+  - spells_with_resource_mechanics=9;
+  - vocation_level_contract_ready=true;
+  - base_power_contract_ready=true;
+  - resource_mechanics_partial_ready=true;
+  - catalog_exhaustive=false;
+  - additional_unlock_rules_ready=false;
+  - rotation_model_ready=false;
+  - final_damage_formula_ready=false.
+- focused regression `tests/sql/phase41_universal_spell_combat_contract.sql`: status=ok.
+- migration commit: `09969eacd5f476d25d6adea733885cfa3fdfe3c5`.
+- regression commit: `21497dde75bd876889b30c966f3514ad4c0c1ea1`.
+- security advisor after 0102:
+  - 12 informational `rls_enabled_no_policy` findings; new `spell_resource_mechanics` is intentionally server-only deny-by-default;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+### Category-first status after 0102
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY;
+4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
+5. slot/restriction compatibility — universal loadout validation READY;
+6. combat/spell mechanics — universal factual core READY; special unlocks + modifier linkage remain;
 7. vocation composition;
 8. final optimizer.
