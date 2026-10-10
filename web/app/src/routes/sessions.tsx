@@ -9,6 +9,7 @@ import {
   Loader2,
   RefreshCw,
   ShieldAlert,
+  Trash2,
   Swords,
   Users,
 } from "lucide-react";
@@ -34,6 +35,7 @@ function SessionHistoryPage() {
   const [detail, setDetail] = useState<any>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   async function loadSessions() {
@@ -88,6 +90,32 @@ function SessionHistoryPage() {
   useEffect(() => { void loadSessions(); }, []);
   useEffect(() => { if (selectedId) void loadDetail(selectedId); }, [selectedId]);
 
+  async function deleteSelected() {
+    const clientId = getOrCreateClientId();
+    if (!clientId || !selectedId || deleting) return;
+    if (!window.confirm("Excluir esta hunt do seu histórico?")) return;
+
+    setDeleting(true);
+    setError("");
+    try {
+      const response = await callHuntNexusApi<any>({
+        action: "player_session_delete",
+        client_id: clientId,
+        session_id: selectedId,
+      });
+      if (!response?.data?.deleted) throw new Error("A sessão não foi excluída.");
+
+      setSelectedId("");
+      setDetail(null);
+      window.dispatchEvent(new Event("huntnexus:player-sessions-changed"));
+      await loadSessions();
+    } catch (e) {
+      setError((e as Error).message || "Não foi possível excluir a sessão.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const selected = useMemo(
     () => sessions.find((s) => s.session_id === selectedId) ?? null,
     [sessions, selectedId],
@@ -104,12 +132,15 @@ function SessionHistoryPage() {
               Abra uma sessão cadastrada para consultar Hunt Analyse, Misc, Damage e Party Hunt.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <button className="hn-primary-button" onClick={() => void loadSessions()} disabled={loadingList}>
+              <Link to="/session" className="hn-primary-button">
+                Cadastrar nova hunt
+              </Link>
+              <button className="hn-secondary-button" onClick={() => void loadSessions()} disabled={loadingList}>
                 {loadingList ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-                Atualizar sessões
+                Atualizar
               </button>
               <span className="hn-secondary-button cursor-default">
-                {sessions.length} sessões carregadas
+                {sessions.length} hunts
               </span>
             </div>
           </div>
@@ -129,10 +160,21 @@ function SessionHistoryPage() {
               ))}
             </select>
             {selected && (
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <Meta label="Vocação" value={selected.vocation || "—"} />
-                <Meta label="Status" value={selected.status === "parsed" ? "Processada" : "Revisar"} />
-              </div>
+              <>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <Meta label="Vocação" value={selected.vocation || "—"} />
+                  <Meta label="Status" value={selected.status === "parsed" ? "Processada" : "Revisar"} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void deleteSelected()}
+                  disabled={deleting}
+                  className="mt-3 inline-flex items-center gap-2 text-xs text-slate-500 transition hover:text-red-300 disabled:opacity-50"
+                >
+                  {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                  Excluir hunt
+                </button>
+              </>
             )}
           </div>
         </div>
