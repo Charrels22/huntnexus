@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   BookOpenCheck,
@@ -8,12 +8,15 @@ import {
   Eraser,
   Gem,
   Save,
+  Loader2,
   Sparkles,
   Swords,
   Tags,
   UserRound,
   Users,
 } from "lucide-react";
+import { callHuntNexusApi } from "@/lib/api/huntnexus";
+import { getOrCreateClientId } from "@/lib/client-id";
 
 export const Route = createFileRoute("/session")({ component: SessionImportPage });
 
@@ -65,12 +68,16 @@ const emptyDraft: Draft = {
 const storageKey = "huntnexus.session-import.draft.v1";
 
 function SessionImportPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AnalyzerKey>("hunt");
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [rareOpen, setRareOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(true);
   const [tagInput, setTagInput] = useState("");
   const [savedAt, setSavedAt] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
   useEffect(() => {
     try {
@@ -107,6 +114,59 @@ function SessionImportPage() {
     if (!tag || draft.tags.includes(tag)) return;
     patch("tags", [...draft.tags, tag]);
     setTagInput("");
+  }
+
+  async function submitHunt() {
+    const clientId = getOrCreateClientId();
+    if (!clientId || !canPrepare || saving) return;
+
+    setSaving(true);
+    setSubmitError("");
+    setValidationWarnings([]);
+
+    try {
+      const response = await callHuntNexusApi<any>({
+        action: "session_import_save",
+        client_id: clientId,
+        blocks: {
+          hunt: draft.hunt,
+          party: draft.party,
+          input: draft.input,
+          misc: draft.misc,
+        },
+        metadata: {
+          character: draft.character,
+          server: draft.server,
+          vocation: draft.vocation,
+          level: draft.level,
+          location: draft.location,
+          observation: draft.observation,
+          tags: draft.tags,
+          type: draft.type,
+          favorite: draft.favorite,
+          publishHighscores: draft.publishHighscores,
+          rareDrops: draft.rareDrops,
+        },
+      });
+
+      const warnings = Array.isArray(response?.parsed?.validation?.warnings)
+        ? response.parsed.validation.warnings
+        : [];
+      setValidationWarnings(warnings);
+
+      const sessionId = response?.data?.session_id;
+      if (!sessionId) throw new Error("A sessão foi processada, mas não retornou identificador.");
+
+      localStorage.removeItem(storageKey);
+      await navigate({
+        to: "/sessions",
+        search: { personal: sessionId },
+      });
+    } catch (e) {
+      setSubmitError((e as Error).message || "Não foi possível salvar a hunt.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -280,12 +340,13 @@ function SessionImportPage() {
 
         <button
           type="button"
-          disabled={!canPrepare}
+          disabled={!canPrepare || saving}
+          onClick={() => void submitHunt()}
           className="hn-primary-button justify-center disabled:cursor-not-allowed disabled:opacity-40"
-          title={canPrepare ? "Parsing e persistência entram na próxima integração" : "Cole o Hunt Analyzer primeiro"}
+          title={canPrepare ? "Parsear, validar e salvar a hunt" : "Cole o Hunt Analyzer primeiro"}
         >
-          <Sparkles className="size-4" />
-          Preparar hunt
+          {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+          {saving ? "Processando..." : "Salvar hunt"}
         </button>
 
         {savedAt && <span className="text-xs text-emerald-300/80">Rascunho salvo às {savedAt}</span>}
@@ -296,9 +357,21 @@ function SessionImportPage() {
         </button>
       </section>
 
+      {submitError && (
+        <div className="rounded-2xl border border-red-400/20 bg-red-400/8 p-4 text-sm text-red-200">
+          {submitError}
+        </div>
+      )}
+
+      {validationWarnings.length > 0 && (
+        <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.04] p-4 text-xs leading-5 text-amber-100/80">
+          O parser salvou a entrada, mas marcou pontos para revisão: {validationWarnings.join(", ")}.
+        </div>
+      )}
+
       <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-4 text-xs leading-5 text-slate-500">
-        O formulário já é o fluxo correto do produto. Neste checkpoint o rascunho fica salvo localmente no navegador; o próximo contrato do backend fará o parsing e a persistência da hunt sem misturar sessão pessoal com a base comunitária.
-        <Link to="/sessions" className="ml-1 text-cyan-300 hover:text-cyan-200">Ver sessões já normalizadas →</Link>
+        As hunts cadastradas ficam separadas da base comunitária. O texto original dos analyzers é preservado para permitir reprocessamento futuro sem perda de informação.
+        <Link to="/sessions" search={{ personal: undefined }} className="ml-1 text-cyan-300 hover:text-cyan-200">Ver minhas sessões →</Link>
       </div>
     </div>
   );
