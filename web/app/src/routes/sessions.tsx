@@ -285,8 +285,8 @@ function Misc({ data }: { data: any }) {
             <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
               {lootedItems.slice(0,80).map((item:any, i:number) => (
                 <div key={`${item.item_name_raw}-${i}`} className="grid grid-cols-[52px_1fr_auto] items-center gap-2 rounded-xl border border-white/6 bg-slate-950/45 p-2">
-                  <CanonicalSprite kind="item" name={item.item_name_raw} size="sm" />
-                  <div className="min-w-0 truncate text-sm font-semibold text-slate-200">{item.item_name_raw}</div>
+                  <CanonicalSprite kind="item" name={item.item_name || item.item_name_raw} size="sm" />
+                  <div className="min-w-0 truncate text-sm font-semibold text-slate-200">{item.item_name || item.item_name_raw}</div>
                   <div className="text-xs font-black text-cyan-200">x{formatNumber(Number(item.amount || 0))}</div>
                 </div>
               ))}
