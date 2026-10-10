@@ -31,7 +31,85 @@ export function detectAnalyzerType(text: string): AnalyzerType | null {
   return null;
 }
 
-type ParsedMetricMap = Record<string, number | null>;
+export type HuntAnalyzerMetrics = {
+  duration_seconds: number | null;
+  xp_gain: number | null;
+  xp_per_hour: number | null;
+  raw_xp_per_hour: number | null;
+  loot_value: number | null;
+  supplies_value: number | null;
+  balance_value: number | null;
+  total_damage: number | null;
+  total_healing: number | null;
+};
+
+export type ParsedSessionImport = {
+  hunt_analyse: HuntAnalyzerMetrics & {
+    session_data_raw: string | null;
+    session_from_raw: string | null;
+    session_to_raw: string | null;
+    total_kills: number;
+    party_size: number | null;
+  };
+  misc: {
+    creatures: Array<{
+      monster_name_raw: string;
+      monster_key: string | null;
+      resolution_status: "raw_name";
+      kills: number;
+    }>;
+    combat_stats: Array<{
+      stat_key: string;
+      stat_name_raw: string;
+      numeric_value: number | null;
+      raw_value: string;
+      unit: string;
+    }>;
+    raw_misc_available: boolean;
+  };
+  damage: {
+    total_damage: number | null;
+    incoming_by_element: Array<Record<string, unknown>>;
+    incoming_by_source: Array<Record<string, unknown>>;
+    charm_damage: unknown[];
+    charm_damage_available: boolean;
+  };
+  party_hunt: {
+    party_size: number | null;
+    totals: {
+      duration_seconds: number | null;
+      loot_value: number | null;
+      supplies_value: number | null;
+      balance_value: number | null;
+      total_damage: number | null;
+      total_healing: number | null;
+    };
+    players: Array<Record<string, unknown>>;
+  };
+  availability: {
+    hunt_analyse: boolean;
+    misc: boolean;
+    damage: boolean;
+    party_hunt: boolean;
+    charm_damage: boolean;
+  };
+  validation: {
+    has_primary_hunt_analyzer: boolean;
+    recognized_metric_count: number;
+    creature_rows: number;
+    party_player_rows: number;
+    incoming_element_rows: number;
+    incoming_source_rows: number;
+    misc_stat_rows: number;
+    warnings: string[];
+  };
+  methodology: {
+    stage: "session_parser_v1";
+    raw_blocks_preserved: true;
+    unknown_values_invented: false;
+    community_evidence_written: false;
+  };
+};
 
 function lines(text: string | undefined) {
   return (text ?? "")
@@ -258,7 +336,7 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^$()|[\]\\{}]/g, "\\$&");
 }
 
-export function parseSessionImport(blocks: SessionImportBlocks) {
+export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionImport {
   const huntLines = lines(blocks.hunt);
   const partyLines = lines(blocks.party);
   const inputLines = lines(blocks.input);
@@ -271,7 +349,7 @@ export function parseSessionImport(blocks: SessionImportBlocks) {
   const input = parseInputAnalyzer(inputLines);
   const miscStats = parseMisc(miscLines);
 
-  const metrics: ParsedMetricMap = {
+  const metrics: HuntAnalyzerMetrics = {
     duration_seconds: parseDurationSeconds(primary),
     xp_gain: metric(huntLines, ["XP Gain"]),
     xp_per_hour: metric(huntLines, ["XP/h"]),
