@@ -10,7 +10,7 @@ import {
   Swords,
   Users,
 } from "lucide-react";
-import { OfficialAssetSlot } from "@/components/shell/app-shell";
+import { CanonicalSprite, CanonicalSpriteGroup } from "@/components/shared/canonical-sprite";
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 
 export const Route = createFileRoute("/hunts/$huntKey")({
@@ -94,7 +94,15 @@ function HuntDetailPage() {
               <HeroMetric label="Sets co-vencedores" value={String(setSummary.co_winners ?? 0)} />
             </div>
           </div>
-          <OfficialAssetSlot label="Imagem oficial/canônica da hunt" />
+          <div className="relative grid min-h-64 place-items-center overflow-hidden border-l border-white/7 bg-slate-950/55 p-8">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,.10),transparent_55%)]" />
+            <div className="relative z-10">
+              <CanonicalSpriteGroup names={monsters.slice(0,4).map((m:any) => m.name)} />
+              <div className="mt-6 text-center text-[10px] uppercase tracking-[0.18em] text-slate-600">
+                sprites canônicos da hunt
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -165,7 +173,7 @@ function Creatures({ monsters, observed }: { monsters:any[]; observed:any }) {
           const seen:any = mix.get(m.key);
           return (
             <div key={m.key} className="grid grid-cols-[80px_1fr] gap-3 rounded-2xl border border-white/7 bg-slate-950/40 p-3">
-              <OfficialAssetSlot label="Sprite oficial" compact />
+              <CanonicalSprite kind="creature" name={m.name} size="md" />
               <div className="min-w-0">
                 <div className="font-bold text-white">{m.name}</div>
                 <div className="mt-2 text-xs text-slate-500">{seen ? `${formatNumber(Number(seen.kills || 0))} kills observadas` : "Sem kills observadas"}</div>
@@ -220,9 +228,12 @@ function Setup({ selection }: { selection:any }) {
               <div className="flex items-center justify-between"><div className="font-bold text-white">Opção {index+1}</div><Badge>{set.selection_policy?.set_objective ?? "balanced"}</Badge></div>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {Object.entries(slots).map(([slot,item]) => (
-                  <div key={slot} className="rounded-xl border border-white/6 bg-white/[0.025] p-3">
-                    <div className="text-[10px] uppercase tracking-wide text-slate-600">{slot}</div>
-                    <div className="mt-1 break-words text-xs font-semibold text-slate-200">{String(item)}</div>
+                  <div key={slot} className="grid grid-cols-[52px_1fr] items-center gap-2 rounded-xl border border-white/6 bg-white/[0.025] p-2">
+                    <CanonicalSprite kind="item" name={slugToName(String(item))} size="sm" />
+                    <div className="min-w-0">
+                      <div className="text-[10px] uppercase tracking-wide text-slate-600">{slot}</div>
+                      <div className="mt-1 break-words text-xs font-semibold text-slate-200">{slugToName(String(item))}</div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -313,4 +324,5 @@ function Muted({ children }: { children:React.ReactNode }) { return <div classNa
 function compact(value:unknown) { const n=Number(value); if(!Number.isFinite(n)) return "—"; const a=Math.abs(n),s=n<0?"-":""; if(a>=1e6)return `${s}${(a/1e6).toFixed(2)}M`; if(a>=1e3)return `${s}${Math.round(a/1e3)}k`; return String(Math.round(n)); }
 function labelObjective(v:string){ return ({offense:"Offense",defense:"Defense",sustain:"Sustain",utility:"Utility",balanced:"Balanced"} as Record<string,string>)[v] ?? v; }
 function cleanLocation(v:unknown){ if(typeof v!=="string") return ""; return v.replace(/\{\{[^}]+\}\}/g,"").trim(); }
+function slugToName(value:string){ return value.split("-").filter(Boolean).map((part)=>part.charAt(0).toUpperCase()+part.slice(1)).join(" "); }
 function compactComposition(v:any){ if(!v||typeof v!=="object")return v; return {vocation:v.vocation ?? v.context?.vocation, level:v.level ?? v.context?.level, profile:v.profile ?? v.composition ?? v.methodology}; }
