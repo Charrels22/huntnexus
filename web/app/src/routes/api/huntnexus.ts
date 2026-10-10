@@ -60,6 +60,39 @@ const Body = z.discriminatedUnion("action", [
     character_profile: UniversalCharacterProfile.default({}),
   }),
   z.object({
+    action: z.literal("session_import_save"),
+    client_id: z.string().uuid(),
+    blocks: z.object({
+      hunt: z.string().max(120000).default(""),
+      party: z.string().max(120000).default(""),
+      input: z.string().max(120000).default(""),
+      misc: z.string().max(120000).default(""),
+    }),
+    metadata: z.object({
+      character: z.string().max(120).default(""),
+      server: z.string().max(120).default(""),
+      vocation: z.string().max(20).default(""),
+      level: z.string().max(10).default(""),
+      location: z.string().max(200).default(""),
+      observation: z.string().max(1000).default(""),
+      tags: z.array(z.string().max(60)).max(20).default([]),
+      type: z.enum(["normal", "bounty"]).default("normal"),
+      favorite: z.boolean().default(false),
+      publishHighscores: z.boolean().default(false),
+      rareDrops: z.string().max(5000).default(""),
+    }),
+  }),
+  z.object({
+    action: z.literal("player_session_list"),
+    client_id: z.string().uuid(),
+    limit: z.coerce.number().int().min(1).max(100).default(30),
+  }),
+  z.object({
+    action: z.literal("player_session_detail"),
+    client_id: z.string().uuid(),
+    session_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("session_list"),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     hunt_key: z.string().min(1).max(200).nullable().optional(),
@@ -247,6 +280,36 @@ export const Route = createFileRoute("/api/huntnexus")({
                 },
               });
             }
+            case "session_import_save": {
+              const { parseSessionImport } = await import("@/lib/session-parser");
+              const parsedImport = parseSessionImport(b.blocks);
+              const data = await rpc("huntnexus_player_session_save", {
+                p_client_id: b.client_id,
+                p_raw_blocks: b.blocks,
+                p_parsed_data: {
+                  ...parsedImport,
+                  metadata: {
+                    rare_drops_raw: b.metadata.rareDrops || null,
+                  },
+                },
+                p_metadata: b.metadata,
+              });
+              return json({ data, parsed: parsedImport });
+            }
+            case "player_session_list":
+              return json({
+                data: await rpc("huntnexus_player_session_list", {
+                  p_client_id: b.client_id,
+                  p_limit: b.limit,
+                }),
+              });
+            case "player_session_detail":
+              return json({
+                data: await rpc("huntnexus_player_session_detail", {
+                  p_client_id: b.client_id,
+                  p_session_id: b.session_id,
+                }),
+              });
             case "session_list":
               return json({
                 data: await rpc("huntnexus_session_analyzer_list", {
