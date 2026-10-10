@@ -184,6 +184,69 @@ function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+
+    setInventoryLoading(true);
+    callHuntNexusApi<any>({ action: "player_inventory_get", client_id: clientId })
+      .then((response) => {
+        const data = response?.data;
+        if (!data) return;
+        setInventory({
+          main_set: data.main_set && typeof data.main_set === "object" ? data.main_set : {},
+          backpack: Array.isArray(data.backpack) ? data.backpack : [],
+          summary: {
+            main_slots: Number(data?.summary?.main_slots || 0),
+            backpack_items: Number(data?.summary?.backpack_items || 0),
+          },
+        });
+      })
+      .catch(() => undefined)
+      .finally(() => setInventoryLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!inventoryTarget || inventoryQuery.trim().length < 2) {
+      setInventoryResults([]);
+      return;
+    }
+
+    const level = Number(form.level);
+    if (!form.vocation || !Number.isFinite(level) || level < 1) {
+      setInventoryResults([]);
+      return;
+    }
+
+    let active = true;
+    setInventorySearching(true);
+    const timer = window.setTimeout(() => {
+      callHuntNexusApi<any>({
+        action: "player_inventory_search",
+        vocation: form.vocation,
+        level,
+        query: inventoryQuery.trim(),
+        selection_key: inventoryTarget.selectionKey,
+        limit: 20,
+      })
+        .then((response) => {
+          if (!active) return;
+          setInventoryResults(Array.isArray(response?.data?.items) ? response.data.items : []);
+        })
+        .catch(() => {
+          if (active) setInventoryResults([]);
+        })
+        .finally(() => {
+          if (active) setInventorySearching(false);
+        });
+    }, 220);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [inventoryTarget, inventoryQuery, form.vocation, form.level]);
+
+  useEffect(() => {
     const options = weaponFamilyOptions(form.vocation);
     if (!options.length) return;
 
@@ -257,6 +320,70 @@ function ProfilePage() {
 
   function patch<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function reloadInventory() {
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+
+    setInventoryLoading(true);
+    try {
+      const response = await callHuntNexusApi<any>({ action: "player_inventory_get", client_id: clientId });
+      const data = response?.data;
+      setInventory({
+        main_set: data?.main_set && typeof data.main_set === "object" ? data.main_set : {},
+        backpack: Array.isArray(data?.backpack) ? data.backpack : [],
+        summary: {
+          main_slots: Number(data?.summary?.main_slots || 0),
+          backpack_items: Number(data?.summary?.backpack_items || 0),
+        },
+      });
+    } finally {
+      setInventoryLoading(false);
+    }
+  }
+
+  function openInventoryPicker(storageKind: "main" | "backpack", selectionKey: string | null = null) {
+    setInventoryTarget({ storageKind, selectionKey });
+    setInventoryQuery("");
+    setInventoryResults([]);
+  }
+
+  async function putInventoryItem(item: InventorySearchItem) {
+    const clientId = getOrCreateClientId();
+    if (!clientId || !inventoryTarget) return;
+
+    if (inventoryTarget.storageKind === "main" && !item.eligible) {
+      setError("Este item está bloqueado para o level/vocação atual e não pode ser colocado no Set Main.");
+      return;
+    }
+
+    setError("");
+    await callHuntNexusApi<any>({
+      action: "player_inventory_put",
+      client_id: clientId,
+      storage_kind: inventoryTarget.storageKind,
+      item_key: item.item_key,
+      quantity: 1,
+    });
+    setInventoryTarget(null);
+    setInventoryQuery("");
+    setInventoryResults([]);
+    await reloadInventory();
+    window.dispatchEvent(new Event("huntnexus:inventory-changed"));
+  }
+
+  async function removeInventoryItem(inventoryId: string) {
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+
+    await callHuntNexusApi<any>({
+      action: "player_inventory_remove",
+      client_id: clientId,
+      inventory_id: inventoryId,
+    });
+    await reloadInventory();
+    window.dispatchEvent(new Event("huntnexus:inventory-changed"));
   }
 
   function togglePerk(itemKey: string, perkOrder: number) {
