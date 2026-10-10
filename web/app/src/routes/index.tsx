@@ -16,6 +16,13 @@ import { OfficialAssetSlot } from "@/components/shell/app-shell";
 
 export const Route = createFileRoute("/")({ component: DashboardPage });
 
+const analyzerShortcuts = [
+  { title: "Hunt Analyse", text: "XP, loot, supplies e balance", icon: TrendingUp },
+  { title: "Misc", text: "Consumo e dados auxiliares", icon: Gauge },
+  { title: "Damage", text: "Dano, charms e recebido", icon: Swords },
+  { title: "Party Hunt", text: "Contribuição de cada player", icon: Users },
+];
+
 const hunts = [
   { key: "cobra-bastion", name: "Cobra Bastion", vocation: "EK", xp: "—", profit: "—", confidence: "Dados reais", risk: "Fire / Physical" },
   { key: "iksupan-last-stand", name: "Iksupan Last Stand", vocation: "RP", xp: "—", profit: "—", confidence: "Dados reais", risk: "Mixed" },
