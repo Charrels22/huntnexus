@@ -5,7 +5,6 @@ import {
   Boxes,
   Flame,
   Loader2,
-  Map,
   ShieldCheck,
   Sparkles,
   Swords,
