@@ -40,6 +40,7 @@ type Draft = {
   vocation: string;
   level: string;
   location: string;
+  huntKey: string;
   observation: string;
   tags: string[];
   type: "normal" | "bounty";
@@ -58,6 +59,7 @@ const emptyDraft: Draft = {
   vocation: "",
   level: "",
   location: "",
+  huntKey: "",
   observation: "",
   tags: [],
   type: "normal",
@@ -79,6 +81,8 @@ function SessionImportPage() {
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [huntSuggestions, setHuntSuggestions] = useState<any[]>([]);
+  const [huntSearchOpen, setHuntSearchOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -86,6 +90,33 @@ function SessionImportPage() {
       if (raw) setDraft({ ...emptyDraft, ...JSON.parse(raw) });
     } catch {}
   }, []);
+
+  useEffect(() => {
+    const query = draft.location.trim();
+    if (query.length < 2 || draft.huntKey) {
+      setHuntSuggestions([]);
+      return;
+    }
+
+    let activeRequest = true;
+    const timer = window.setTimeout(() => {
+      callHuntNexusApi<any>({ action: "search_hunts", query, limit: 8 })
+        .then((response) => {
+          if (!activeRequest) return;
+          const rows = Array.isArray(response?.data) ? response.data : [];
+          setHuntSuggestions(rows);
+          setHuntSearchOpen(rows.length > 0);
+        })
+        .catch(() => {
+          if (activeRequest) setHuntSuggestions([]);
+        });
+    }, 220);
+
+    return () => {
+      activeRequest = false;
+      window.clearTimeout(timer);
+    };
+  }, [draft.location, draft.huntKey]);
 
   const active = analyzerTabs.find((tab) => tab.key === activeTab)!;
   const analyzerCount = useMemo(
@@ -157,6 +188,7 @@ function SessionImportPage() {
           vocation: draft.vocation,
           level: draft.level,
           location: draft.location,
+          hunt_key: draft.huntKey,
           observation: draft.observation,
           tags: draft.tags,
           type: draft.type,
@@ -344,7 +376,49 @@ function SessionImportPage() {
 
             <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
               <Field label="Local">
-                <input className="hn-control" value={draft.location} onChange={(e) => patch("location", e.target.value)} placeholder="Hunt / local" />
+                <div className="relative">
+                  <input
+                    className="hn-control"
+                    value={draft.location}
+                    onFocus={() => huntSuggestions.length && setHuntSearchOpen(true)}
+                    onChange={(e) => {
+                      patch("location", e.target.value);
+                      patch("huntKey", "");
+                    }}
+                    placeholder="Digite para buscar uma hunt"
+                    autoComplete="off"
+                  />
+                  {draft.huntKey && (
+                    <div className="mt-1.5 text-[10px] text-emerald-300/80">
+                      Vinculada ao catálogo HuntNexus
+                    </div>
+                  )}
+                  {huntSearchOpen && huntSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+.35rem)] z-30 overflow-hidden rounded-xl border border-white/10 bg-slate-950 shadow-2xl">
+                      {huntSuggestions.map((hunt) => (
+                        <button
+                          key={hunt.hunt_key}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            patch("location", hunt.name);
+                            patch("huntKey", hunt.hunt_key);
+                            setHuntSearchOpen(false);
+                          }}
+                          className="flex w-full items-center justify-between gap-3 border-b border-white/5 px-3 py-2.5 text-left last:border-b-0 hover:bg-cyan-400/7"
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-slate-200">{hunt.name}</div>
+                            <div className="mt-0.5 text-[10px] text-slate-500">{hunt.city || "Tibia"} · {hunt.vocation || "All"}</div>
+                          </div>
+                          <div className="shrink-0 text-[10px] text-slate-600">
+                            {hunt.observed_sessions || 0} sessões
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Field>
               <Field label="Observação">
                 <input className="hn-control" value={draft.observation} onChange={(e) => patch("observation", e.target.value)} placeholder="Observação opcional" />
