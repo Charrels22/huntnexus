@@ -5,12 +5,14 @@ import {
   Boxes,
   Flame,
   Loader2,
+  MapPinned,
   ShieldCheck,
   Sparkles,
   Swords,
   Users,
 } from "lucide-react";
 import { CanonicalSprite, CanonicalSpriteGroup } from "@/components/shared/canonical-sprite";
+import { CanonicalTibiaMap } from "@/components/shared/tibia-map";
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 
 export const Route = createFileRoute("/hunts/$huntKey")({
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/hunts/$huntKey")({
 const tabs = [
   { key: "overview", label: "Overview", icon: Activity },
   { key: "creatures", label: "Creatures", icon: Swords },
+  { key: "map", label: "Map", icon: MapPinned },
   { key: "damage", label: "Damage", icon: ShieldCheck },
   { key: "setup", label: "Setup", icon: Boxes },
   { key: "spells", label: "Spells & Proficiency", icon: Sparkles },
@@ -121,6 +124,7 @@ function HuntDetailPage() {
       <section className="rounded-3xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
         {tab === "overview" && <Overview data={data} />}
         {tab === "creatures" && <Creatures monsters={monsters} observed={data.observed} />}
+        {tab === "map" && <MapPanel hunt={hunt} />}
         {tab === "damage" && <Damage defensive={data.defensive} />}
         {tab === "setup" && <Setup selection={data.set_selection} />}
         {tab === "spells" && <Spells spells={data.spells} composition={data.vocation_composition} />}
@@ -182,6 +186,26 @@ function Creatures({ monsters, observed }: { monsters:any[]; observed:any }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function MapPanel({ hunt }: { hunt:any }) {
+  return (
+    <div>
+      <SectionTitle title="Map" subtitle="Minimap real do Tibia centralizado na coordenada factual da hunt." />
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
+        <CanonicalTibiaMap location={hunt.location} label={hunt.name || "Hunt"} />
+        <Panel title="Localização">
+          <div className="space-y-3">
+            <Metric label="Cidade" value={hunt.city || "—"} />
+            <Metric label="Local" value={cleanLocation(hunt.location) || "—"} />
+            <div className="rounded-xl border border-white/6 bg-white/[0.025] p-3 text-xs leading-5 text-slate-500">
+              O mapa usa os dados visuais do minimap do Tibia. Não é uma ilustração gerada pelo HuntNexus.
+            </div>
+          </div>
+        </Panel>
       </div>
     </div>
   );
