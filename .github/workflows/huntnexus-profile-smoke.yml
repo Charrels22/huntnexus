@@ -1,0 +1,30 @@
+name: HuntNexus Profile Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/player-profile-smoke.mjs"
+      - "web/app/src/routes/profile.tsx"
+      - "web/app/src/routes/planner.tsx"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - "db/migrations/0118_player_character_profile.sql"
+      - "db/migrations/0119_player_profile_proficiency_catalog.sql"
+      - ".github/workflows/huntnexus-profile-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Profile regression smoke
+        run: node tests/player-profile-smoke.mjs
