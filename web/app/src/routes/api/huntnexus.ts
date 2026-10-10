@@ -47,6 +47,15 @@ const Body = z.discriminatedUnion("action", [
     two_hand_active_perk_orders: PerkOrders.default([]),
   }),
   z.object({
+    action: z.literal("session_list"),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    hunt_key: z.string().min(1).max(200).nullable().optional(),
+  }),
+  z.object({
+    action: z.literal("session_detail"),
+    session_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("search_hunts"),
     query: z.string().max(100).default(""),
     limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -169,6 +178,19 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_one_hand_active_perk_orders: b.one_hand_active_perk_orders,
                   p_two_hand_active_perk_orders: b.two_hand_active_perk_orders,
                   p_effective_magic_level: b.character_profile.effective_magic_level,
+                }),
+              });
+            case "session_list":
+              return json({
+                data: await rpc("huntnexus_session_analyzer_list", {
+                  p_limit: b.limit,
+                  p_hunt_key: b.hunt_key ?? null,
+                }),
+              });
+            case "session_detail":
+              return json({
+                data: await rpc("huntnexus_session_analyzer_detail", {
+                  p_session_id: b.session_id,
                 }),
               });
             case "search_hunts":
