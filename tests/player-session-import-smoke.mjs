@@ -84,6 +84,7 @@ try {
       vocation: "EK",
       level: "700",
       location: "Cobra Bastion",
+      hunt_key: "cobra-bastion",
       observation: "dedicated import smoke",
       tags: ["smoke"],
       type: "normal",
@@ -118,6 +119,7 @@ try {
   });
   assert(list?.data?.summary?.returned === 1, "private list regression");
   assert(list?.data?.sessions?.[0]?.hunt_name === "Cobra Bastion", "hunt metadata regression");
+  assert(list?.data?.sessions?.[0]?.hunt_key === "cobra-bastion", "hunt key list regression");
 
   const detail = await post({
     action: "player_session_detail",
@@ -125,6 +127,7 @@ try {
     session_id: sessionId,
   });
   assert(detail?.data?.hunt_analyse?.xp_gain === 12000000, "detail hunt analyse regression");
+  assert(detail?.data?.session?.hunt_key === "cobra-bastion", "hunt key detail regression");
   assert(detail?.data?.party_hunt?.players?.length === 2, "detail party regression");
   assert(detail?.data?.parser?.community_evidence_written === false, "detail privacy regression");
 
