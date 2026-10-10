@@ -100,6 +100,37 @@ try {
     "external frontier classification regression",
   );
 
+  const ownedOptions = await post({
+    action: "player_owned_build_options",
+    client_id: clientId,
+    hunt_key: "podzilla",
+    vocation: "MS",
+    level: 655,
+    proficiency_selections: {
+      "soultainter": [1, 3],
+      "amber-wand": [1],
+    },
+    character_profile: {
+      effective_magic_level: 110,
+    },
+    option_limit: 3,
+  });
+
+  assert(ownedOptions?.data?.methodology?.stage === "player_owned_build_options_v1", "owned build stage regression");
+  assert(ownedOptions?.data?.methodology?.main_set_is_option_1 === true, "Main must be option 1");
+  assert(ownedOptions?.data?.methodology?.external_items_used_in_owned_options === false, "external item leaked into owned options");
+  assert(ownedOptions?.data?.options?.[0]?.option_type === "main", "option 1 type regression");
+  assert(ownedOptions?.data?.options?.[0]?.selection?.weapon === "soultainter", "option 1 weapon regression");
+  assert(
+    !(ownedOptions?.data?.options ?? []).some((option) =>
+      option.option_type === "owned_variant" &&
+      Object.values(option.selection ?? {}).some((itemKey) =>
+        !["soultainter","amber-wand","spellbook-of-ancient-arcana"].includes(itemKey)
+      )
+    ),
+    "non-owned item leaked into owned build option",
+  );
+
   console.log(JSON.stringify({
     status: "ok",
     stage: "player_inventory_public_smoke",
@@ -108,6 +139,8 @@ try {
     backpack_frontier_candidates: review.data.summary.backpack_frontier_candidates,
     external_frontier_candidates: review.data.summary.external_frontier_candidates,
     automatic_main_replacement: review.data.methodology.automatic_main_replacement,
+    owned_build_options: ownedOptions.data.summary.returned_options,
+    discarded_bp_variants: ownedOptions.data.summary.discarded_as_main_dominated,
   }, null, 2));
 } finally {
   for (const inventoryId of inventoryIds) {
