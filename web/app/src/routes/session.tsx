@@ -92,6 +92,25 @@ function SessionImportPage() {
   }, []);
 
   useEffect(() => {
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+
+    callHuntNexusApi<any>({ action: "player_profile_get", client_id: clientId })
+      .then((response) => {
+        const profile = response?.data?.profile;
+        if (!profile) return;
+        setDraft((current) => ({
+          ...current,
+          character: current.character || profile.character_name || "",
+          server: current.server || profile.world_name || "",
+          vocation: current.vocation || profile.vocation || "",
+          level: current.level || (profile.level ? String(profile.level) : ""),
+        }));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     const query = draft.location.trim();
     if (query.length < 2 || draft.huntKey) {
       setHuntSuggestions([]);
