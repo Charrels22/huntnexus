@@ -237,6 +237,17 @@ const Body = z.discriminatedUnion("action", [
     proficiency_selections: ProficiencySelections.default({}),
   }),
   z.object({
+    action: z.literal("planner_personalized"),
+    client_id: z.string().uuid().nullable().optional(),
+    vocation: Vocation,
+    level: Level,
+    objective: z.enum(["xp", "profit", "balanced"]).default("balanced"),
+    party_size: z.coerce.number().int().min(1).max(10).default(1),
+    limit: z.coerce.number().int().min(1).max(5).default(3),
+    proficiency_selections: ProficiencySelections.default({}),
+    character_profile: UniversalCharacterProfile.default({}),
+  }),
+  z.object({
     action: z.literal("final_optimizer"),
     client_id: z.string().uuid().nullable().optional(),
     vocation: Vocation,
@@ -588,6 +599,84 @@ export const Route = createFileRoute("/api/huntnexus")({
                 rpc("huntnexus_rubinot_spell_warnings", { p_vocation: b.vocation, p_level: b.level }),
               ]);
               return json({ data, warnings: Array.isArray(warnings) ? warnings : [] });
+            }
+            case "planner_personalized": {
+              const ranking = await rpc("huntnexus_rank_observed_hunts", {
+                p_vocation: b.vocation,
+                p_level: b.level,
+                p_objective: b.objective,
+                p_party_size: b.party_size,
+                p_limit: b.limit,
+              });
+
+              const ranked = Array.isArray(ranking?.results) ? ranking.results : [];
+              const results = await Promise.all(
+                ranked.map(async (hunt: any, index: number) => {
+                  if (!b.client_id || !hunt?.hunt_key) {
+                    return {
+                      hunt,
+                      hunt_rank_order: index + 1,
+                      owned_builds: null,
+                      saved_owned_choice: { exists: false, choice: null },
+                    };
+                  }
+
+                  const [ownedBuilds, savedChoice] = await Promise.all([
+                    rpc("huntnexus_player_owned_build_options_v2", {
+                      p_client_id: b.client_id,
+                      p_hunt_key: hunt.hunt_key,
+                      p_vocation: b.vocation,
+                      p_level: b.level,
+                      p_proficiency_selections: b.proficiency_selections,
+                      p_character_profile: b.character_profile,
+                      p_option_limit: 3,
+                    }),
+                    rpc("huntnexus_player_hunt_build_choice_get", {
+                      p_client_id: b.client_id,
+                      p_hunt_key: hunt.hunt_key,
+                      p_vocation: b.vocation,
+                    }),
+                  ]);
+
+                  return {
+                    hunt,
+                    hunt_rank_order: index + 1,
+                    owned_builds: ownedBuilds,
+                    saved_owned_choice: savedChoice,
+                  };
+                }),
+              );
+
+              return json({
+                data: {
+                  query: ranking?.query ?? {
+                    vocation: b.vocation,
+                    level: b.level,
+                    objective: b.objective,
+                    party_size: b.party_size,
+                  },
+                  results,
+                  summary: {
+                    ranked_hunts: results.length,
+                    hunts_with_registered_main_set: results.filter(
+                      (row: any) => Number(row?.owned_builds?.summary?.main_items ?? 0) > 0,
+                    ).length,
+                    hunts_with_saved_build_choice: results.filter(
+                      (row: any) => row?.saved_owned_choice?.exists === true,
+                    ).length,
+                  },
+                  methodology: {
+                    stage: "planner_personalized_api_v1",
+                    source_hunt_ranking_stage: ranking?.methodology?.stage ?? null,
+                    hunt_ranking_reordered_by_inventory: false,
+                    ownership_affects_hunt_rank: false,
+                    universal_set_frontier_deferred_to_hunt_detail: true,
+                    owned_builds_enrich_results_only: true,
+                    main_set_is_baseline: true,
+                    external_items_used_in_owned_options: false,
+                  },
+                },
+              });
             }
             case "final_optimizer": {
               const params = {
