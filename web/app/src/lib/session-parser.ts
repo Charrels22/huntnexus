@@ -45,7 +45,7 @@ function metric(textLines: string[], labels: string[]): number | null {
   for (const line of textLines) {
     for (const label of labels) {
       const match = line.match(new RegExp("^" + escapeRegex(label) + "\\s*:\\s*(.+)$", "i"));
-      if (match) return parseIntegerLike(match[1]);
+      if (match?.[1]) return parseIntegerLike(match[1]);
     }
   }
   return null;
@@ -55,7 +55,7 @@ function textMetric(textLines: string[], labels: string[]): string | null {
   for (const line of textLines) {
     for (const label of labels) {
       const match = line.match(new RegExp("^" + escapeRegex(label) + "\\s*:\\s*(.+)$", "i"));
-      if (match) return match[1].trim();
+      if (match?.[1]) return match[1].trim();
     }
   }
   return null;
@@ -65,7 +65,7 @@ function parseDurationSeconds(textLines: string[]) {
   const raw = textMetric(textLines, ["Session"]);
   if (!raw) return null;
   const h = raw.match(/(\d+)\s*:\s*(\d+)\s*h/i);
-  if (h) return Number(h[1]) * 3600 + Number(h[2]) * 60;
+  if (h?.[1] && h?.[2]) return Number(h[1]) * 3600 + Number(h[2]) * 60;
   const hm = raw.match(/(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?/i);
   if (hm && (hm[1] || hm[2])) return Number(hm[1] || 0) * 3600 + Number(hm[2] || 0) * 60;
   return null;
@@ -89,12 +89,15 @@ function parseKilledMonsters(textLines: string[]) {
   const out: Array<{ monster_name_raw: string; kills: number }> = [];
   for (let i = start + 1; i < textLines.length; i++) {
     const line = textLines[i];
+    if (!line) continue;
     if (/^(Looted Items|Loot|Supplies|Balance|Damage|Healing|Session|XP Gain|XP\/h):/i.test(line)) break;
     const match = line.match(/^(\d[\d,]*)x\s+(.+)$/i);
     if (!match) continue;
     const kills = parseIntegerLike(match[1]);
     if (kills == null) continue;
-    out.push({ monster_name_raw: match[2].trim(), kills });
+    const monsterName = match[2];
+    if (!monsterName) continue;
+    out.push({ monster_name_raw: monsterName.trim(), kills });
   }
   return out;
 }
@@ -105,6 +108,7 @@ function parsePartyPlayers(textLines: string[]) {
 
   for (let i = 0; i < textLines.length; i++) {
     const line = textLines[i];
+    if (!line) continue;
     if (line.includes(":")) continue;
     if (/^(Killed Monsters|Looted Items)$/i.test(line)) continue;
 
@@ -117,8 +121,10 @@ function parsePartyPlayers(textLines: string[]) {
 
     const block: string[] = [];
     for (let j = i + 1; j < textLines.length && block.length < 8; j++) {
-      if (!textLines[j].includes(":") && block.length > 0) break;
-      block.push(textLines[j]);
+      const candidate = textLines[j];
+      if (!candidate) continue;
+      if (!candidate.includes(":") && block.length > 0) break;
+      block.push(candidate);
     }
 
     const loot = metric(block, ["Loot"]);
@@ -161,8 +167,11 @@ function parseInputAnalyzer(textLines: string[]) {
     const match = line.match(/^(.+?)\s*:\s*([\d,.]+)(?:\s*\(([-\d,.]+)%\))?$/);
     if (!match) continue;
 
-    const label = match[1].trim();
-    const value = parseIntegerLike(match[2]);
+    const rawLabel = match[1];
+    const rawValue = match[2];
+    if (!rawLabel || !rawValue) continue;
+    const label = rawLabel.trim();
+    const value = parseIntegerLike(rawValue);
     const share = match[3] ? parseDecimalLike(match[3]) : null;
     if (value == null) continue;
 
@@ -184,8 +193,11 @@ function parseMisc(textLines: string[]) {
   for (const line of textLines) {
     const match = line.match(/^(.+?)\s*:\s*(.+)$/);
     if (!match) continue;
-    const name = match[1].trim();
-    const raw = match[2].trim();
+    const rawName = match[1];
+    const rawValue = match[2];
+    if (!rawName || !rawValue) continue;
+    const name = rawName.trim();
+    const raw = rawValue.trim();
     stats.push({
       key: slug(name),
       name_raw: name,
