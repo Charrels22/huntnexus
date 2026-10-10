@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-const Vocation = z.enum(["EK", "RP", "ED", "MS"]);
+const Vocation = z.enum(["EK", "RP", "ED", "MS", "EM"]);
 const Level = z.coerce.number().int().min(1).max(5000);
 const PerkOrders = z.array(z.coerce.number().int().min(1).max(100)).max(20);
 const ProficiencySelections = z.record(
@@ -14,6 +14,15 @@ const CharacterProfile = z.object({
   effective_magic_level: z.coerce.number().int().min(0).max(1000).optional(),
   effective_shielding: z.coerce.number().int().min(0).max(1000).optional(),
 }).strict();
+
+const UniversalCharacterProfile = z.object({
+  weapon_family: z.string().max(40).optional(),
+  effective_weapon_skill: z.coerce.number().int().min(1).max(1000).optional(),
+  effective_magic_level: z.coerce.number().int().min(0).max(1000).optional(),
+  effective_shielding: z.coerce.number().int().min(0).max(1000).optional(),
+  effective_distance_skill: z.coerce.number().int().min(0).max(1000).optional(),
+  effective_fist_skill: z.coerce.number().int().min(0).max(1000).optional(),
+}).passthrough();
 
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("health") }),
@@ -59,6 +68,23 @@ const Body = z.discriminatedUnion("action", [
     one_hand_active_perk_orders: PerkOrders.default([]),
     two_hand_active_perk_orders: PerkOrders.default([]),
     proficiency_selections: ProficiencySelections.default({}),
+  }),
+  z.object({
+    action: z.literal("final_optimizer"),
+    vocation: Vocation,
+    level: Level,
+    hunt_objective: z.enum(["xp", "profit", "balanced"]).default("balanced"),
+    set_objective: z.enum(["offense", "defense", "sustain", "utility", "balanced"]).default("balanced"),
+    party_size: z.coerce.number().int().min(1).max(10).default(1),
+    hunt_limit: z.coerce.number().int().min(1).max(5).default(3),
+    hand_per_source: z.coerce.number().int().min(1).max(10).default(3),
+    per_body_slot: z.coerce.number().int().min(1).max(5).default(2),
+    set_limit: z.coerce.number().int().min(1).max(200).default(100),
+    frontier_limit: z.coerce.number().int().min(1).max(200).default(100),
+    selection_limit: z.coerce.number().int().min(1).max(50).default(20),
+    unlocked_requirement_keys: z.array(z.string().min(1).max(200)).max(100).default([]),
+    proficiency_selections: ProficiencySelections.default({}),
+    character_profile: UniversalCharacterProfile.default({}),
   }),
   z.object({
     action: z.literal("boss_build"),
@@ -173,6 +199,25 @@ export const Route = createFileRoute("/api/huntnexus")({
               ]);
               return json({ data, warnings: Array.isArray(warnings) ? warnings : [] });
             }
+            case "final_optimizer":
+              return json({
+                data: await rpc("huntnexus_optimizer_final_universal", {
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_hunt_objective: b.hunt_objective,
+                  p_set_objective: b.set_objective,
+                  p_party_size: b.party_size,
+                  p_hunt_limit: b.hunt_limit,
+                  p_hand_per_source: b.hand_per_source,
+                  p_per_body_slot: b.per_body_slot,
+                  p_set_limit: b.set_limit,
+                  p_frontier_limit: b.frontier_limit,
+                  p_selection_limit: b.selection_limit,
+                  p_unlocked_requirement_keys: b.unlocked_requirement_keys,
+                  p_proficiency_selections: b.proficiency_selections,
+                  p_character_profile: b.character_profile,
+                }),
+              });
             case "boss_build": {
               const [data, warnings] = await Promise.all([
                 rpc("huntnexus_boss_build_preview", { p_boss_key: b.boss_key, p_vocation: b.vocation, p_level: b.level }),
