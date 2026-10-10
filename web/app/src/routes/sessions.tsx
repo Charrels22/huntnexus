@@ -314,7 +314,7 @@ function Damage({ data }: { data: any }) {
         <Block title="Maiores fontes de dano recebido">
           <div className="space-y-2">
             {sources.slice(0,12).map((s:any, i:number) => (
-              <DataRow key={`${s.player_id}-${s.monster_key}-${i}`} label={s.monster_name_raw || s.monster_key || "Fonte"} value={`${formatNumber(Number(s.damage || 0))} · ${formatNumber(Number(s.share_percent || 0),1)}%`} />
+              <DataRow key={`${s.player_id || "p"}-${s.monster_key || s.source_name_raw || i}`} label={s.monster_name_raw || s.source_name_raw || s.monster_key || "Fonte"} value={`${formatNumber(Number(s.damage || 0))} · ${s.share_percent == null ? "—" : formatNumber(Number(s.share_percent || 0),1) + "%"}`} />
             ))}
             {!sources.length && <Muted>Fontes de dano recebido não disponíveis.</Muted>}
           </div>
@@ -348,11 +348,13 @@ function Party({ data }: { data: any }) {
           const damageShare = totalDamage > 0 ? Number(player.damage || 0) / totalDamage * 100 : 0;
           const healingShare = totalHealing > 0 ? Number(player.healing || 0) / totalHealing * 100 : 0;
           return (
-            <div key={player.player_id} className="rounded-2xl border border-white/7 bg-slate-950/45 p-4">
+            <div key={player.player_id || player.name} className="rounded-2xl border border-white/7 bg-slate-950/45 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-lg font-bold text-white">{player.vocation || "Player"}</div>
-                  <div className="text-xs text-slate-500">Level {player.level ?? "—"}</div>
+                  <div className="text-lg font-bold text-white">{player.name || player.vocation || "Player"}</div>
+                  <div className="text-xs text-slate-500">
+                    {[player.vocation, player.level ? `Level ${player.level}` : null, player.leader ? "Leader" : null].filter(Boolean).join(" · ") || "Dados do Party Hunt Analyzer"}
+                  </div>
                 </div>
                 <span className="rounded-full border border-cyan-400/15 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-200">{formatNumber(damageShare,1)}% dmg</span>
               </div>
