@@ -41,6 +41,30 @@ const Body = z.discriminatedUnion("action", [
     client_id: z.string().uuid(),
   }),
   z.object({
+    action: z.literal("player_inventory_get"),
+    client_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("player_inventory_search"),
+    vocation: z.string().max(20),
+    level: z.coerce.number().int().min(1).max(5000),
+    query: z.string().trim().min(2).max(120),
+    selection_key: z.string().max(40).nullable().optional(),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  }),
+  z.object({
+    action: z.literal("player_inventory_put"),
+    client_id: z.string().uuid(),
+    storage_kind: z.enum(["main","backpack"]),
+    item_key: z.string().max(200),
+    quantity: z.coerce.number().int().min(1).max(9999).default(1),
+  }),
+  z.object({
+    action: z.literal("player_inventory_remove"),
+    client_id: z.string().uuid(),
+    inventory_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("player_profile_save"),
     client_id: z.string().uuid(),
     profile: z.object({
@@ -251,6 +275,38 @@ export const Route = createFileRoute("/api/huntnexus")({
               return json({
                 data: await rpc("huntnexus_player_profile_delete", {
                   p_client_id: b.client_id,
+                }),
+              });
+            case "player_inventory_get":
+              return json({
+                data: await rpc("huntnexus_player_inventory_get", {
+                  p_client_id: b.client_id,
+                }),
+              });
+            case "player_inventory_search":
+              return json({
+                data: await rpc("huntnexus_player_inventory_search", {
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_query: b.query,
+                  p_selection_key: b.selection_key ?? null,
+                  p_limit: b.limit,
+                }),
+              });
+            case "player_inventory_put":
+              return json({
+                data: await rpc("huntnexus_player_inventory_put", {
+                  p_client_id: b.client_id,
+                  p_storage_kind: b.storage_kind,
+                  p_item_key: b.item_key,
+                  p_quantity: b.quantity,
+                }),
+              });
+            case "player_inventory_remove":
+              return json({
+                data: await rpc("huntnexus_player_inventory_remove", {
+                  p_client_id: b.client_id,
+                  p_inventory_id: b.inventory_id,
                 }),
               });
             case "player_profile_save":
