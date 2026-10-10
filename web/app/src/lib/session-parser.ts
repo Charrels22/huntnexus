@@ -186,11 +186,11 @@ function parseInputAnalyzer(textLines: string[]) {
   let section: "elements" | "sources" | null = null;
 
   for (const line of textLines) {
-    if (/damage types|elements/i.test(line) && !line.includes(":")) {
+    if (/^(damage types|elements)\s*:?$/i.test(line)) {
       section = "elements";
       continue;
     }
-    if (/damage sources|sources/i.test(line) && !line.includes(":")) {
+    if (/^(damage sources|sources)\s*:?$/i.test(line)) {
       section = "sources";
       continue;
     }
