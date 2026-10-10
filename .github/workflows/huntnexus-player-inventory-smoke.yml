@@ -1,0 +1,30 @@
+name: HuntNexus Player Inventory Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/player-inventory-smoke.mjs"
+      - "web/app/src/routes/profile.tsx"
+      - "web/app/src/routes/hunts.$huntKey.tsx"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - "db/migrations/0121_player_main_set_backpack.sql"
+      - "db/migrations/0122_player_inventory_hunt_review.sql"
+      - ".github/workflows/huntnexus-player-inventory-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Player inventory regression smoke
+        run: node tests/player-inventory-smoke.mjs
