@@ -138,7 +138,7 @@ try {
   assert(imported?.data?.community_evidence_written === false, "private import leaked to community evidence");
 
   const parsed = imported?.parsed;
-  assert(parsed?.methodology?.stage === "session_parser_v1", "parser stage regression");
+  assert(parsed?.methodology?.stage === "session_parser_v2", "parser stage regression");
   assert(parsed?.hunt_analyse?.duration_seconds === 5400, "duration parse regression");
   assert(parsed?.hunt_analyse?.xp_gain === 12000000, "XP parse regression");
   assert(parsed?.hunt_analyse?.xp_per_hour === 8000000, "XP/h parse regression");
@@ -149,6 +149,8 @@ try {
   assert(parsed?.damage?.incoming_by_element?.length === 2, "element damage parse regression");
   assert(parsed?.damage?.incoming_by_source?.length === 2, "damage source parse regression");
   assert(parsed?.misc?.combat_stats?.length === 2, "misc parse regression");
+  assert(parsed?.damage?.charm_damage_status === "not_observed", "standard analyzer charm status regression");
+  assert(parsed?.damage?.charm_damage_available === false, "standard analyzer must not invent charm damage");
 
   const list = await post({
     action: "player_session_list",
