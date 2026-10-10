@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Activity,
   ArrowRight,
@@ -14,6 +15,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { OfficialAssetSlot } from "@/components/shell/app-shell";
+import { CanonicalSprite } from "@/components/shared/canonical-sprite";
+import { callHuntNexusApi } from "@/lib/api/huntnexus";
 
 export const Route = createFileRoute("/")({ component: DashboardPage });
 
@@ -24,14 +27,24 @@ const analyzerShortcuts: Array<{ title: string; text: string; icon: LucideIcon }
   { title: "Party Hunt", text: "Contribuição de cada player", icon: Users },
 ];
 
-const hunts = [
-  { key: "cobra-bastion", name: "Cobra Bastion", vocation: "EK", xp: "—", profit: "—", confidence: "Dados reais", risk: "Fire / Physical" },
-  { key: "iksupan-last-stand", name: "Iksupan Last Stand", vocation: "RP", xp: "—", profit: "—", confidence: "Dados reais", risk: "Mixed" },
-  { key: "nimmersatts-breeding-ground", name: "Nimmersatt's Breeding Ground", vocation: "ED", xp: "—", profit: "—", confidence: "Dados reais", risk: "Mixed" },
-  { key: "grounds-of-undeath", name: "Grounds of Undeath", vocation: "EM", xp: "13.1M", profit: "2.64M", confidence: "2 sessões", risk: "Physical / Fire / Death" },
-];
+
 
 function DashboardPage() {
+  const [hunts, setHunts] = useState<any[]>([]);
+  const [loadingHunts, setLoadingHunts] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    callHuntNexusApi<any>({ action: "featured_hunts", limit: 8 })
+      .then((response) => {
+        if (!active) return;
+        setHunts(Array.isArray(response?.data?.hunts) ? response.data.hunts : []);
+      })
+      .catch(() => { if (active) setHunts([]); })
+      .finally(() => { if (active) setLoadingHunts(false); });
+    return () => { active = false; };
+  }, []);
+
   return (
     <div className="mx-auto max-w-[1450px] space-y-6">
       <section className="hn-hero overflow-hidden rounded-3xl border border-white/8 p-5 md:p-7">
@@ -81,34 +94,45 @@ function DashboardPage() {
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Base real</div>
-            <h2 className="mt-1 text-2xl font-bold text-white">Hunts que já conseguimos explicar</h2>
+            <h2 className="mt-1 text-2xl font-bold text-white">Hunts mais observadas na base</h2>
           </div>
           <Link to="/planner" className="text-sm text-cyan-300 hover:text-cyan-200">Abrir planner →</Link>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {hunts.map((hunt) => (
-            <article key={hunt.key} className="hn-hunt-card">
-              <OfficialAssetSlot label="Imagem oficial da hunt" compact />
+          {loadingHunts && Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="hn-hunt-card min-h-72 animate-pulse bg-white/[0.02]" />
+          ))}
+          {!loadingHunts && hunts.map((hunt) => (
+            <article key={hunt.hunt_key} className="hn-hunt-card overflow-hidden">
+              <div className="grid min-h-28 place-items-center border-b border-white/6 bg-slate-950/55 p-4">
+                <CanonicalSprite kind="creature" name={hunt.hero_image_name} size="lg" />
+              </div>
               <div className="space-y-4 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="text-lg font-bold text-white">{hunt.name}</div>
-                    <div className="mt-1 text-xs text-slate-500">{hunt.vocation} · regressão validada</div>
+                    <div className="text-lg font-bold text-white">{hunt.hunt_name}</div>
+                    <div className="mt-1 text-xs text-slate-500">{hunt.city || "Tibia"} · observado</div>
                   </div>
                   <span className="rounded-full border border-emerald-400/15 bg-emerald-400/8 px-2 py-1 text-[10px] text-emerald-300">
-                    {hunt.confidence}
+                    {hunt.session_count} sessões
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <Metric icon={Flame} label="XP/h" value={hunt.xp} />
-                  <Metric icon={Coins} label="Profit/h" value={hunt.profit} />
+                  <Metric icon={Flame} label="XP/h mediana" value={formatCompact(hunt.median_xp_per_hour)} />
+                  <Metric icon={Coins} label="Profit/h mediano" value={formatCompact(hunt.median_balance_per_hour)} />
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <ShieldCheck className="size-3.5 text-cyan-400" /> {hunt.risk}
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <span>{hunt.solo_sessions || 0} solo · {hunt.party_sessions || 0} party</span>
+                  <ShieldCheck className="size-3.5 text-cyan-400" />
                 </div>
               </div>
             </article>
           ))}
+          {!loadingHunts && hunts.length === 0 && (
+            <div className="col-span-full rounded-2xl border border-dashed border-white/8 p-8 text-center text-sm text-slate-600">
+              Nenhuma hunt observada disponível no momento.
+            </div>
+          )}
         </div>
       </section>
     </div>
@@ -124,4 +148,15 @@ function Metric({ icon: Icon, label, value }: { icon: typeof Flame; label: strin
       <div className="mt-1 text-sm font-bold text-slate-100">{value}</div>
     </div>
   );
+}
+
+
+function formatCompact(value: unknown) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)}k`;
+  return String(Math.round(n));
 }
