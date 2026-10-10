@@ -424,8 +424,10 @@ function Damage({ data }: { data: any }) {
   return (
     <div className="space-y-6">
       <PanelHeader eyebrow="Damage" title="Dano causado e recebido" subtitle="Breakdown normalizado da sessão." />
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Kpi icon={Swords} label="Damage dealt" value={formatCompact(d.total_damage)} />
+        <Kpi icon={ShieldAlert} label="Damage recebido" value={formatCompact(d.incoming_total_damage)} />
+        <Kpi icon={Activity} label="Max DPS recebido" value={formatCompact(d.incoming_max_dps)} />
         <Kpi icon={ShieldAlert} label="Elementos recebidos" value={String(elements.length)} />
         <Kpi
           icon={Activity}
