@@ -142,6 +142,53 @@ try {
     "non-owned item leaked into owned build option",
   );
 
+  const ownedVariant = (ownedOptions?.data?.options ?? []).find((option) => option.option_type === "owned_variant");
+  if (ownedVariant) {
+    const choiceSave = await post({
+      action: "player_hunt_build_choice_save",
+      client_id: clientId,
+      hunt_key: "podzilla",
+      vocation: "MS",
+      level: 655,
+      selection: ownedVariant.selection,
+      option_type: "owned_variant",
+      replacements: ownedVariant.replacements ?? [],
+    });
+
+    assert(choiceSave?.data?.saved === true, "hunt build choice save regression");
+    assert(choiceSave?.data?.main_set_mutated === false, "hunt choice mutated Main Set");
+
+    const choiceGet = await post({
+      action: "player_hunt_build_choice_get",
+      client_id: clientId,
+      hunt_key: "podzilla",
+      vocation: "MS",
+    });
+
+    assert(choiceGet?.data?.exists === true, "hunt build choice get regression");
+    assert(
+      JSON.stringify(choiceGet?.data?.choice?.selection) === JSON.stringify(ownedVariant.selection),
+      "hunt build choice selection regression",
+    );
+
+    const inventoryAfterChoice = await post({
+      action: "player_inventory_get",
+      client_id: clientId,
+    });
+    assert(
+      inventoryAfterChoice?.data?.main_set?.weapon?.item_key === "soultainter",
+      "selecting hunt option changed Main Set",
+    );
+
+    const choiceDelete = await post({
+      action: "player_hunt_build_choice_delete",
+      client_id: clientId,
+      hunt_key: "podzilla",
+      vocation: "MS",
+    });
+    assert(choiceDelete?.data?.main_set_mutated === false, "hunt choice delete mutated Main Set");
+  }
+
   console.log(JSON.stringify({
     status: "ok",
     stage: "player_inventory_public_smoke",
@@ -152,6 +199,7 @@ try {
     automatic_main_replacement: review.data.methodology.automatic_main_replacement,
     owned_build_options: ownedOptions.data.summary.returned_options,
     discarded_bp_variants: ownedOptions.data.summary.discarded_as_main_dominated,
+    hunt_build_choice_tested: Boolean(ownedVariant),
   }, null, 2));
 } finally {
   for (const inventoryId of inventoryIds) {
