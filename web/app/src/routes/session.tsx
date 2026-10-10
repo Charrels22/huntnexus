@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 import { detectAnalyzerType, parseSessionImport } from "@/lib/session-parser";
 
 export const Route = createFileRoute("/session")({ component: SessionImportPage });
@@ -83,6 +84,7 @@ function SessionImportPage() {
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [huntSuggestions, setHuntSuggestions] = useState<any[]>([]);
   const [huntSearchOpen, setHuntSearchOpen] = useState(false);
+  const [sessionLoadoutPreview, setSessionLoadoutPreview] = useState<any>(null);
 
   useEffect(() => {
     try {
@@ -136,6 +138,95 @@ function SessionImportPage() {
       window.clearTimeout(timer);
     };
   }, [draft.location, draft.huntKey]);
+
+  useEffect(() => {
+    const clientId = getOrCreateClientId();
+    if (!clientId || !draft.huntKey || !draft.vocation) {
+      setSessionLoadoutPreview(null);
+      return;
+    }
+
+    let activeRequest = true;
+
+    Promise.all([
+      callHuntNexusApi<any>({
+        action: "player_hunt_build_choice_get",
+        client_id: clientId,
+        hunt_key: draft.huntKey,
+        vocation: draft.vocation,
+      }),
+      callHuntNexusApi<any>({
+        action: "player_inventory_get",
+        client_id: clientId,
+      }),
+    ])
+      .then(([choiceResponse, inventoryResponse]) => {
+        if (!activeRequest) return;
+
+        const choice = choiceResponse?.data?.exists ? choiceResponse.data.choice : null;
+        const inventory = inventoryResponse?.data ?? {};
+        const mainSet = inventory?.main_set && typeof inventory.main_set === "object"
+          ? inventory.main_set
+          : {};
+        const backpack = Array.isArray(inventory?.backpack) ? inventory.backpack : [];
+
+        if (choice?.selection && typeof choice.selection === "object") {
+          const owned = [
+            ...Object.values(mainSet),
+            ...backpack,
+          ] as any[];
+
+          const items = Object.entries(choice.selection).map(([selectionKey, itemKey]) => {
+            const match = owned.find(
+              (item:any) => item?.selection_key === selectionKey && item?.item_key === itemKey,
+            );
+            return {
+              selection_key: selectionKey,
+              item_key: String(itemKey),
+              item_name: match?.item_name || String(itemKey),
+              storage_kind: match?.storage_kind || (
+                mainSet?.[selectionKey]?.item_key === itemKey ? "main" : "backpack"
+              ),
+            };
+          });
+
+          setSessionLoadoutPreview({
+            source: "saved_hunt_choice",
+            option_type: choice.option_type,
+            items,
+          });
+          return;
+        }
+
+        const mainItems = Object.values(mainSet) as any[];
+        if (mainItems.length) {
+          setSessionLoadoutPreview({
+            source: "main_default",
+            option_type: "main",
+            items: mainItems.map((item:any) => ({
+              selection_key: item.selection_key,
+              item_key: item.item_key,
+              item_name: item.item_name,
+              storage_kind: "main",
+            })),
+          });
+          return;
+        }
+
+        setSessionLoadoutPreview({
+          source: "not_available",
+          option_type: null,
+          items: [],
+        });
+      })
+      .catch(() => {
+        if (activeRequest) setSessionLoadoutPreview(null);
+      });
+
+    return () => {
+      activeRequest = false;
+    };
+  }, [draft.huntKey, draft.vocation]);
 
   const active = analyzerTabs.find((tab) => tab.key === activeTab)!;
   const analyzerCount = useMemo(
@@ -481,6 +572,58 @@ function SessionImportPage() {
         )}
       </section>
 
+      {draft.huntKey && draft.vocation && sessionLoadoutPreview && (
+        <section className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.025] p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Setup que será registrado</div>
+              <div className="mt-1 text-sm font-semibold text-slate-200">
+                {sessionLoadoutPreview.source === "saved_hunt_choice"
+                  ? "Build escolhida para esta hunt"
+                  : sessionLoadoutPreview.source === "main_default"
+                    ? "Set Main"
+                    : "Nenhum setup disponível"}
+              </div>
+            </div>
+
+            {sessionLoadoutPreview.option_type === "owned_variant" && (
+              <span className="rounded-full border border-cyan-400/15 bg-cyan-400/[0.05] px-2.5 py-1 text-[10px] font-semibold text-cyan-200">
+                Main + BP
+              </span>
+            )}
+          </div>
+
+          {Array.isArray(sessionLoadoutPreview.items) && sessionLoadoutPreview.items.length ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {sessionLoadoutPreview.items.map((item:any) => (
+                <div
+                  key={`${item.selection_key}-${item.item_key}`}
+                  title={item.item_name || item.item_key}
+                  className={`rounded-xl border p-2 text-center ${
+                    item.storage_kind === "backpack"
+                      ? "border-cyan-300/25 bg-cyan-400/[0.06]"
+                      : "border-white/7 bg-black/20"
+                  }`}
+                >
+                  <CanonicalSprite kind="item" name={item.item_name || slugToNameSession(item.item_key)} size="sm" />
+                  <div className="mt-1 max-w-[72px] truncate text-[9px] uppercase tracking-wide text-slate-600">
+                    {sessionSlotLabelPreview(item.selection_key)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 text-xs text-slate-600">
+              Cadastre um Set Main no Profile para que o HuntNexus registre o equipamento usado junto com a sessão.
+            </div>
+          )}
+
+          <div className="mt-3 text-[10px] leading-4 text-slate-600">
+            O setup é salvo como snapshot histórico. Alterações futuras no Profile ou na BP não mudam esta sessão.
+          </div>
+        </section>
+      )}
+
       <section className="flex flex-col gap-3 border-t border-white/8 pt-5 sm:flex-row sm:items-center">
         <button type="button" className="hn-secondary-button justify-center" onClick={saveDraft}>
           <Save className="size-4" />
@@ -547,6 +690,29 @@ function Toggle({ active, onClick, children }: { active: boolean; onClick: () =>
   );
 }
 
+
+function sessionSlotLabelPreview(slot:string) {
+  return ({
+    neck:"Amuleto",
+    head:"Helmet",
+    ring:"Ring",
+    weapon:"Weapon",
+    body:"Armor",
+    offhand:"Off-hand",
+    legs:"Legs",
+    feet:"Boots",
+    ammunition:"Ammo",
+  } as Record<string,string>)[slot] ?? slot;
+}
+
+function slugToNameSession(value:unknown) {
+  if (typeof value !== "string") return "";
+  return value
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 function PreviewMetric({ label, value }: { label: string; value: string }) {
   return (
