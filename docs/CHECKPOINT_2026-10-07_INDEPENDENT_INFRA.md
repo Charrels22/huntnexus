@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0100
+- schema/migrations aplicados até 0101
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1211,5 +1211,94 @@ The existing EK implementation remains as a regression fixture while generic cat
 4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
 5. slot/restriction compatibility — next;
 6. combat/spell mechanics;
+7. vocation composition;
+8. final optimizer.
+
+
+## Universal slot / restriction compatibility
+
+- migration 0101 adds:
+  - server-only `loadout_slot_rules`;
+  - server-only `vw_loadout_item_catalog_universal`;
+  - `huntnexus_loadout_compatibility_universal(vocation,level,selection)`;
+  - `huntnexus_slot_compatibility_audit()`.
+- current selection contract supports:
+  - head;
+  - body;
+  - legs;
+  - feet;
+  - neck;
+  - ring;
+  - weapon;
+  - offhand;
+  - ammunition dependency.
+- container/backpack is explicitly recognized but remains outside the current catalog scope.
+- current universal loadout item catalog:
+  - 854 weapons;
+  - 689 equipment items;
+  - 27 ammunition items;
+  - 1,570 total selectable/dependency items.
+- slot facts are source-grounded:
+  - head/body/legs/feet/neck/ring are single equipment positions;
+  - offhand/shield slot supports shield, spellbook or quiver subject to item/vocation requirements;
+  - weapon uses item-specific one/two-hand data;
+  - ammunition is modeled as Bow/Crossbow dependency, not as a body equipment slot.
+- status semantics:
+  - `valid` = all selected items/restrictions/dependencies are compatible;
+  - `incomplete` = no hard conflict, but a required weapon dependency or out-of-scope catalog is missing;
+  - `blocked` = slot, level, vocation, hand or dependency-family conflict.
+- item-level validation includes:
+  - item existence;
+  - canonical slot;
+  - level requirement;
+  - vocation restriction.
+- combination rules include:
+  - one-hand weapon + valid offhand allowed;
+  - ordinary two-hand weapon + offhand blocked;
+  - Bow/Crossbow use the explicit two-hand + quiver exception;
+  - Bow requires quiver + arrow dependency;
+  - Crossbow requires quiver + bolt dependency;
+  - wrong ammunition family is blocked;
+  - ammunition with a non-Bow/Crossbow weapon is blocked.
+- partial body loadouts are valid; omitted optional armor slots do not make a selection incomplete.
+- validated examples:
+  - EK 700 Grand Sanguine Blade + Shield of Corruption + Lion Plate -> valid;
+  - EK 700 Soulshredder + Shield of Corruption -> blocked (`two_handed_weapon_blocks_offhand`);
+  - RP 1000 Moonsilver Bow + Alicorn Quiver + Crystalline Arrow + Falcon Coif -> valid;
+  - RP 1000 Moonsilver Bow alone -> incomplete (`required_quiver_missing`, `required_ammunition_missing`);
+  - RP Bow + Spectral Bolt -> blocked (`ammunition_family_mismatch`);
+  - ED 700 Soulhexer + Lion Spellbook -> valid;
+  - Lion Plate selected in head -> blocked (`wrong_slot`);
+  - Lion Plate for RP -> blocked (`vocation_restriction`);
+  - Moonsilver Bow for RP 700 -> blocked (`level_requirement`);
+  - container/backpack selection -> incomplete (`catalog_out_of_scope`).
+- `huntnexus_slot_compatibility_audit()`, stage `slot_compatibility_audit_v1`:
+  - selection_rules=10;
+  - supported_selection_keys=9;
+  - out_of_scope_selection_keys=1;
+  - weapon_families_with_usage_rules=9;
+  - equipment_slots=7;
+  - equipment_families=9;
+  - ammunition_families=2;
+  - slot_contract_ready=true;
+  - weapon_offhand_dependency_ready=true;
+  - vocation_level_restriction_ready=true;
+  - container_catalog_ready=false;
+  - final_loadout_optimizer_ready=false.
+- focused regression `tests/sql/phase40_universal_slot_restriction_compatibility.sql`: status=ok.
+- migration commit: `cc2135fa4b86a5d10b933043584312739cff396a`.
+- regression commit: `164ae325439e8f7298cbb1a57be2f371d995f5f4`.
+- security advisor after 0101:
+  - 11 informational `rls_enabled_no_policy` findings; new `loadout_slot_rules` is intentionally server-only deny-by-default;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+### Category-first status after 0101
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY;
+4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
+5. slot/restriction compatibility — universal loadout validation READY;
+6. combat/spell mechanics — next;
 7. vocation composition;
 8. final optimizer.
