@@ -39,6 +39,8 @@ try {
         "100x cobra assassin",
         "50x cobra scout",
         "Looted Items:",
+        "3x cobra crest",
+        "25x a platinum coin",
       ].join("\n"),
       party: [
         "Session: 01:30h",
@@ -102,6 +104,8 @@ try {
   assert(parsed?.hunt_analyse?.xp_per_hour === 8000000, "XP/h parse regression");
   assert(parsed?.hunt_analyse?.total_kills === 150, "kill parse regression");
   assert(parsed?.party_hunt?.players?.length === 2, "party parse regression");
+  assert(parsed?.misc?.looted_items?.length === 2, "looted items parse regression");
+  assert(parsed?.misc?.looted_items?.[0]?.amount === 3, "loot item amount regression");
   assert(parsed?.damage?.incoming_by_element?.length === 2, "element damage parse regression");
   assert(parsed?.damage?.incoming_by_source?.length === 2, "damage source parse regression");
   assert(parsed?.misc?.combat_stats?.length === 2, "misc parse regression");
@@ -131,6 +135,7 @@ try {
     party_players: parsed.party_hunt.players.length,
     damage_elements: parsed.damage.incoming_by_element.length,
     damage_sources: parsed.damage.incoming_by_source.length,
+    looted_items: parsed.misc.looted_items.length,
   }, null, 2));
 } finally {
   if (sessionId) {
