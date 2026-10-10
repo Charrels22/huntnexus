@@ -47,6 +47,7 @@ function HuntDetailPage() {
   const [error, setError] = useState("");
   const [personalReview, setPersonalReview] = useState<any>(null);
   const [ownedBuildOptions, setOwnedBuildOptions] = useState<any>(null);
+  const [personalBuildPerformance, setPersonalBuildPerformance] = useState<any>(null);
   const [huntBuildChoice, setHuntBuildChoice] = useState<any>(null);
   const [savingBuildChoice, setSavingBuildChoice] = useState(false);
   const [loadingPersonalReview, setLoadingPersonalReview] = useState(false);
@@ -133,19 +134,27 @@ function HuntDetailPage() {
             hunt_key: huntKey,
             vocation: search.vocation,
           }),
+          callHuntNexusApi<any>({
+            action: "player_session_build_performance",
+            client_id: clientId,
+            hunt_key: huntKey,
+            vocation: search.vocation,
+          }),
         ]);
       })
       .then((responses) => {
         if (!active || !responses) return;
-        const [reviewResponse, optionsResponse, choiceResponse] = responses;
+        const [reviewResponse, optionsResponse, choiceResponse, performanceResponse] = responses;
         setPersonalReview(reviewResponse?.data ?? null);
         setOwnedBuildOptions(optionsResponse?.data ?? null);
         setHuntBuildChoice(choiceResponse?.data?.exists ? choiceResponse.data.choice : null);
+        setPersonalBuildPerformance(performanceResponse?.data ?? null);
       })
       .catch(() => {
         if (active) {
           setPersonalReview(null);
           setOwnedBuildOptions(null);
+          setPersonalBuildPerformance(null);
           setHuntBuildChoice(null);
         }
       })
@@ -267,6 +276,7 @@ function HuntDetailPage() {
             selection={data.set_selection}
             personalReview={personalReview}
             ownedBuildOptions={ownedBuildOptions}
+            personalBuildPerformance={personalBuildPerformance}
             huntBuildChoice={huntBuildChoice}
             savingBuildChoice={savingBuildChoice}
             onChooseBuild={chooseBuildForHunt}
@@ -389,6 +399,7 @@ function Setup({
   selection,
   personalReview,
   ownedBuildOptions,
+  personalBuildPerformance,
   huntBuildChoice,
   savingBuildChoice,
   onChooseBuild,
@@ -397,6 +408,7 @@ function Setup({
   selection:any;
   personalReview:any;
   ownedBuildOptions:any;
+  personalBuildPerformance:any;
   huntBuildChoice:any;
   savingBuildChoice:boolean;
   onChooseBuild:(option:any) => Promise<void>;
@@ -458,6 +470,8 @@ function Setup({
           />
         )}
       </div>
+
+      <PrivateBuildPerformance data={personalBuildPerformance} />
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
         <Panel title="Seu Set Main">
@@ -647,6 +661,98 @@ function Community({ observed }: { observed:any }) {
       </div>
     </div>
   );
+}
+
+function PrivateBuildPerformance({ data }: { data:any }) {
+  const builds = Array.isArray(data?.builds) ? data.builds : [];
+  if (!builds.length) return null;
+
+  return (
+    <div className="mt-5 rounded-2xl border border-violet-400/12 bg-violet-400/[0.025] p-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="text-sm font-bold text-white">Seus resultados por build</div>
+          <div className="mt-1 text-xs text-slate-500">
+            Medianas das suas sessões privadas desta hunt. Comparação descritiva; não prova que o equipamento causou a diferença.
+          </div>
+        </div>
+        <span className="rounded-full border border-white/7 px-2.5 py-1 text-[10px] text-slate-500">
+          {data?.summary?.sessions ?? 0} sessões · {data?.summary?.distinct_builds ?? builds.length} builds
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 xl:grid-cols-3">
+        {builds.slice(0,6).map((build:any, index:number) => (
+          <div key={build.build_signature ?? index} className="rounded-xl border border-white/7 bg-slate-950/45 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-xs font-semibold text-slate-200">
+                  {build.option_type === "owned_variant" ? "Build alternativa" : "Set Main"}
+                </div>
+                <div className="mt-1 text-[10px] text-slate-600">{build.session_count} sessão(ões)</div>
+              </div>
+              <span className={`rounded-full border px-2 py-1 text-[9px] ${buildSampleClass(build.sample_status)}`}>
+                {buildSampleLabel(build.sample_status)}
+              </span>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {(Array.isArray(build.items) ? build.items : []).slice(0,8).map((item:any) => (
+                <div key={`${item.selection_key}-${item.item_key}`} title={item.item_name || item.item_key} className="rounded-lg border border-white/6 bg-black/20 p-1.5">
+                  <CanonicalSprite kind="item" name={item.item_name || slugToName(item.item_key)} size="sm" />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <BuildPerfMetric label="XP/h" value={formatCompactMetric(build.median_xp_per_hour)} />
+              <BuildPerfMetric label="Profit/h" value={formatCompactMetric(build.median_profit_per_hour)} />
+              <BuildPerfMetric label="Damage/h" value={formatCompactMetric(build.median_damage_per_hour)} />
+              <BuildPerfMetric label="Healing/h" value={formatCompactMetric(build.median_healing_per_hour)} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 text-[10px] leading-4 text-slate-600">
+        Amostras pequenas são mantidas visíveis, mas não são tratadas como evidência suficiente para declarar uma build melhor.
+      </div>
+    </div>
+  );
+}
+
+function BuildPerfMetric({ label, value }: { label:string; value:string }) {
+  return (
+    <div className="rounded-lg border border-white/6 bg-white/[0.02] p-2">
+      <div className="text-[9px] text-slate-600">{label}</div>
+      <div className="mt-1 text-xs font-bold text-slate-200">{value}</div>
+    </div>
+  );
+}
+
+function buildSampleLabel(status:string) {
+  return ({
+    single_session:"1 sessão",
+    very_low_sample:"amostra muito baixa",
+    low_sample:"amostra baixa",
+    observed_sample:"amostra observada",
+  } as Record<string,string>)[status] ?? "amostra";
+}
+
+function buildSampleClass(status:string) {
+  if (status === "observed_sample") return "border-emerald-400/15 bg-emerald-400/[0.05] text-emerald-300";
+  if (status === "low_sample") return "border-cyan-400/15 bg-cyan-400/[0.05] text-cyan-200";
+  return "border-amber-400/15 bg-amber-400/[0.05] text-amber-200";
+}
+
+function formatCompactMetric(value:unknown) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)}k`;
+  return String(Math.round(n));
 }
 
 function OwnedBuildOptionCard({
