@@ -333,6 +333,7 @@ function Damage({ defensive }: { defensive:any }) {
 }
 
 function Setup({ selection, personalReview, ownedBuildOptions, loadingPersonalReview }: { selection:any; personalReview:any; ownedBuildOptions:any; loadingPersonalReview:boolean }) {
+  const [selectedOwnedOption, setSelectedOwnedOption] = useState(1);
   const sets = Array.isArray(selection?.selected_sets) ? selection.selected_sets : [];
   const mainSet = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
   const ownedAlternatives = Array.isArray(personalReview?.owned_alternatives) ? personalReview.owned_alternatives : [];
@@ -365,11 +366,24 @@ function Setup({ selection, personalReview, ownedBuildOptions, loadingPersonalRe
         ) : ownedOptions.length ? (
           <div className="mt-4 grid gap-3 xl:grid-cols-3">
             {ownedOptions.map((option:any) => (
-              <OwnedBuildOptionCard key={option.option_order} option={option} personalReview={personalReview} />
+              <OwnedBuildOptionCard
+                key={option.option_order}
+                option={option}
+                personalReview={personalReview}
+                selected={selectedOwnedOption === option.option_order}
+                onSelect={() => setSelectedOwnedOption(option.option_order)}
+              />
             ))}
           </div>
         ) : (
           <div className="mt-4 text-sm text-slate-500">Cadastre o Set Main no Profile para gerar opções personalizadas.</div>
+        )}
+
+        {ownedOptions.length > 1 && (
+          <OwnedBuildComparison
+            option={ownedOptions.find((option:any) => option.option_order === selectedOwnedOption) ?? ownedOptions[0]}
+            personalReview={personalReview}
+          />
         )}
       </div>
 
@@ -563,7 +577,17 @@ function Community({ observed }: { observed:any }) {
   );
 }
 
-function OwnedBuildOptionCard({ option, personalReview }: { option:any; personalReview:any }) {
+function OwnedBuildOptionCard({
+  option,
+  personalReview,
+  selected,
+  onSelect,
+}: {
+  option:any;
+  personalReview:any;
+  selected:boolean;
+  onSelect:() => void;
+}) {
   const selection = option?.selection ?? {};
   const replacements = Array.isArray(option?.replacements) ? option.replacements : [];
   const mainRows = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
@@ -571,17 +595,30 @@ function OwnedBuildOptionCard({ option, personalReview }: { option:any; personal
   const itemByKey = new Map(
     [...mainRows, ...ownedRows].map((item:any) => [item.item_key, item]),
   );
-  const slots = Object.entries(selection);
+  const mainBySlot = new Map(mainRows.map((item:any) => [item.selection_key, item.item_key]));
+  const slots = orderedBuildSlots(selection);
+  const replacementSlots = new Set(replacements.map((item:any) => item.selection_key));
 
   return (
-    <div className={`rounded-2xl border p-4 ${option.option_type === "main" ? "border-amber-400/45 bg-amber-400/[0.08]" : "border-white/7 bg-slate-950/45"}`}>
-      <div className="flex items-center justify-between gap-3">
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`group w-full rounded-2xl border p-4 text-left transition ${
+        selected
+          ? option.option_type === "main"
+            ? "border-amber-300/70 bg-amber-400/[0.10] shadow-[0_0_0_1px_rgba(252,211,77,.08)]"
+            : "border-cyan-300/45 bg-cyan-400/[0.07] shadow-[0_0_0_1px_rgba(34,211,238,.06)]"
+          : "border-white/7 bg-slate-950/45 hover:border-white/14"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-black text-white">{option.option_order}ª opção</div>
           <div className="mt-1 text-[11px] text-slate-500">
-            {option.option_type === "main" ? "Set Main / em uso" : "Variação com itens da BP"}
+            {option.option_type === "main" ? "Seu Set Main" : `${replacements.length} troca${replacements.length === 1 ? "" : "s"} com a BP`}
           </div>
         </div>
+
         {option.option_type === "main" ? (
           <span className="rounded-full bg-amber-300 px-2.5 py-1 text-[10px] font-black text-slate-950">Em uso</span>
         ) : option.dominates_main ? (
@@ -594,24 +631,128 @@ function OwnedBuildOptionCard({ option, personalReview }: { option:any; personal
       <div className="mt-4 grid grid-cols-4 gap-2">
         {slots.map(([slot,itemKey]) => {
           const row:any = itemByKey.get(String(itemKey));
+          const changed = replacementSlots.has(slot) || (
+            option.option_type !== "main" &&
+            mainBySlot.has(slot) &&
+            mainBySlot.get(slot) !== itemKey
+          );
+
           return (
-            <div key={slot} className="rounded-xl border border-white/6 bg-black/20 p-2 text-center">
+            <div
+              key={slot}
+              title={row?.item_name || slugToName(String(itemKey))}
+              className={`relative rounded-xl border p-2 text-center transition ${
+                changed
+                  ? "border-cyan-300/35 bg-cyan-400/[0.08]"
+                  : option.option_type === "main"
+                    ? "border-amber-300/12 bg-black/20"
+                    : "border-white/6 bg-black/20"
+              }`}
+            >
+              {changed && (
+                <span className="absolute -right-1 -top-1 rounded-full border border-cyan-300/30 bg-cyan-300 px-1.5 py-0.5 text-[8px] font-black text-slate-950">
+                  BP
+                </span>
+              )}
               <CanonicalSprite kind="item" name={row?.item_name || slugToName(String(itemKey))} size="sm" />
-              <div className="mt-1 truncate text-[9px] uppercase tracking-wide text-slate-600">{slot}</div>
+              <div className="mt-1 truncate text-[9px] uppercase tracking-wide text-slate-600">{buildSlotLabel(slot)}</div>
             </div>
           );
         })}
       </div>
 
-      {replacements.length > 0 && (
-        <div className="mt-3 text-[11px] leading-5 text-slate-500">
-          Usa da BP: <span className="text-cyan-200">{replacements.map((r:any) => r.item_name).join(", ")}</span>
+      {replacements.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {replacements.map((replacement:any) => (
+            <span
+              key={`${replacement.selection_key}-${replacement.item_key}`}
+              className="rounded-full border border-cyan-400/15 bg-cyan-400/[0.045] px-2 py-1 text-[9px] font-semibold text-cyan-200"
+            >
+              {buildSlotLabel(replacement.selection_key)} · {replacement.item_name}
+            </span>
+          ))}
         </div>
+      ) : (
+        <div className="mt-3 text-[10px] text-amber-200/75">Referência atual do personagem</div>
       )}
 
-      <div className="mt-2 text-[10px] leading-4 text-slate-600">{option.reason}</div>
+      <div className="mt-3 border-t border-white/6 pt-3 text-[10px] leading-4 text-slate-600">
+        {humanOwnedBuildReason(option)}
+      </div>
+    </button>
+  );
+}
+
+function OwnedBuildComparison({ option, personalReview }: { option:any; personalReview:any }) {
+  if (!option || option.option_type === "main") {
+    return (
+      <div className="mt-4 rounded-xl border border-amber-400/10 bg-amber-400/[0.025] p-3 text-xs text-slate-500">
+        <span className="font-semibold text-amber-200/80">1ª opção:</span> seu Set Main continua sendo a referência da hunt.
+      </div>
+    );
+  }
+
+  const replacements = Array.isArray(option.replacements) ? option.replacements : [];
+  const mainRows = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
+  const mainBySlot = new Map(mainRows.map((item:any) => [item.selection_key, item]));
+
+  return (
+    <div className="mt-4 rounded-xl border border-cyan-400/10 bg-cyan-400/[0.025] p-3">
+      <div className="text-xs font-semibold text-cyan-100">O que muda nesta opção</div>
+      <div className="mt-2 grid gap-2 md:grid-cols-2">
+        {replacements.map((replacement:any) => {
+          const previous:any = mainBySlot.get(replacement.selection_key);
+          return (
+            <div key={replacement.selection_key} className="flex items-center gap-2 rounded-lg border border-white/6 bg-black/15 px-2.5 py-2">
+              <CanonicalSprite kind="item" name={previous?.item_name || slugToName(String(previous?.item_key || ""))} size="sm" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[9px] uppercase tracking-wide text-slate-600">{buildSlotLabel(replacement.selection_key)}</div>
+                <div className="truncate text-[10px] text-slate-500">{previous?.item_name || "Main"}</div>
+              </div>
+              <span className="text-xs text-cyan-300">→</span>
+              <CanonicalSprite kind="item" name={replacement.item_name} size="sm" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[9px] uppercase tracking-wide text-cyan-500">BP</div>
+                <div className="truncate text-[10px] font-semibold text-cyan-100">{replacement.item_name}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 text-[10px] leading-4 text-slate-600">{humanOwnedBuildReason(option)}</div>
     </div>
   );
+}
+
+function orderedBuildSlots(selection:any) {
+  const order = ["neck","head","ring","weapon","body","offhand","legs","feet","ammunition"];
+  const entries = Object.entries(selection ?? {});
+  return entries.sort(([a],[b]) => {
+    const ai = order.indexOf(a);
+    const bi = order.indexOf(b);
+    return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+  });
+}
+
+function buildSlotLabel(slot:string) {
+  return ({
+    neck:"Amuleto",
+    head:"Helmet",
+    ring:"Ring",
+    weapon:"Weapon",
+    body:"Armor",
+    offhand:"Off-hand",
+    legs:"Legs",
+    feet:"Boots",
+    ammunition:"Ammo",
+  } as Record<string,string>)[slot] ?? slot;
+}
+
+function humanOwnedBuildReason(option:any) {
+  if (option?.option_type === "main") return "Set Main cadastrado e preservado como baseline.";
+  if (option?.dominates_main) return "Esta variação da BP supera o Main nas dimensões em que a comparação é exata.";
+  if (option?.exact_comparable) return "Esta variação passou pelo frontier contextual e não ficou dominada pelo Main.";
+  return "Esta variação passou pelo filtro contextual, mas não é totalmente comparável ao Main; por isso é mostrada como alternativa, não como upgrade.";
 }
 
 function validFinalStat(baseValue: unknown, finalValue: unknown) {
