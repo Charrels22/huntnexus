@@ -262,6 +262,8 @@ function Analyse({ data }: { data: any }) {
         <Kpi icon={Clock3} label="Kills" value={formatNumber(Number(a.total_kills || 0))} />
       </div>
 
+      <SessionLoadoutSnapshot snapshot={data.loadout_snapshot} />
+
       <div className="grid gap-4 xl:grid-cols-[1.3fr_.7fr]">
         <div className="hn-chart-placeholder">
           <div className="relative z-10">
@@ -285,6 +287,82 @@ function Analyse({ data }: { data: any }) {
       </div>
     </div>
   );
+}
+
+function SessionLoadoutSnapshot({ snapshot }: { snapshot:any }) {
+  const items = Array.isArray(snapshot?.items) ? snapshot.items : [];
+  const source = snapshot?.source;
+
+  if (!items.length) {
+    return (
+      <div className="rounded-2xl border border-white/7 bg-slate-950/35 p-4">
+        <div className="text-sm font-semibold text-slate-200">Setup usado</div>
+        <div className="mt-2 text-xs text-slate-600">Esta sessão não possui snapshot de equipamento.</div>
+      </div>
+    );
+  }
+
+  const sourceLabel =
+    source === "saved_hunt_choice"
+      ? "Build escolhida para esta hunt"
+      : source === "main_default"
+        ? "Set Main"
+        : "Setup registrado";
+
+  return (
+    <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.025] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-cyan-100">Setup usado</div>
+          <div className="mt-1 text-[11px] text-slate-500">
+            {sourceLabel} · snapshot histórico da sessão
+          </div>
+        </div>
+        {snapshot?.option_type === "owned_variant" && (
+          <span className="rounded-full border border-cyan-400/15 bg-cyan-400/[0.05] px-2.5 py-1 text-[10px] font-semibold text-cyan-200">
+            Main + BP
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {items.map((item:any) => (
+          <div
+            key={`${item.selection_key}-${item.item_key}`}
+            title={item.item_name || slugToName(item.item_key)}
+            className={`rounded-xl border p-2 text-center ${
+              item.storage_kind === "backpack"
+                ? "border-cyan-300/25 bg-cyan-400/[0.06]"
+                : "border-white/7 bg-black/20"
+            }`}
+          >
+            <CanonicalSprite kind="item" name={item.item_name || slugToName(item.item_key)} size="sm" />
+            <div className="mt-1 max-w-[74px] truncate text-[9px] uppercase tracking-wide text-slate-600">
+              {sessionSlotLabel(item.selection_key)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 text-[10px] leading-4 text-slate-600">
+        Este snapshot não muda se você alterar o Set Main ou remover uma peça da BP depois.
+      </div>
+    </div>
+  );
+}
+
+function sessionSlotLabel(slot:string) {
+  return ({
+    neck:"Amuleto",
+    head:"Helmet",
+    ring:"Ring",
+    weapon:"Weapon",
+    body:"Armor",
+    offhand:"Off-hand",
+    legs:"Legs",
+    feet:"Boots",
+    ammunition:"Ammo",
+  } as Record<string,string>)[slot] ?? slot;
 }
 
 function Misc({ data }: { data: any }) {
