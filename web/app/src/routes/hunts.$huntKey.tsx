@@ -14,6 +14,7 @@ import {
 import { CanonicalSprite, CanonicalSpriteGroup } from "@/components/shared/canonical-sprite";
 import { CanonicalTibiaMap } from "@/components/shared/tibia-map";
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
+import { getOrCreateClientId } from "@/lib/client-id";
 
 export const Route = createFileRoute("/hunts/$huntKey")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -44,6 +45,8 @@ function HuntDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [personalReview, setPersonalReview] = useState<any>(null);
+  const [loadingPersonalReview, setLoadingPersonalReview] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -61,6 +64,49 @@ function HuntDetailPage() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [huntKey, search.vocation, search.level, search.setObjective]);
+
+  useEffect(() => {
+    if (tab !== "setup") return;
+
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+
+    let active = true;
+    setLoadingPersonalReview(true);
+
+    callHuntNexusApi<any>({
+      action: "player_profile_get",
+      client_id: clientId,
+    })
+      .then((profileResponse) => {
+        if (!active) return null;
+        const proficiencySelections = profileResponse?.data?.profile?.proficiency_selections ?? {};
+
+        return callHuntNexusApi<any>({
+          action: "player_inventory_hunt_review",
+          client_id: clientId,
+          hunt_key: huntKey,
+          vocation: search.vocation,
+          level: search.level,
+          proficiency_selections: proficiencySelections,
+          frontier_limit: 12,
+        });
+      })
+      .then((reviewResponse) => {
+        if (!active || !reviewResponse) return;
+        setPersonalReview(reviewResponse?.data ?? null);
+      })
+      .catch(() => {
+        if (active) setPersonalReview(null);
+      })
+      .finally(() => {
+        if (active) setLoadingPersonalReview(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [tab, huntKey, search.vocation, search.level]);
 
   if (loading) {
     return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="size-7 animate-spin text-cyan-300" /></div>;
@@ -133,7 +179,7 @@ function HuntDetailPage() {
         {tab === "creatures" && <Creatures monsters={monsters} observed={data.observed} />}
         {tab === "map" && <MapPanel hunt={hunt} media={media} />}
         {tab === "damage" && <Damage defensive={data.defensive} />}
-        {tab === "setup" && <Setup selection={data.set_selection} />}
+        {tab === "setup" && <Setup selection={data.set_selection} personalReview={personalReview} loadingPersonalReview={loadingPersonalReview} />}
         {tab === "spells" && <Spells spells={data.spells} composition={data.vocation_composition} />}
         {tab === "imbuements" && <Imbuements data={data.imbuements} />}
         {tab === "community" && <Community observed={data.observed} />}
@@ -246,11 +292,113 @@ function Damage({ defensive }: { defensive:any }) {
   );
 }
 
-function Setup({ selection }: { selection:any }) {
+function Setup({ selection, personalReview, loadingPersonalReview }: { selection:any; personalReview:any; loadingPersonalReview:boolean }) {
   const sets = Array.isArray(selection?.selected_sets) ? selection.selected_sets : [];
+  const mainSet = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
+  const ownedAlternatives = Array.isArray(personalReview?.owned_alternatives) ? personalReview.owned_alternatives : [];
+  const frontierCandidates = Array.isArray(personalReview?.frontier_candidates) ? personalReview.frontier_candidates : [];
+  const backpackCandidates = frontierCandidates.filter((item:any) => item.ownership === "backpack");
+  const externalCandidates = frontierCandidates.filter((item:any) => item.ownership === "external");
+
   return (
     <div>
-      <SectionTitle title="Setup recomendado" subtitle={`${selection?.summary?.co_winners ?? sets.length} co-vencedores preservados`} />
+      <SectionTitle title="Setup da hunt" subtitle="Seu Set Main permanece como baseline; BP e itens externos aparecem separados." />
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
+        <Panel title="Seu Set Main">
+          {loadingPersonalReview ? (
+            <div className="grid min-h-[160px] place-items-center"><Loader2 className="size-5 animate-spin text-cyan-300" /></div>
+          ) : mainSet.length ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {mainSet.map((item:any) => (
+                <div key={item.selection_key} className="grid grid-cols-[52px_1fr_auto] items-center gap-2 rounded-xl border border-white/6 bg-white/[0.025] p-2">
+                  <CanonicalSprite kind="item" name={item.item_name} size="sm" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-600">{item.selection_key}</div>
+                    <div className="mt-1 truncate text-xs font-semibold text-slate-200">{item.item_name}</div>
+                  </div>
+                  <span className={`rounded-full border px-2 py-1 text-[9px] ${
+                    item.on_context_frontier
+                      ? "border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-300"
+                      : "border-white/7 text-slate-500"
+                  }`}>
+                    {item.on_context_frontier ? "frontier" : "baseline"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Muted>Cadastre seu Set Main no Profile para comparar esta hunt com o equipamento que você realmente usa.</Muted>
+          )}
+        </Panel>
+
+        <Panel title="Alternativas que você já possui">
+          {ownedAlternatives.length ? (
+            <div className="space-y-2">
+              {ownedAlternatives.map((item:any) => (
+                <div key={item.item_key} className="grid grid-cols-[52px_1fr_auto] items-center gap-2 rounded-xl border border-white/6 bg-white/[0.025] p-2">
+                  <CanonicalSprite kind="item" name={item.item_name} size="sm" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-600">{item.selection_key}</div>
+                    <div className="mt-1 truncate text-xs font-semibold text-slate-200">{item.item_name}</div>
+                  </div>
+                  <span className={`rounded-full border px-2 py-1 text-[9px] ${
+                    item.on_context_frontier
+                      ? "border-cyan-400/20 bg-cyan-400/[0.06] text-cyan-200"
+                      : "border-white/7 text-slate-600"
+                  }`}>
+                    {item.on_context_frontier ? "candidata" : "BP"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Muted>Nenhuma alternativa da BP cadastrada.</Muted>
+          )}
+        </Panel>
+      </div>
+
+      {backpackCandidates.length > 0 && (
+        <div className="mt-5 rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.025] p-4">
+          <div className="text-sm font-semibold text-cyan-100">Peças da BP que chegaram ao frontier contextual</div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {backpackCandidates.map((item:any) => (
+              <span key={item.item_key} className="rounded-full border border-cyan-400/15 bg-cyan-400/[0.05] px-3 py-1.5 text-xs text-cyan-200">
+                {item.item_name}
+              </span>
+            ))}
+          </div>
+          <div className="mt-3 text-[11px] text-slate-500">Isso indica relevância contextual no item-level Pareto; não significa troca automática nem vencedor único.</div>
+        </div>
+      )}
+
+      {externalCandidates.length > 0 && (
+        <div className="mt-5">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-slate-200">Sugestões externas</div>
+              <div className="mt-1 text-xs text-slate-600">Itens contextuais que não constam no seu Set Main nem na BP.</div>
+            </div>
+            <span className="text-[10px] text-slate-600">{externalCandidates.length} candidatos</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {externalCandidates.slice(0,12).map((item:any) => (
+              <div key={`${item.selection_key}-${item.item_key}`} className="grid grid-cols-[52px_1fr] items-center gap-2 rounded-xl border border-white/6 bg-slate-950/35 p-2">
+                <CanonicalSprite kind="item" name={item.item_name} size="sm" />
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-wide text-slate-600">{item.selection_key}</div>
+                  <div className="mt-1 truncate text-xs font-semibold text-slate-300">{item.item_name}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-7 border-t border-white/7 pt-5">
+        <SectionTitle title="Frontier universal" subtitle={`${selection?.summary?.co_winners ?? sets.length} co-vencedores preservados no catálogo completo`} />
+      </div>
+
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
         {sets.slice(0,8).map((set:any, index:number) => {
           const slots = set.selection ?? {};
