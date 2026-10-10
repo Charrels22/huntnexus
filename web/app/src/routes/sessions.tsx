@@ -236,7 +236,23 @@ function Analyse({ data }: { data: any }) {
   const profitPerHour = rate(a.balance_value, a.duration_seconds);
   return (
     <div className="space-y-6">
-      <PanelHeader eyebrow="Hunt Analyse" title={decodeHtml(session.hunt_name_raw || session.hunt_key || "Sessão")} subtitle={formatDuration(a.duration_seconds)} />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PanelHeader eyebrow="Hunt Analyse" title={decodeHtml(session.hunt_name_raw || session.hunt_key || "Sessão")} subtitle={formatDuration(a.duration_seconds)} />
+        {session.hunt_key && (
+          <Link
+            to="/hunts/$huntKey"
+            params={{ huntKey: session.hunt_key }}
+            search={{
+              vocation: session.vocation || "EK",
+              level: Number(session.level || 700),
+              setObjective: "balanced",
+            }}
+            className="hn-secondary-button"
+          >
+            Ver página da hunt
+          </Link>
+        )}
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <Kpi icon={BarChart3} label="XP/h" value={formatCompact(a.xp_per_hour)} />
         <Kpi icon={Coins} label="Profit/h" value={formatCompact(profitPerHour)} />
