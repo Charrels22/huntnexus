@@ -184,6 +184,12 @@ const Body = z.discriminatedUnion("action", [
     }),
   }),
   z.object({
+    action: z.literal("player_session_build_performance"),
+    client_id: z.string().uuid(),
+    hunt_key: z.string().min(1).max(200),
+    vocation: z.string().max(20).nullable().optional(),
+  }),
+  z.object({
     action: z.literal("player_session_list"),
     client_id: z.string().uuid(),
     limit: z.coerce.number().int().min(1).max(100).default(30),
@@ -513,6 +519,14 @@ export const Route = createFileRoute("/api/huntnexus")({
               });
               return json({ data, parsed: parsedImport });
             }
+            case "player_session_build_performance":
+              return json({
+                data: await rpc("huntnexus_player_session_build_performance", {
+                  p_client_id: b.client_id,
+                  p_hunt_key: b.hunt_key,
+                  p_vocation: b.vocation ?? null,
+                }),
+              });
             case "player_session_list":
               return json({
                 data: await rpc("huntnexus_player_session_list", {
