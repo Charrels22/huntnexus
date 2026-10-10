@@ -6,7 +6,7 @@
 Projeto próprio: HuntNexus
 - região: São Paulo
 - status: ACTIVE_HEALTHY
-- schema/migrations aplicados até 0104
+- schema/migrations aplicados até 0105
 - ChatGPT possui conexão direta via Supabase connector
 
 ### Cloudflare
@@ -1584,3 +1584,90 @@ The existing EK implementation remains as a regression fixture while generic cat
 6. combat/spell mechanics — level + special unlock + proficiency linkage core READY;
 7. vocation composition — universal factual composition READY;
 8. final optimizer — next.
+
+
+## Universal optimizer candidate envelope
+
+- migration 0105 starts the FINAL OPTIMIZER on top of the completed category-first contracts.
+- new function:
+  - `huntnexus_optimizer_candidate_envelope_universal(vocation,level,objective,party_size,hunt_limit,per_dimension,unlock_keys)`.
+- new audit:
+  - `huntnexus_optimizer_audit()`.
+- design rule:
+  - hunt ranking may use the existing observed hunt ranking score;
+  - that hunt ranking score is never reused as a loadout/item score;
+  - candidate pools are not collapsed into a synthetic cross-metric value.
+- the universal envelope now gathers, for each ranked hunt:
+  - observed hunt ranking;
+  - universal vocation composition;
+  - canonical weapon-family candidate pools only;
+  - 7 equipment-slot candidate pools;
+  - unlock-aware spell candidates;
+  - hunt-specific Imbuement/incoming-damage context;
+  - explicit reference to the universal loadout-validation contract.
+- legacy EK-specific optimizer logic is not used as the universal set selector.
+- current level-700 balanced validation, top hunt:
+  - EK -> Cobra Bastion; canonical weapon pools Sword/Axe/Club;
+  - RP -> Iksupan Last Stand; Bow/Crossbow;
+  - ED -> Nimmersatt's Breeding Ground; Rod;
+  - MS -> Podzilla; Wand;
+  - EM -> Grounds of Undeath; Fist.
+- each result currently includes 7 equipment pools:
+  - head;
+  - body;
+  - legs;
+  - feet;
+  - neck;
+  - ring;
+  - offhand.
+- spell unlock state remains integrated:
+  - EK 11 catalog / 10 eligible / 1 incomplete at level 700 with no special unlocks supplied;
+  - RP 6 / 6 / 0;
+  - ED 14 / 13 / 1;
+  - MS 13 / 13 / 0;
+  - EM 16 / 11 / 5.
+- observed damage remains optional evidence:
+  - EK / RP / ED / EM top validation hunts had current observed incoming damage;
+  - MS / Podzilla returned `damage_available=false`;
+  - missing observed damage does not trigger inferred defensive context.
+- decision state after 0105 is intentionally:
+  - hunt_ranked=true;
+  - candidate_pool_built=true;
+  - set_selected=false;
+  - pareto_frontier_applied=false;
+  - final_optimizer_applied=false.
+- `huntnexus_optimizer_audit()`, stage `optimizer_audit_v1`:
+  - weapon_contract_ready=true;
+  - equipment_contract_ready=true;
+  - imbuement_contract_ready=true;
+  - effect_contract_ready=true;
+  - slot_contract_ready=true;
+  - spell_contract_ready=true;
+  - vocation_contract_ready=true;
+  - candidate_envelope_ready=true;
+  - pareto_frontier_ready=false;
+  - set_selection_ready=false;
+  - final_optimizer_ready=false.
+- remaining optimizer work is explicit:
+  1. define a Pareto/frontier layer only across factual dimensions with known directionality;
+  2. build concrete set candidates;
+  3. validate every concrete set through `huntnexus_loadout_compatibility_universal`;
+  4. keep defensive Imbuement priority separate from offense/sustain/skill choices until a factual cross-type policy exists;
+  5. do not introduce an invented universal DPS/healing scalar.
+- focused regression `tests/sql/phase44_universal_optimizer_candidate_envelope.sql`: status=ok.
+- migration commit: `4bb2984d6b951f6bb0c381cf030688cb879e2846`.
+- regression commit: `e2c3fc88644cb2f9ca5fa30701be0ab9c0e3288e`.
+- security advisor after 0105:
+  - unchanged 14 informational intentional server-only `rls_enabled_no_policy` findings;
+  - existing `pg_net` public-schema warning remains unchanged.
+
+### Category-first status after 0105
+
+1. weapons — core contract READY; proficiency backfill separate;
+2. armor/equipment slots — catalog + eligibility + factual comparison READY;
+3. imbues — factual catalog + compatibility + defensive hunt context READY;
+4. protections/effects — static/conditional effect contract + hunt protection alignment READY;
+5. slot/restriction compatibility — universal loadout validation READY;
+6. combat/spell mechanics — core READY;
+7. vocation composition — universal factual composition READY;
+8. final optimizer — candidate envelope READY; Pareto/frontier + concrete set selection next.
