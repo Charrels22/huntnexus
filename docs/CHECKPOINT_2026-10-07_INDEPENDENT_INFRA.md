@@ -1896,3 +1896,58 @@ The existing EK implementation remains as a regression fixture while generic cat
 6. combat/spell mechanics — core READY;
 7. vocation composition — universal factual composition READY;
 8. final optimizer — candidate envelope + Pareto/frontier + concrete set generation/validation READY; factual set-selection policy next.
+
+
+## Emergency handoff — 2026-10-10 chat rollover
+
+This conversation reached its practical maximum duration immediately after starting the next optimizer block.
+
+### Live DB WIP after 0106
+
+A new function currently exists in the live Supabase database because it was created through `execute_sql`, but it has NOT yet been captured in a clean migration / GitHub commit:
+
+`huntnexus_optimizer_hand_packages_universal(hunt_key, vocation, level, per_source, limit)`
+
+Purpose:
+- combine Pareto-frontier canonical weapons with compatible offhand and ammunition;
+- deterministic bounded source slicing to control combinatorial explosion;
+- slice order is technical (`item_key`) and explicitly NOT a ranking;
+- every hand package is validated with `huntnexus_loadout_compatibility_universal`;
+- no package score and no winner selection.
+
+Validated with `per_source=3`, `limit=100`:
+- EK / Cobra Bastion: 9 frontier weapons -> 24 packages -> 24 valid;
+- RP / Iksupan Last Stand: 6 -> 18 -> 18 valid;
+- ED / Nimmersatt's Breeding Ground: 3 -> 21 -> 21 valid;
+- MS / Podzilla: 3 -> 21 -> 21 valid;
+- EM / Grounds of Undeath: 3 -> 3 -> 3 valid;
+- all five validation samples had 0 incomplete and 0 blocked packages.
+
+### First task in the next chat
+
+Do NOT create 0107 from memory. First inspect the live function using `pg_get_functiondef`.
+
+Then:
+1. revalidate hand-package behavior;
+2. create the concrete full-set generator using valid hand packages + bounded Pareto frontier head/body/legs/feet/neck/ring pools;
+3. validate EVERY concrete set through `huntnexus_loadout_compatibility_universal`;
+4. do NOT select a winner yet;
+5. update optimizer audit so concrete_set_generation_ready=true and set_validation_ready=true while set_selection_ready=false and final_optimizer_ready=false;
+6. create clean migration 0107;
+7. create focused phase46 regression;
+8. commit migration + regression + checkpoint.
+
+The full master handoff for ChatGPT continuity was also saved in GPT Library as:
+`/HuntNexus/HUNTNEXUS_MASTER_HANDOFF_2026-10-10.md`.
+
+### Optimizer invariants that must remain
+
+- no universal synthetic scalar;
+- hunt ranking score is separate from item/loadout selection;
+- Pareto/frontier remains factual only;
+- unrestricted weapon compatibility never redefines vocation identity;
+- Weapon Proficiency activation requires explicit selection;
+- defensive Imbuement priority may use observed incoming damage;
+- offense/sustain/skill Imbuements remain unranked across types without a factual policy;
+- deterministic truncation/slicing is NOT ranking;
+- legacy EK-specific selector is not the universal optimizer.
