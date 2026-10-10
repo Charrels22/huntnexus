@@ -5,6 +5,32 @@ export type SessionImportBlocks = {
   misc?: string;
 };
 
+export type AnalyzerType = "hunt" | "party" | "input" | "misc";
+
+export function detectAnalyzerType(text: string): AnalyzerType | null {
+  const normalized = text.replace(/\r\n?/g, "\n").trim();
+  if (!normalized) return null;
+
+  if (/Killed Monsters:?/i.test(normalized) || /XP Gain\s*:/i.test(normalized) || /Looted Items:?/i.test(normalized)) {
+    return "hunt";
+  }
+
+  if (/Damage Types:?/i.test(normalized) || /Damage Sources:?/i.test(normalized)) {
+    return "input";
+  }
+
+  if (/Session data\s*:\s*From/i.test(normalized)) {
+    const playerSignals = (normalized.match(/(?:^|\n)[^:\n]+(?:\s+\(Leader\))?\s*\n\s*Loot\s*:/gi) ?? []).length;
+    if (playerSignals > 0 || /Loot Type\s*:/i.test(normalized)) return "party";
+  }
+
+  if (/^(?:[A-Za-z][^:\n]{1,60})\s*:\s*.+$/m.test(normalized)) {
+    return "misc";
+  }
+
+  return null;
+}
+
 type ParsedMetricMap = Record<string, number | null>;
 
 function lines(text: string | undefined) {
