@@ -112,3 +112,32 @@ Policy:
 8. External/non-owned catalog items are never inserted into these owned options.
 
 This is not a scalar ranking and does not claim a unique best set.
+
+
+## Planner personalization
+
+The Hunt Planner uses a lightweight owned-first envelope.
+
+Planner responsibilities:
+- rank hunts from observed hunt evidence;
+- preserve the original hunt ranking;
+- enrich each ranked hunt with Main Set / Backpack options;
+- surface an already saved per-hunt build choice.
+
+Planner does **not** compute the full universal set frontier. That expensive layer is deferred to Hunt Detail / Setup.
+
+Methodology:
+- inventory never reorders hunts;
+- ownership never changes hunt ranking_score;
+- Main Set remains the baseline;
+- external items never enter owned build options.
+
+## Per-hunt choice
+
+A player may choose one owned build for a specific hunt/vocation.
+
+This choice:
+- may contain only items registered in Main Set or Backpack;
+- does not mutate Main Set;
+- is invalidated if an item it references is no longer owned;
+- is restored when the player reopens that hunt.
