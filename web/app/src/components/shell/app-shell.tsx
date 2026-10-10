@@ -16,7 +16,8 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { callHuntNexusApi } from "@/lib/api/huntnexus";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -48,6 +49,18 @@ function Brand() {
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [recentSessions, setRecentSessions] = useState<any[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    callHuntNexusApi<any>({ action: "session_list", limit: 2 })
+      .then((response) => {
+        if (!active) return;
+        setRecentSessions(Array.isArray(response?.data?.sessions) ? response.data.sessions : []);
+      })
+      .catch(() => { if (active) setRecentSessions([]); });
+    return () => { active = false; };
+  }, []);
 
   return (
     <div className="hn-app min-h-screen bg-background text-foreground">
@@ -109,14 +122,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               Sessões recentes
             </div>
             <div className="mt-3 space-y-2 text-xs text-slate-400">
-              <div className="rounded-lg bg-white/[0.025] p-2.5">
-                <div className="font-medium text-slate-200">Grounds of Undeath</div>
-                <div className="mt-1 text-slate-500">Última sessão analisada</div>
-              </div>
-              <div className="rounded-lg bg-white/[0.025] p-2.5">
-                <div className="font-medium text-slate-200">Cobra Bastion</div>
-                <div className="mt-1 text-slate-500">Histórico disponível</div>
-              </div>
+              {recentSessions.map((session) => (
+                <Link key={session.session_id} to="/session" className="block rounded-lg bg-white/[0.025] p-2.5 transition hover:bg-white/[0.05]">
+                  <div className="truncate font-medium text-slate-200">{decodeHtml(session.hunt_name_raw || session.hunt_key || "Hunt")}</div>
+                  <div className="mt-1 text-slate-500">{formatCompact(session.xp_per_hour)} XP/h · {Number(session.party_size || 1) > 1 ? `x${session.party_size}` : "solo"}</div>
+                </Link>
+              ))}
+              {recentSessions.length === 0 && (
+                <div className="rounded-lg border border-dashed border-white/7 p-2.5 text-slate-600">Nenhuma sessão recente.</div>
+              )}
             </div>
           </div>
 
@@ -165,4 +179,17 @@ export function OfficialAssetSlot({
       </div>
     </div>
   );
+}
+
+
+function formatCompact(value: unknown) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(n) >= 1_000) return `${Math.round(n / 1_000)}k`;
+  return String(Math.round(n));
+}
+
+function decodeHtml(value: string) {
+  return value.replaceAll("&#39;", "'").replaceAll("&amp;", "&").replaceAll("&quot;", '"');
 }
