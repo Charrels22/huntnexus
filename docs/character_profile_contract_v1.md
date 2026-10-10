@@ -141,3 +141,33 @@ When opened:
 - exact tree edges are not drawn until node-to-level/topology evidence is stored.
 
 Current official documentation confirms that a proficiency tree has one to seven levels and only one perk per level may be active, but the flattened source rows currently stored by HuntNexus do not prove the level assignment of every perk. HuntNexus therefore does not infer those assignments.
+
+
+## Session loadout snapshot
+
+When a private hunt session is saved and has a canonical `hunt_key`, HuntNexus captures the equipment context at that moment.
+
+Resolution order:
+1. saved per-hunt owned build choice;
+2. otherwise the current Main Set;
+3. otherwise `not_available`.
+
+The resulting `loadout_snapshot` is immutable historical data. Later changes to Main Set, Backpack, or per-hunt choices do not rewrite existing session snapshots.
+
+This enables descriptive comparison of the player's own sessions by the build actually recorded for each session.
+
+## Private build performance
+
+`huntnexus_player_session_build_performance()` groups private sessions by immutable loadout selection and exposes median:
+- XP/h
+- Profit/h
+- Damage/h
+- Healing/h
+
+Sample labels:
+- 1 session: `single_session`
+- 2 sessions: `very_low_sample`
+- 3–4 sessions: `low_sample`
+- 5+ sessions: `observed_sample`
+
+No causal effect of the loadout is inferred from these observations.
