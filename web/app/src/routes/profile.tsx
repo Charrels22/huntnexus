@@ -142,6 +142,18 @@ function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    const options = weaponFamilyOptions(form.vocation);
+    if (!options.length) return;
+
+    const allowed = options.map((option) => option.value);
+    if (allowed.includes(form.weapon_family)) return;
+
+    if (options.length === 1) {
+      patch("weapon_family", options[0]!.value);
+    }
+  }, [form.vocation]);
+
+  useEffect(() => {
     const level = Number(form.level);
     if (!form.vocation || !Number.isFinite(level) || level < 1 || !form.weapon_family) {
       setProficiencyTrees([]);
@@ -336,20 +348,28 @@ function ProfilePage() {
           <Field label="Weapon family">
             <select className="hn-control" value={form.weapon_family} onChange={(e) => patch("weapon_family", e.target.value)}>
               <option value="">Não informado</option>
-              <option value="sword">Sword</option>
-              <option value="axe">Axe</option>
-              <option value="club">Club</option>
-              <option value="distance">Distance</option>
-              <option value="fist">Fist</option>
-              <option value="rod">Rod</option>
-              <option value="wand">Wand</option>
+              {weaponFamilyOptions(form.vocation).map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </Field>
-          <Field label="Sword"><NumberInput value={form.sword} onChange={(v) => patch("sword", v)} /></Field>
-          <Field label="Axe"><NumberInput value={form.axe} onChange={(v) => patch("axe", v)} /></Field>
-          <Field label="Club"><NumberInput value={form.club} onChange={(v) => patch("club", v)} /></Field>
-          <Field label="Distance"><NumberInput value={form.distance} onChange={(v) => patch("distance", v)} /></Field>
-          <Field label="Fist"><NumberInput value={form.fist} onChange={(v) => patch("fist", v)} /></Field>
+
+          {form.vocation === "EK" && (
+            <>
+              <Field label="Sword"><NumberInput value={form.sword} onChange={(v) => patch("sword", v)} /></Field>
+              <Field label="Axe"><NumberInput value={form.axe} onChange={(v) => patch("axe", v)} /></Field>
+              <Field label="Club"><NumberInput value={form.club} onChange={(v) => patch("club", v)} /></Field>
+            </>
+          )}
+
+          {form.vocation === "RP" && (
+            <Field label="Distance"><NumberInput value={form.distance} onChange={(v) => patch("distance", v)} /></Field>
+          )}
+
+          {form.vocation === "EM" && (
+            <Field label="Fist"><NumberInput value={form.fist} onChange={(v) => patch("fist", v)} /></Field>
+          )}
+
           <Field label="Shielding"><NumberInput value={form.shielding} onChange={(v) => patch("shielding", v)} /></Field>
           <Field label="Magic Level"><NumberInput value={form.magic_level} onChange={(v) => patch("magic_level", v)} /></Field>
         </div>
@@ -359,12 +379,18 @@ function ProfilePage() {
           <p className="mt-1 text-xs text-slate-500">
             Opcional. Informe o valor final, não apenas o bônus. Ex.: ML base 110 +2 de equipamento = <strong className="text-slate-300">112</strong>.
           </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <Field label="Weapon skill final"><NumberInput value={form.effective_weapon_skill} onChange={(v) => patch("effective_weapon_skill", v)} /></Field>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {form.vocation === "EK" && (
+              <Field label="Weapon skill final"><NumberInput value={form.effective_weapon_skill} onChange={(v) => patch("effective_weapon_skill", v)} /></Field>
+            )}
+            {form.vocation === "RP" && (
+              <Field label="Distance final"><NumberInput value={form.effective_distance_skill} onChange={(v) => patch("effective_distance_skill", v)} /></Field>
+            )}
+            {form.vocation === "EM" && (
+              <Field label="Fist final"><NumberInput value={form.effective_fist_skill} onChange={(v) => patch("effective_fist_skill", v)} /></Field>
+            )}
             <Field label="Magic level final"><NumberInput value={form.effective_magic_level} onChange={(v) => patch("effective_magic_level", v)} /></Field>
             <Field label="Shielding final"><NumberInput value={form.effective_shielding} onChange={(v) => patch("effective_shielding", v)} /></Field>
-            <Field label="Distance final"><NumberInput value={form.effective_distance_skill} onChange={(v) => patch("effective_distance_skill", v)} /></Field>
-            <Field label="Fist final"><NumberInput value={form.effective_fist_skill} onChange={(v) => patch("effective_fist_skill", v)} /></Field>
           </div>
 
           {effectiveWarnings.length > 0 && (
@@ -562,9 +588,25 @@ function baseWeaponSkill(form: FormState) {
   if (form.weapon_family === "sword") return form.sword;
   if (form.weapon_family === "axe") return form.axe;
   if (form.weapon_family === "club") return form.club;
-  if (form.weapon_family === "distance") return form.distance;
+  if (form.weapon_family === "bow" || form.weapon_family === "crossbow") return form.distance;
   if (form.weapon_family === "fist") return form.fist;
   return "";
+}
+
+function weaponFamilyOptions(vocation: string) {
+  if (vocation === "EK") return [
+    { value: "sword", label: "Sword" },
+    { value: "axe", label: "Axe" },
+    { value: "club", label: "Club" },
+  ];
+  if (vocation === "RP") return [
+    { value: "bow", label: "Bow" },
+    { value: "crossbow", label: "Crossbow" },
+  ];
+  if (vocation === "ED") return [{ value: "rod", label: "Rod" }];
+  if (vocation === "MS") return [{ value: "wand", label: "Wand" }];
+  if (vocation === "EM") return [{ value: "fist", label: "Fist" }];
+  return [];
 }
 
 function compareFinalStat(label: string, baseRaw: string, finalRaw: string) {
