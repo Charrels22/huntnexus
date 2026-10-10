@@ -1,406 +1,326 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
-  BarChart3,
-  Clock3,
-  Coins,
-  HeartPulse,
-  Loader2,
-  RefreshCw,
-  ShieldAlert,
+  BookOpenCheck,
+  ChevronDown,
+  ChevronUp,
+  ClipboardPaste,
+  Eraser,
+  Gem,
+  Save,
+  Sparkles,
   Swords,
+  Tags,
+  UserRound,
   Users,
 } from "lucide-react";
-import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
-import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 
-export const Route = createFileRoute("/session")({ component: SessionAnalyzerPage });
+export const Route = createFileRoute("/session")({ component: SessionImportPage });
 
-const tabs = [
-  { key: "analyse", label: "Hunt Analyse", icon: BarChart3 },
-  { key: "misc", label: "Misc", icon: Activity },
-  { key: "damage", label: "Damage", icon: Swords },
-  { key: "party", label: "Party Hunt", icon: Users },
+const analyzerTabs = [
+  { key: "hunt", label: "Hunt Analyzer", icon: Swords, placeholder: "Cole aqui o Hunt Analyzer..." },
+  { key: "party", label: "Party Hunt", icon: Users, placeholder: "Cole aqui o Party Hunt Analyzer..." },
+  { key: "input", label: "Input Analyzer", icon: ClipboardPaste, placeholder: "Cole aqui o Input Analyzer..." },
+  { key: "misc", label: "Miscellaneous", icon: BookOpenCheck, placeholder: "Cole aqui o Miscellaneous..." },
 ] as const;
 
-type TabKey = (typeof tabs)[number]["key"];
+type AnalyzerKey = (typeof analyzerTabs)[number]["key"];
 
-function SessionAnalyzerPage() {
-  const [tab, setTab] = useState<TabKey>("analyse");
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("");
-  const [detail, setDetail] = useState<any>(null);
-  const [loadingList, setLoadingList] = useState(true);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [error, setError] = useState("");
+type Draft = {
+  hunt: string;
+  party: string;
+  input: string;
+  misc: string;
+  character: string;
+  server: string;
+  vocation: string;
+  level: string;
+  location: string;
+  observation: string;
+  tags: string[];
+  type: "normal" | "bounty";
+  favorite: boolean;
+  publishHighscores: boolean;
+  rareDrops: string;
+};
 
-  async function loadSessions() {
-    setLoadingList(true);
-    setError("");
+const emptyDraft: Draft = {
+  hunt: "",
+  party: "",
+  input: "",
+  misc: "",
+  character: "",
+  server: "",
+  vocation: "",
+  level: "",
+  location: "",
+  observation: "",
+  tags: [],
+  type: "normal",
+  favorite: false,
+  publishHighscores: false,
+  rareDrops: "",
+};
+
+const storageKey = "huntnexus.session-import.draft.v1";
+
+function SessionImportPage() {
+  const [activeTab, setActiveTab] = useState<AnalyzerKey>("hunt");
+  const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [rareOpen, setRareOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(true);
+  const [tagInput, setTagInput] = useState("");
+  const [savedAt, setSavedAt] = useState<string>("");
+
+  useEffect(() => {
     try {
-      const response = await callHuntNexusApi<any>({ action: "session_list", limit: 30 });
-      const rows = Array.isArray(response?.data?.sessions) ? response.data.sessions : [];
-      setSessions(rows);
-      if (!selectedId && rows[0]?.session_id) setSelectedId(rows[0].session_id);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoadingList(false);
-    }
-  }
+      const raw = localStorage.getItem(storageKey);
+      if (raw) setDraft({ ...emptyDraft, ...JSON.parse(raw) });
+    } catch {}
+  }, []);
 
-  async function loadDetail(sessionId: string) {
-    if (!sessionId) return;
-    setLoadingDetail(true);
-    setError("");
-    try {
-      const response = await callHuntNexusApi<any>({ action: "session_detail", session_id: sessionId });
-      setDetail(response?.data ?? null);
-    } catch (e) {
-      setError((e as Error).message);
-      setDetail(null);
-    } finally {
-      setLoadingDetail(false);
-    }
-  }
-
-  useEffect(() => { void loadSessions(); }, []);
-  useEffect(() => { if (selectedId) void loadDetail(selectedId); }, [selectedId]);
-
-  const selected = useMemo(
-    () => sessions.find((s) => s.session_id === selectedId) ?? null,
-    [sessions, selectedId],
+  const active = analyzerTabs.find((tab) => tab.key === activeTab)!;
+  const analyzerCount = useMemo(
+    () => [draft.hunt, draft.party, draft.input, draft.misc].filter((value) => value.trim()).length,
+    [draft.hunt, draft.party, draft.input, draft.misc],
   );
+  const canPrepare = draft.hunt.trim().length > 0;
+
+  function patch<K extends keyof Draft>(key: K, value: Draft[K]) {
+    setDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function saveDraft() {
+    localStorage.setItem(storageKey, JSON.stringify(draft));
+    setSavedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+  }
+
+  function clearAll() {
+    setDraft(emptyDraft);
+    localStorage.removeItem(storageKey);
+    setTagInput("");
+    setSavedAt("");
+  }
+
+  function addTag() {
+    const tag = tagInput.trim();
+    if (!tag || draft.tags.includes(tag)) return;
+    patch("tags", [...draft.tags, tag]);
+    setTagInput("");
+  }
 
   return (
-    <div className="mx-auto max-w-[1450px] space-y-6">
-      <section className="rounded-3xl border border-white/8 bg-slate-950/55 p-5 md:p-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
-          <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-cyan-400">Session Analyzer</div>
-            <h1 className="mt-1 text-3xl font-black text-white">Sua hunt, desmontada em dados úteis.</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              Hunt Analyse, Misc, Damage e Party Hunt usam as sessões normalizadas que já existem no HuntNexus.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button className="hn-primary-button" onClick={() => void loadSessions()} disabled={loadingList}>
-                {loadingList ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-                Atualizar sessões
-              </button>
-              <span className="hn-secondary-button cursor-default">
-                {sessions.length} sessões carregadas
-              </span>
+    <div className="mx-auto max-w-[1280px] space-y-6">
+      <section className="overflow-hidden rounded-3xl border border-white/8 bg-slate-950/55">
+        <div className="border-b border-white/7 p-5 md:p-6">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Session Analyzer</div>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-white">Cadastrar uma hunt</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+            Cole os analyzers da sessão. O HuntNexus identifica cada bloco, cruza as informações e depois organiza a hunt em Hunt Analyse, Misc, Damage e Party Hunt.
+          </p>
+        </div>
+
+        <div className="p-5 md:p-6">
+          <div className="flex flex-wrap gap-2">
+            {analyzerTabs.map(({ key, label, icon: Icon }) => {
+              const filled = Boolean(draft[key].trim());
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setActiveTab(key)}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition ${activeTab === key ? "border-cyan-400/35 bg-cyan-400/10 text-cyan-100" : "border-white/7 bg-white/[0.025] text-slate-400 hover:border-white/12 hover:text-slate-200"}`}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                  {filled && <span className="size-1.5 rounded-full bg-emerald-400" />}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4">
+            <textarea
+              value={draft[activeTab]}
+              onChange={(e) => patch(activeTab, e.target.value)}
+              placeholder={active.placeholder}
+              spellCheck={false}
+              className="min-h-[260px] w-full resize-y rounded-2xl border border-white/10 bg-[#080d18] p-4 font-mono text-sm leading-6 text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-400/35 focus:shadow-[0_0_0_3px_rgba(34,211,238,.05)]"
+            />
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="text-slate-500">
+              {analyzerCount}/4 blocos preenchidos
+              {!draft.hunt.trim() && <span className="ml-2 text-amber-300/80">Hunt Analyzer é o bloco principal</span>}
             </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/7 bg-white/[0.025] p-4">
-            <label className="text-xs font-medium text-slate-500">Sessão analisada</label>
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="hn-control mt-2"
-              disabled={loadingList || sessions.length === 0}
-            >
-              {sessions.map((s) => (
-                <option key={s.session_id} value={s.session_id}>
-                  {decodeHtml(s.hunt_name_raw || s.hunt_key || "Hunt")} · {formatDuration(s.duration_seconds)} · {formatCompact(s.xp_per_hour)} XP/h
-                </option>
-              ))}
-            </select>
-            {selected && (
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <Meta label="Party" value={Number(selected.party_size || 1) > 1 ? `x${selected.party_size}` : "Solo"} />
-                <Meta label="Qualidade" value={selected.structural_quality_score != null ? formatNumber(Number(selected.structural_quality_score), 2) : "—"} />
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {error && (
-        <div className="rounded-2xl border border-red-400/20 bg-red-400/8 p-4 text-sm text-red-200">
-          {error}
-        </div>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-4">
-        {tabs.map(({ key, label, icon: Icon }) => {
-          const unavailable =
-            key === "party" && detail && detail.availability?.party_hunt === false;
-          return (
             <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`hn-analyzer-tab ${tab === key ? "hn-analyzer-tab-active" : ""} ${unavailable ? "opacity-55" : ""}`}
+              type="button"
+              onClick={() => navigator.clipboard?.readText().then((text) => text && patch(activeTab, text)).catch(() => undefined)}
+              className="inline-flex items-center gap-2 text-slate-400 transition hover:text-cyan-200"
             >
-              <Icon className="size-5" />
-              <span>{label}</span>
-              {unavailable && <span className="text-[9px] uppercase tracking-wide">solo</span>}
+              <ClipboardPaste className="size-3.5" />
+              Colar da área de transferência
             </button>
-          );
-        })}
-      </div>
-
-      <section className="min-h-[420px] rounded-3xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
-        {loadingDetail && (
-          <div className="grid min-h-[360px] place-items-center text-slate-500">
-            <Loader2 className="size-6 animate-spin text-cyan-300" />
           </div>
-        )}
-
-        {!loadingDetail && !detail && (
-          <Empty title="Nenhuma sessão aberta" text="Escolha uma sessão real do banco para começar a análise." />
-        )}
-
-        {!loadingDetail && detail && tab === "analyse" && <Analyse data={detail} />}
-        {!loadingDetail && detail && tab === "misc" && <Misc data={detail} />}
-        {!loadingDetail && detail && tab === "damage" && <Damage data={detail} />}
-        {!loadingDetail && detail && tab === "party" && <Party data={detail} />}
+        </div>
       </section>
-    </div>
-  );
-}
 
-function Analyse({ data }: { data: any }) {
-  const a = data.hunt_analyse ?? {};
-  const session = data.session ?? {};
-  const profitPerHour = rate(a.balance_value, a.duration_seconds);
-  return (
-    <div className="space-y-6">
-      <PanelHeader eyebrow="Hunt Analyse" title={decodeHtml(session.hunt_name_raw || session.hunt_key || "Sessão")} subtitle={formatDuration(a.duration_seconds)} />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <Kpi icon={BarChart3} label="XP/h" value={formatCompact(a.xp_per_hour)} />
-        <Kpi icon={Coins} label="Profit/h" value={formatCompact(profitPerHour)} />
-        <Kpi icon={Coins} label="Balance" value={formatCompact(a.balance_value)} />
-        <Kpi icon={Swords} label="Damage" value={formatCompact(a.total_damage)} />
-        <Kpi icon={HeartPulse} label="Healing" value={formatCompact(a.total_healing)} />
-        <Kpi icon={Clock3} label="Kills" value={formatNumber(Number(a.total_kills || 0))} />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[1.3fr_.7fr]">
-        <div className="hn-chart-placeholder">
-          <div className="relative z-10">
-            <div className="text-sm font-semibold text-slate-200">Resumo visual da sessão</div>
-            <div className="mt-1 text-xs text-slate-500">A timeline detalhada entra quando tivermos snapshots temporais da sessão.</div>
+      <section className="overflow-hidden rounded-2xl border border-white/8 bg-slate-950/45">
+        <button
+          type="button"
+          onClick={() => setRareOpen((value) => !value)}
+          className="flex w-full items-center gap-3 p-5 text-left"
+        >
+          <Gem className="size-4 text-amber-300" />
+          <div className="font-semibold text-white">Adicionar drops raros</div>
+          <div className="ml-auto">{rareOpen ? <ChevronUp className="size-4 text-slate-500" /> : <ChevronDown className="size-4 text-slate-500" />}</div>
+        </button>
+        {rareOpen && (
+          <div className="border-t border-white/7 p-5">
+            <textarea
+              value={draft.rareDrops}
+              onChange={(e) => patch("rareDrops", e.target.value)}
+              placeholder="Itens raros, observações de loot ou drops que você queira destacar..."
+              className="hn-control min-h-28 resize-y"
+            />
           </div>
-          <div className="absolute inset-x-6 bottom-6 flex h-28 items-end gap-2">
-            {[38,52,48,65,58,79,67,86,72,90,81,88].map((h,i) => <div key={i} className="flex-1 rounded-t bg-cyan-400/20" style={{height:`${h}%`}} />)}
-          </div>
-        </div>
-        <div className="space-y-3">
-          <DataRow label="XP total" value={formatNumber(Number(a.xp_gain || 0))} />
-          <DataRow label="Raw XP/h" value={formatCompact(a.raw_xp_per_hour)} />
-          <DataRow label="Loot" value={a.loot_value == null ? "Não informado" : formatCompact(a.loot_value)} />
-          <DataRow label="Supplies" value={a.supplies_value == null ? "Não informado" : formatCompact(a.supplies_value)} />
-          <DataRow label="Party" value={Number(a.party_size || 1) > 1 ? `x${a.party_size}` : "Solo"} />
-        </div>
-      </div>
-    </div>
-  );
-}
+        )}
+      </section>
 
-function Misc({ data }: { data: any }) {
-  const misc = data.misc ?? {};
-  const equipment = Array.isArray(misc.equipment) ? misc.equipment : [];
-  const stats = Array.isArray(misc.combat_stats) ? misc.combat_stats : [];
-  const creatures = Array.isArray(misc.creatures) ? misc.creatures : [];
-  return (
-    <div className="space-y-6">
-      <PanelHeader eyebrow="Misc" title="Contexto da sessão" subtitle="Equipamento, stats observados e criaturas." />
-      <div className="grid gap-5 xl:grid-cols-3">
-        <Block title="Equipment">
-          {equipment.length ? (
-            <div className="grid grid-cols-2 gap-2">
-              {equipment.map((e:any, i:number) => (
-                <div key={`${e.player_id}-${e.slot_key}-${i}`} className="grid grid-cols-[52px_1fr] items-center gap-2 rounded-xl border border-white/6 bg-slate-950/45 p-2">
-                  <CanonicalSprite kind="item" name={e.item_name_raw || slugToName(e.item_key)} size="sm" />
-                  <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-wide text-slate-600">{e.slot_key}</div>
-                    <div className="mt-1 truncate text-sm font-semibold text-slate-200">{e.item_name_raw || slugToName(e.item_key) || "—"}</div>
-                  </div>
-                </div>
-              ))}
+      <section className="overflow-hidden rounded-3xl border border-white/8 bg-slate-950/45">
+        <button
+          type="button"
+          onClick={() => setInfoOpen((value) => !value)}
+          className="flex w-full items-center gap-3 p-5 text-left"
+        >
+          <Sparkles className="size-4 text-cyan-300" />
+          <div>
+            <div className="font-semibold text-white">Informações adicionais</div>
+            <div className="mt-1 text-xs text-slate-500">Opcional — melhora filtros, histórico e comparações.</div>
+          </div>
+          <div className="ml-auto">{infoOpen ? <ChevronUp className="size-4 text-slate-500" /> : <ChevronDown className="size-4 text-slate-500" />}</div>
+        </button>
+
+        {infoOpen && (
+          <div className="border-t border-white/7 p-5">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <Field label="Personagem" icon={UserRound}>
+                <input className="hn-control" value={draft.character} onChange={(e) => patch("character", e.target.value)} placeholder="Nome do personagem" />
+              </Field>
+              <Field label="Servidor">
+                <input className="hn-control" value={draft.server} onChange={(e) => patch("server", e.target.value)} placeholder="Servidor" />
+              </Field>
+              <Field label="Vocação" icon={Swords}>
+                <select className="hn-control" value={draft.vocation} onChange={(e) => patch("vocation", e.target.value)}>
+                  <option value="">Detectar / escolher</option>
+                  <option value="EK">Elite Knight</option>
+                  <option value="RP">Royal Paladin</option>
+                  <option value="ED">Elder Druid</option>
+                  <option value="MS">Master Sorcerer</option>
+                  <option value="EM">Exalted Monk</option>
+                </select>
+              </Field>
+              <Field label="Level">
+                <input className="hn-control" type="number" min="1" value={draft.level} onChange={(e) => patch("level", e.target.value)} placeholder="Level" />
+              </Field>
             </div>
-          ) : <Muted>Nenhum equipment normalizado nesta sessão.</Muted>}
-        </Block>
 
-        <Block title="Combat Stats">
-          <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
-            {stats.slice(0,40).map((s:any, i:number) => (
-              <DataRow key={`${s.player_id}-${s.stat_key}-${i}`} label={s.stat_name_raw || s.stat_key} value={formatStat(s)} />
-            ))}
-            {!stats.length && <Muted>Nenhum stat detalhado disponível.</Muted>}
-          </div>
-        </Block>
+            <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
+              <Field label="Local">
+                <input className="hn-control" value={draft.location} onChange={(e) => patch("location", e.target.value)} placeholder="Hunt / local" />
+              </Field>
+              <Field label="Observação">
+                <input className="hn-control" value={draft.observation} onChange={(e) => patch("observation", e.target.value)} placeholder="Observação opcional" />
+              </Field>
+            </div>
 
-        <Block title="Creatures">
-          <div className="space-y-2">
-            {creatures.slice(0,20).map((c:any, i:number) => (
-              <div key={`${c.monster_key || c.monster_name_raw}-${i}`} className="flex items-center justify-between rounded-xl border border-white/6 bg-slate-950/45 px-3 py-2">
-                <div>
-                  <div className="text-sm font-medium text-slate-200">{c.monster_name_raw || c.monster_key}</div>
-                  <div className="text-[10px] text-slate-600">{c.resolution_status}</div>
+            <div className="mt-5">
+              <div className="mb-2 flex items-center gap-2 text-xs font-medium text-slate-400"><Tags className="size-3.5" /> Tags</div>
+              <div className="flex flex-wrap gap-2">
+                {draft.tags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => patch("tags", draft.tags.filter((value) => value !== tag))}
+                    className="rounded-full border border-cyan-400/15 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-200"
+                    title="Clique para remover"
+                  >
+                    {tag} ×
+                  </button>
+                ))}
+                <div className="flex min-w-[220px] gap-2">
+                  <input
+                    className="hn-control h-9 min-h-9"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+                    placeholder="Adicionar tag"
+                  />
+                  <button type="button" className="hn-secondary-button h-9 py-1" onClick={addTag}>+</button>
                 </div>
-                <div className="text-sm font-black text-cyan-200">{formatNumber(Number(c.kills || 0))}</div>
-              </div>
-            ))}
-            {!creatures.length && <Muted>Nenhuma criatura normalizada.</Muted>}
-          </div>
-        </Block>
-      </div>
-    </div>
-  );
-}
-
-function Damage({ data }: { data: any }) {
-  const d = data.damage ?? {};
-  const elements = Array.isArray(d.incoming_by_element) ? d.incoming_by_element : [];
-  const sources = Array.isArray(d.incoming_by_source) ? d.incoming_by_source : [];
-  const maxShare = Math.max(1, ...elements.map((x:any) => Number(x.share_percent || 0)));
-  return (
-    <div className="space-y-6">
-      <PanelHeader eyebrow="Damage" title="Dano causado e recebido" subtitle="Breakdown normalizado da sessão." />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Kpi icon={Swords} label="Damage dealt" value={formatCompact(d.total_damage)} />
-        <Kpi icon={ShieldAlert} label="Elementos recebidos" value={String(elements.length)} />
-        <Kpi icon={Activity} label="Charm damage" value={d.charm_damage_available ? "Disponível" : "Ainda não normalizado"} />
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Block title="Dano recebido por elemento">
-          <div className="space-y-3">
-            {elements.map((e:any, i:number) => (
-              <div key={`${e.player_id}-${e.element}-${i}`}>
-                <div className="mb-1.5 flex items-center justify-between text-xs">
-                  <span className="capitalize text-slate-300">{e.element}</span>
-                  <span className="text-slate-500">{formatNumber(Number(e.damage || 0))} · {formatNumber(Number(e.share_percent || 0),1)}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                  <div className="h-full rounded-full bg-cyan-400/55 transition-all" style={{width:`${Math.max(3,(Number(e.share_percent || 0)/maxShare)*100)}%`}} />
-                </div>
-              </div>
-            ))}
-            {!elements.length && <Muted>Dano recebido por elemento não disponível nesta sessão.</Muted>}
-          </div>
-        </Block>
-
-        <Block title="Maiores fontes de dano recebido">
-          <div className="space-y-2">
-            {sources.slice(0,12).map((s:any, i:number) => (
-              <DataRow key={`${s.player_id}-${s.monster_key}-${i}`} label={s.monster_name_raw || s.monster_key || "Fonte"} value={`${formatNumber(Number(s.damage || 0))} · ${formatNumber(Number(s.share_percent || 0),1)}%`} />
-            ))}
-            {!sources.length && <Muted>Fontes de dano recebido não disponíveis.</Muted>}
-          </div>
-        </Block>
-      </div>
-
-      {!d.charm_damage_available && (
-        <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.04] p-4 text-sm text-amber-100/80">
-          Charm damage existe como requisito do produto, mas ainda não há campo normalizado no banco atual. O HuntNexus não exibe zero nem inventa contribuição enquanto esse parsing não estiver disponível.
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Party({ data }: { data: any }) {
-  const p = data.party_hunt ?? {};
-  const players = Array.isArray(p.players) ? p.players : [];
-  const totalDamage = players.reduce((sum:number, x:any) => sum + Number(x.damage || 0), 0);
-  const totalHealing = players.reduce((sum:number, x:any) => sum + Number(x.healing || 0), 0);
-
-  if (!data.availability?.party_hunt) {
-    return <Empty title="Sessão solo" text="Party Hunt só aparece como análise comparativa quando a sessão contém mais de um jogador." />;
-  }
-
-  return (
-    <div className="space-y-6">
-      <PanelHeader eyebrow="Party Hunt" title={`Party x${p.party_size || players.length}`} subtitle="Contribuição observada por membro." />
-      <div className="grid gap-4 xl:grid-cols-2">
-        {players.map((player:any) => {
-          const damageShare = totalDamage > 0 ? Number(player.damage || 0) / totalDamage * 100 : 0;
-          const healingShare = totalHealing > 0 ? Number(player.healing || 0) / totalHealing * 100 : 0;
-          return (
-            <div key={player.player_id} className="rounded-2xl border border-white/7 bg-slate-950/45 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-lg font-bold text-white">{player.vocation || "Player"}</div>
-                  <div className="text-xs text-slate-500">Level {player.level ?? "—"}</div>
-                </div>
-                <span className="rounded-full border border-cyan-400/15 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-200">{formatNumber(damageShare,1)}% dmg</span>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Mini label="Damage" value={formatCompact(player.damage)} />
-                <Mini label="Healing" value={formatCompact(player.healing)} />
-                <Mini label="Damage share" value={`${formatNumber(damageShare,1)}%`} />
-                <Mini label="Healing share" value={`${formatNumber(healingShare,1)}%`} />
               </div>
             </div>
-          );
-        })}
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Toggle active={draft.type === "normal"} onClick={() => patch("type", "normal")}>Normal</Toggle>
+              <Toggle active={draft.type === "bounty"} onClick={() => patch("type", "bounty")}>Bounty</Toggle>
+              <Toggle active={draft.favorite} onClick={() => patch("favorite", !draft.favorite)}>Favorita</Toggle>
+              <Toggle active={draft.publishHighscores} onClick={() => patch("publishHighscores", !draft.publishHighscores)}>Publicar em rankings</Toggle>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3 border-t border-white/8 pt-5 sm:flex-row sm:items-center">
+        <button type="button" className="hn-secondary-button justify-center" onClick={saveDraft}>
+          <Save className="size-4" />
+          Salvar rascunho
+        </button>
+
+        <button
+          type="button"
+          disabled={!canPrepare}
+          className="hn-primary-button justify-center disabled:cursor-not-allowed disabled:opacity-40"
+          title={canPrepare ? "Parsing e persistência entram na próxima integração" : "Cole o Hunt Analyzer primeiro"}
+        >
+          <Sparkles className="size-4" />
+          Preparar hunt
+        </button>
+
+        {savedAt && <span className="text-xs text-emerald-300/80">Rascunho salvo às {savedAt}</span>}
+
+        <button type="button" onClick={clearAll} className="ml-auto inline-flex items-center gap-2 px-3 py-2 text-xs text-slate-500 transition hover:text-red-300">
+          <Eraser className="size-3.5" />
+          Limpar tudo
+        </button>
+      </section>
+
+      <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.03] p-4 text-xs leading-5 text-slate-500">
+        O formulário já é o fluxo correto do produto. Neste checkpoint o rascunho fica salvo localmente no navegador; o próximo contrato do backend fará o parsing e a persistência da hunt sem misturar sessão pessoal com a base comunitária.
+        <Link to="/sessions" className="ml-1 text-cyan-300 hover:text-cyan-200">Ver sessões já normalizadas →</Link>
       </div>
     </div>
   );
 }
 
-function PanelHeader({ eyebrow, title, subtitle }: { eyebrow:string; title:string; subtitle:string }) {
-  return <div><div className="text-xs uppercase tracking-[0.16em] text-cyan-400">{eyebrow}</div><div className="mt-1 flex flex-wrap items-baseline gap-3"><h2 className="text-2xl font-bold text-white">{title}</h2><span className="text-xs text-slate-500">{subtitle}</span></div></div>;
-}
-function Kpi({ icon: Icon, label, value }: any) {
-  return <div className="rounded-2xl border border-white/6 bg-slate-950/50 p-4"><Icon className="size-4 text-cyan-300" /><div className="mt-4 text-xs text-slate-500">{label}</div><div className="mt-1 text-xl font-black text-white">{value}</div></div>;
-}
-function Block({ title, children }: { title:string; children:React.ReactNode }) {
-  return <div className="rounded-2xl border border-white/7 bg-slate-950/35 p-4"><div className="mb-4 text-sm font-semibold text-slate-200">{title}</div>{children}</div>;
-}
-function DataRow({ label, value }: { label:string; value:string }) {
-  return <div className="flex items-center justify-between gap-4 rounded-xl border border-white/6 bg-slate-950/45 px-3 py-2.5"><span className="text-xs text-slate-500">{label}</span><span className="text-sm font-semibold text-slate-200">{value}</span></div>;
-}
-function Meta({ label, value }: { label:string; value:string }) {
-  return <div className="rounded-lg bg-white/[0.025] p-2"><div className="text-[10px] text-slate-600">{label}</div><div className="mt-1 font-semibold text-slate-300">{value}</div></div>;
-}
-function Mini({ label, value }: { label:string; value:string }) {
-  return <div className="rounded-xl border border-white/6 bg-white/[0.025] p-3"><div className="text-[10px] text-slate-600">{label}</div><div className="mt-1 text-sm font-bold text-slate-200">{value}</div></div>;
-}
-function Muted({ children }: { children:React.ReactNode }) {
-  return <div className="rounded-xl border border-dashed border-white/7 p-4 text-xs text-slate-600">{children}</div>;
-}
-function Empty({ title, text }: { title:string; text:string }) {
-  return <div className="grid min-h-[320px] place-items-center text-center"><div><div className="text-xl font-bold text-white">{title}</div><p className="mt-2 max-w-md text-sm text-slate-500">{text}</p></div></div>;
+function Field({ label, icon: Icon, children }: { label: string; icon?: typeof UserRound; children: React.ReactNode }) {
+  return (
+    <label className="space-y-2 text-xs font-medium text-slate-400">
+      <span className="flex items-center gap-1.5">{Icon && <Icon className="size-3.5" />}{label}</span>
+      {children}
+    </label>
+  );
 }
 
-function formatDuration(seconds: unknown) {
-  const total = Number(seconds || 0);
-  if (!Number.isFinite(total) || total <= 0) return "—";
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  return h > 0 ? `${h}h ${String(m).padStart(2,"0")}m` : `${m}m`;
-}
-function formatCompact(value: unknown) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "—";
-  const abs = Math.abs(n);
-  const sign = n < 0 ? "-" : "";
-  if (abs >= 1_000_000) return `${sign}${(abs/1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${sign}${Math.round(abs/1_000)}k`;
-  return formatNumber(n);
-}
-function rate(value: unknown, seconds: unknown) {
-  const v = Number(value);
-  const s = Number(seconds);
-  return Number.isFinite(v) && Number.isFinite(s) && s > 0 ? v * 3600 / s : null;
-}
-function formatStat(stat:any) {
-  if (stat?.numeric_value == null) return "—";
-  return `${formatNumber(Number(stat.numeric_value),2)}${stat.unit === "percent" ? "%" : ""}`;
-}
-function slugToName(value:unknown) {
-  if (typeof value !== "string") return "";
-  return value.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
-}
-function decodeHtml(value:string) {
-  return value
-    .replaceAll("&#39;", "'")
-    .replaceAll("&amp;", "&")
-    .replaceAll("&quot;", '"');
+function Toggle({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border px-3 py-2 text-xs font-medium transition ${active ? "border-cyan-400/25 bg-cyan-400/10 text-cyan-200" : "border-white/7 bg-white/[0.02] text-slate-500 hover:text-slate-300"}`}
+    >
+      {children}
+    </button>
+  );
 }
