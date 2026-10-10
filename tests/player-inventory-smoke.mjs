@@ -101,20 +101,13 @@ try {
   );
 
   const personalizedPlanner = await post({
-    action: "final_optimizer",
+    action: "planner_personalized",
     client_id: clientId,
     vocation: "MS",
     level: 655,
-    hunt_objective: "balanced",
-    set_objective: "offense",
+    objective: "balanced",
     party_size: 1,
-    hunt_limit: 1,
-    hand_per_source: 2,
-    per_body_slot: 1,
-    set_limit: 30,
-    frontier_limit: 30,
-    selection_limit: 8,
-    unlocked_requirement_keys: [],
+    limit: 1,
     proficiency_selections: {
       "soultainter": [1, 3],
       "amber-wand": [1],
@@ -126,7 +119,7 @@ try {
   });
 
   assert(
-    personalizedPlanner?.data?.methodology?.stage === "optimizer_final_personalized_api_v1",
+    personalizedPlanner?.data?.methodology?.stage === "planner_personalized_api_v1",
     "personalized planner stage regression",
   );
   assert(
