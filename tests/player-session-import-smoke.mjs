@@ -88,8 +88,6 @@ try {
         "Loot: 1,500,000",
         "Supplies: 500,000",
         "Balance: 1,000,000",
-        "Damage: 6,000,000",
-        "Healing: 1,200,000",
         "Smoke One (Leader)",
         "Loot: 1,000,000",
         "Supplies: 250,000",
@@ -146,8 +144,9 @@ try {
   assert(parsed?.hunt_analyse?.xp_per_hour === 8000000, "XP/h parse regression");
   assert(parsed?.hunt_analyse?.total_kills === 150, "kill parse regression");
   assert(parsed?.party_hunt?.players?.length === 2, "party parse regression");
-  assert(parsed?.party_hunt?.totals?.total_damage === 6000000, "party explicit total damage regression");
-  assert(parsed?.party_hunt?.totals?.total_healing === 1200000, "party explicit total healing regression");
+  assert(parsed?.party_hunt?.totals?.total_damage === null, "party missing total damage must remain null");
+  assert(parsed?.party_hunt?.totals?.total_healing === null, "party missing total healing must remain null");
+  assert(parsed?.party_hunt?.players?.[0]?.damage === 3500000, "party first player damage regression");
   assert(parsed?.misc?.looted_items?.length === 2, "looted items parse regression");
   assert(parsed?.misc?.looted_items?.[0]?.amount === 3, "loot item amount regression");
   assert(parsed?.damage?.incoming_total_damage === 200000, "Damage Input total regression");
