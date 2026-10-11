@@ -67,10 +67,38 @@ for (const current of cases) {
     `${current.vocation}/${current.family} proficiency regression`,
   );
 
+  const huntKey = planner.data.results[0].hunt.hunt_key;
+  const detail = await post({
+    action: "hunt_detail",
+    hunt_key: huntKey,
+    vocation: current.vocation,
+    level: 700,
+    set_objective: "balanced",
+    proficiency_selections: {},
+    character_profile: {},
+  });
+  const factual = detail?.data?.factual;
+  assert(factual?.hunt?.name, `${current.vocation} Hunt Detail missing factual hunt name`);
+  assert(Array.isArray(factual?.monsters) && factual.monsters.length > 0,
+    `${current.vocation} Hunt Detail missing source-backed creature catalog`);
+  assert(Array.isArray(factual?.elements),
+    `${current.vocation} Hunt Detail factual elements shape regression`);
+  assert(detail?.data?.observed && typeof detail.data.observed === "object",
+    `${current.vocation} Hunt Detail observed contract regression`);
+  assert(detail?.data?.set_selection?.methodology?.stage,
+    `${current.vocation} Hunt Detail optimizer selection contract regression`);
+  assert(detail?.data?.imbuements && typeof detail.data.imbuements === "object",
+    `${current.vocation} Hunt Detail imbuements contract regression`);
+  assert(detail?.data?.vocation_composition && typeof detail.data.vocation_composition === "object",
+    `${current.vocation} Hunt Detail vocation composition contract regression`);
+
   results.push({
     vocation: current.vocation,
     family: current.family,
-    hunt_key: planner.data.results[0].hunt.hunt_key,
+    hunt_key: huntKey,
+    factual_creatures: factual.monsters.length,
+    imbuement_contract: true,
+    set_selection_stage: detail.data.set_selection.methodology.stage,
     proficiency_trees: proficiency.data.summary.eligible_tree_count,
   });
 }
@@ -80,5 +108,7 @@ console.log(JSON.stringify({
   stage: "cross_vocation_public_smoke",
   level: 700,
   human_playtest_complete: false,
+  factual_hunt_detail_checked: true,
+  frontend_visual_validation_complete: false,
   results,
 }, null, 2));
