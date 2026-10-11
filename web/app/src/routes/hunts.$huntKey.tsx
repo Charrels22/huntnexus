@@ -51,6 +51,16 @@ function HuntDetailPage() {
   const [huntBuildChoice, setHuntBuildChoice] = useState<any>(null);
   const [savingBuildChoice, setSavingBuildChoice] = useState(false);
   const [loadingPersonalReview, setLoadingPersonalReview] = useState(false);
+  const [setupLoad, setSetupLoad] = useState<{ key: string; data: any } | null>(null);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [setupError, setSetupError] = useState("");
+  const [setupRetry, setSetupRetry] = useState(0);
+  const [spellsLoad, setSpellsLoad] = useState<{ key: string; data: any } | null>(null);
+  const [spellsLoading, setSpellsLoading] = useState(false);
+  const [spellsError, setSpellsError] = useState("");
+  const setupKey = [huntKey,search.vocation,search.level,search.setObjective].join("|");
+  const spellsKey = [huntKey,search.vocation,search.level].join("|");
+
 
   useEffect(() => {
     let active = true;
@@ -68,6 +78,51 @@ function HuntDetailPage() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [huntKey, search.vocation, search.level, search.setObjective]);
+
+  useEffect(() => {
+    if (tab !== "setup" || (setupLoad?.key === setupKey && setupRetry === 0)) return;
+    let active = true;
+    setSetupLoading(true);
+    setSetupError("");
+    callHuntNexusApi<any>({
+      action: "hunt_detail_setup",
+      hunt_key: huntKey,
+      vocation: search.vocation,
+      level: search.level,
+      set_objective: search.setObjective,
+      proficiency_selections: {},
+      character_profile: {},
+    })
+      .then((response) => {
+        if (active) setSetupLoad({ key: setupKey, data: response?.data ?? null });
+      })
+      .catch(() => {
+        if (active) setSetupError("Não foi possível calcular o frontier universal. Os dados factuais e o seu Set Main continuam disponíveis.");
+      })
+      .finally(() => { if (active) setSetupLoading(false); });
+    return () => { active = false; };
+  }, [tab, setupKey, setupRetry]);
+
+  useEffect(() => {
+    if (tab !== "spells" || spellsLoad?.key === spellsKey) return;
+    let active = true;
+    setSpellsLoading(true);
+    setSpellsError("");
+    callHuntNexusApi<any>({
+      action: "hunt_detail_spells",
+      hunt_key: huntKey,
+      vocation: search.vocation,
+      level: search.level,
+    })
+      .then((response) => {
+        if (active) setSpellsLoad({ key: spellsKey, data: response?.data ?? null });
+      })
+      .catch(() => {
+        if (active) setSpellsError("A composição de spells não pôde ser carregada para esta configuração.");
+      })
+      .finally(() => { if (active) setSpellsLoading(false); });
+    return () => { active = false; };
+  }, [tab, spellsKey]);
 
   useEffect(() => {
     if (tab !== "setup") return;
@@ -212,7 +267,8 @@ function HuntDetailPage() {
   const perf = data.observed?.performance ?? {};
   const monsters = Array.isArray(data.factual?.monsters) ? data.factual.monsters : [];
   const media = data.media ?? {};
-  const setSummary = data.set_selection?.summary ?? {};
+  const currentSetup = setupLoad?.key === setupKey ? setupLoad.data : null;
+  const setSummary = currentSetup?.summary ?? {};
   const combatElements = (Array.isArray(data.factual?.elements) ? data.factual.elements : [])
     .filter((e:any) => ["physical","fire","ice","earth","energy","death","holy"].includes(String(e.element)))
     .filter((e:any) => e.avg_modifier_percent != null && Number.isFinite(Number(e.avg_modifier_percent)));
@@ -243,7 +299,7 @@ function HuntDetailPage() {
             <div className="mt-6 grid max-w-3xl gap-3 sm:grid-cols-3">
               <HeroMetric label="XP/h mediana" value={compact(perf.median_xp_per_hour)} />
               <HeroMetric label="Profit/h mediano" value={compact(perf.median_balance_per_hour)} />
-              <HeroMetric label="Sets co-vencedores" value={String(setSummary.co_winners ?? 0)} />
+              <HeroMetric label="Sets co-vencedores" value={currentSetup ? String(setSummary.co_winners ?? "—") : "Ver Setup"} />
             </div>
           </div>
           <div className="relative overflow-hidden border-l border-white/7 bg-slate-950/55 p-5 md:p-7">
@@ -324,7 +380,10 @@ function HuntDetailPage() {
         {tab === "damage" && <Damage defensive={data.defensive} />}
         {tab === "setup" && (
           <Setup
-            selection={data.set_selection}
+            selection={currentSetup}
+            loadingSelection={setupLoading}
+            selectionError={setupError}
+            onRetrySelection={() => { setSetupRetry((value) => value + 1); }}
             personalReview={personalReview}
             ownedBuildOptions={ownedBuildOptions}
             personalBuildPerformance={personalBuildPerformance}
@@ -334,7 +393,13 @@ function HuntDetailPage() {
             loadingPersonalReview={loadingPersonalReview}
           />
         )}
-        {tab === "spells" && <Spells spells={data.spells} composition={data.vocation_composition} />}
+        {tab === "spells" && (spellsLoading ? (
+          <div className="grid min-h-[240px] place-items-center"><Loader2 className="size-5 animate-spin text-cyan-300" /></div>
+        ) : spellsError ? (
+          <Muted>{spellsError}</Muted>
+        ) : spellsLoad?.key === spellsKey ? (
+          <Spells spells={spellsLoad.data?.spells} composition={spellsLoad.data?.vocation_composition} />
+        ) : <Muted>Carregando spells e composição da vocação...</Muted>)}
         {tab === "imbuements" && <Imbuements data={data.imbuements} />}
         {tab === "community" && <Community observed={data.observed} />}
       </section>
@@ -461,6 +526,9 @@ function Damage({ defensive }: { defensive:any }) {
 
 function Setup({
   selection,
+  loadingSelection,
+  selectionError,
+  onRetrySelection,
   personalReview,
   ownedBuildOptions,
   personalBuildPerformance,
@@ -470,6 +538,9 @@ function Setup({
   loadingPersonalReview,
 }: {
   selection:any;
+  loadingSelection:boolean;
+  selectionError:string;
+  onRetrySelection:() => void;
   personalReview:any;
   ownedBuildOptions:any;
   personalBuildPerformance:any;
@@ -629,7 +700,7 @@ function Setup({
       )}
 
       <div className="mt-7 border-t border-white/7 pt-5">
-        <SectionTitle title="Frontier universal" subtitle={`${selection?.summary?.co_winners ?? sets.length} co-vencedores preservados no catálogo completo`} />
+        <SectionTitle title="Frontier universal" subtitle={selection ? `${selection?.summary?.co_winners ?? sets.length} co-vencedores preservados no catálogo completo` : "Cálculo completo executado somente ao abrir o Setup"} />
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
@@ -652,7 +723,14 @@ function Setup({
             </div>
           );
         })}
-        {!sets.length && <Muted>Nenhum set selecionável para esta configuração.</Muted>}
+        {loadingSelection && <div className="flex items-center gap-2 text-xs text-cyan-300"><Loader2 className="size-4 animate-spin" />Calculando combinações universais...</div>}
+        {selectionError && (
+          <div className="col-span-full rounded-xl border border-amber-400/15 bg-amber-400/[0.035] p-3 text-xs text-amber-200">
+            {selectionError}
+            <button type="button" className="ml-3 underline" onClick={onRetrySelection}>Tentar novamente</button>
+          </div>
+        )}
+        {!sets.length && !loadingSelection && !selectionError && selection && <Muted>Nenhum set selecionável para esta configuração.</Muted>}
       </div>
     </div>
   );
