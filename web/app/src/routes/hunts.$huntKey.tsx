@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { CanonicalSprite, CanonicalSpriteGroup } from "@/components/shared/canonical-sprite";
-import { CanonicalTibiaMap } from "@/components/shared/tibia-map";
+import { CanonicalTibiaMap, parseMapperCoords } from "@/components/shared/tibia-map";
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
 
@@ -213,6 +213,16 @@ function HuntDetailPage() {
   const monsters = Array.isArray(data.factual?.monsters) ? data.factual.monsters : [];
   const media = data.media ?? {};
   const setSummary = data.set_selection?.summary ?? {};
+  const combatElements = (Array.isArray(data.factual?.elements) ? data.factual.elements : [])
+    .filter((e:any) => ["physical","fire","ice","earth","energy","death","holy"].includes(String(e.element)))
+    .filter((e:any) => Number.isFinite(Number(e.avg_modifier_percent)));
+  const strongestElement = [...combatElements].sort(
+    (a:any,b:any) => Number(b.avg_modifier_percent) - Number(a.avg_modifier_percent),
+  )[0] ?? null;
+  const mostResistedElement = [...combatElements]
+    .filter((e:any) => Number(e.avg_modifier_percent) >= 0)
+    .sort((a:any,b:any) => Number(a.avg_modifier_percent) - Number(b.avg_modifier_percent))[0] ?? null;
+  const mapperCoords = parseMapperCoords(media?.mapper_location || hunt.location);
 
   return (
     <div className="mx-auto max-w-[1450px] space-y-5">
@@ -236,18 +246,59 @@ function HuntDetailPage() {
               <HeroMetric label="Sets co-vencedores" value={String(setSummary.co_winners ?? 0)} />
             </div>
           </div>
-          <div className="relative grid min-h-64 place-items-center overflow-hidden border-l border-white/7 bg-slate-950/55 p-8">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,.10),transparent_55%)]" />
-            <div className="relative z-10">
-              {media.hero_image_name ? (
-                <div className="flex justify-center">
-                  <CanonicalSprite kind="creature" name={media.hero_image_name} size="lg" className="scale-125" />
+          <div className="relative overflow-hidden border-l border-white/7 bg-slate-950/55 p-5 md:p-7">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(34,211,238,.11),transparent_55%)]" />
+            <div className="relative z-10 flex h-full flex-col justify-between gap-5">
+              <div>
+                <div className="text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                  Ecossistema da hunt
                 </div>
-              ) : (
-                <CanonicalSpriteGroup names={monsters.slice(0,4).map((m:any) => m.name)} />
-              )}
-              <div className="mt-6 text-center text-[10px] uppercase tracking-[0.18em] text-slate-600">
-                sprites canônicos da hunt
+                <div className="mt-4 flex items-end justify-center gap-1">
+                  {media.hero_image_name && (
+                    <CanonicalSprite
+                      kind="creature"
+                      name={media.hero_image_name}
+                      size="lg"
+                      className="z-10 scale-110 border-cyan-400/15"
+                    />
+                  )}
+                  <CanonicalSpriteGroup
+                    names={monsters
+                      .filter((m:any) => m.name !== media.hero_image_name)
+                      .slice(0,3)
+                      .map((m:any) => m.name)}
+                  />
+                </div>
+                <div className="mt-3 text-center text-[10px] text-slate-600">
+                  {monsters.length} criatura{monsters.length === 1 ? "" : "s"} vinculada{monsters.length === 1 ? "" : "s"} · sprites canônicos
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <HeroFact
+                  label="Melhor elemento médio"
+                  value={
+                    strongestElement
+                      ? `${elementLabel(strongestElement.element)} · ${formatNumber(Number(strongestElement.avg_modifier_percent),1)}%`
+                      : "—"
+                  }
+                />
+                <HeroFact
+                  label="Mais resistido em média"
+                  value={
+                    mostResistedElement
+                      ? `${elementLabel(mostResistedElement.element)} · ${formatNumber(Number(mostResistedElement.avg_modifier_percent),1)}%`
+                      : "—"
+                  }
+                />
+                <HeroFact
+                  label="Mapa"
+                  value={mapperCoords ? `${mapperCoords.x}, ${mapperCoords.y}, ${mapperCoords.z}` : "Sem coordenada"}
+                />
+                <HeroFact
+                  label="Fonte visual"
+                  value={media.hero_image_name ? media.hero_image_name : "Composição de criaturas"}
+                />
               </div>
             </div>
           </div>
@@ -294,8 +345,16 @@ function HuntDetailPage() {
 function Overview({ data }: { data:any }) {
   const factualElements = Array.isArray(data.factual?.elements) ? data.factual.elements : [];
   const perf = data.observed?.performance ?? {};
+  const hunt = data.factual?.hunt ?? {};
   return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <CanonicalLevelCard label="Knight" value={hunt.level_knights} />
+        <CanonicalLevelCard label="Paladin" value={hunt.level_paladins} />
+        <CanonicalLevelCard label="Mages" value={hunt.level_mages} />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
       <Panel title="Performance observada">
         <div className="grid gap-3 sm:grid-cols-2">
           <Metric label="Sessões" value={formatNumber(Number(perf.session_count || 0))} />
@@ -319,6 +378,7 @@ function Overview({ data }: { data:any }) {
             ))}
         </div>
       </Panel>
+      </div>
     </div>
   );
 }
@@ -1144,6 +1204,38 @@ function validFinalStat(baseValue: unknown, finalValue: unknown) {
 function SectionTitle({ title, subtitle }: { title:string; subtitle:string }) { return <div><div className="text-xs uppercase tracking-[.18em] text-cyan-400">Hunt Detail</div><h2 className="mt-1 text-2xl font-bold text-white">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div>; }
 function Panel({ title, children }: { title:string; children:React.ReactNode }) { return <div className="rounded-2xl border border-white/7 bg-slate-950/35 p-4"><div className="mb-4 text-sm font-semibold text-slate-200">{title}</div>{children}</div>; }
 function Metric({ label, value }: { label:string; value:string }) { return <div className="flex items-center justify-between gap-4 rounded-xl border border-white/6 bg-white/[0.025] px-3 py-2.5"><span className="text-xs text-slate-500">{label}</span><span className="text-sm font-bold text-slate-200">{value}</span></div>; }
+function HeroFact({ label, value }: { label:string; value:string }) {
+  return (
+    <div className="rounded-xl border border-white/7 bg-black/20 px-3 py-2.5">
+      <div className="text-[9px] uppercase tracking-wide text-slate-600">{label}</div>
+      <div className="mt-1 truncate text-xs font-bold text-slate-200">{value}</div>
+    </div>
+  );
+}
+
+function CanonicalLevelCard({ label, value }: { label:string; value:unknown }) {
+  const clean = value == null || String(value).trim() === "" ? null : String(value);
+  return (
+    <div className="rounded-2xl border border-white/7 bg-slate-950/35 p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">{label}</div>
+      <div className="mt-1 text-xl font-black text-white">{clean ? `Level ${clean}` : "Não publicado"}</div>
+      <div className="mt-1 text-[10px] text-slate-600">guidance canônico da fonte</div>
+    </div>
+  );
+}
+
+function elementLabel(value:unknown) {
+  return ({
+    physical:"Physical",
+    fire:"Fire",
+    ice:"Ice",
+    earth:"Earth",
+    energy:"Energy",
+    death:"Death",
+    holy:"Holy",
+  } as Record<string,string>)[String(value)] ?? String(value ?? "—");
+}
+
 function HeroMetric({ label, value }: { label:string; value:string }) { return <div className="rounded-xl border border-white/7 bg-slate-950/35 p-3"><div className="text-[10px] uppercase tracking-wide text-slate-500">{label}</div><div className="mt-1 text-xl font-black text-white">{value}</div></div>; }
 function Badge({ children }: { children:React.ReactNode }) { return <span className="rounded-full border border-cyan-400/15 bg-cyan-400/8 px-2.5 py-1 text-[10px] font-semibold text-cyan-200">{children}</span>; }
 function Muted({ children }: { children:React.ReactNode }) { return <div className="rounded-xl border border-dashed border-white/7 p-4 text-xs text-slate-600">{children}</div>; }
