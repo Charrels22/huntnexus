@@ -57,3 +57,12 @@ These URLs were present in the production database; website retrievability throu
 4. Manual screenshot and in-game sprite review for all 32 eligible trees (5 sampled screenshots alone are not full visual certification).
 5. Real Magic Link login on two devices, with a consenting test account; cross-device SQL fixture is not enough.
 6. Closed pilot only with explicit user approval after privacy and authentication gates.
+
+
+## FE-21 further source-backed sprite closure
+- File existence probe `38170282340` **SUCCESS**: https://github.com/Charrels22/huntnexus/actions/runs/38170282340 . The spell icon `Proficiency Spell Executioner's Throw.gif` loaded (32x32); `Proficiency Spell Executioners Throw.gif` without the apostrophe did not.
+- Exact source record: `weapon_proficiency_perks.item_key=soulshredder`, `effect_key=base_damage`, `spell_key=executioners-throw`, description `+4% base damage for Executioner's Throw`, reference `https://www.tibiawiki.com.br/wiki/soulshredder` (Tier B).
+- `proficiencyIconFiles` now chooses `Proficiency Spell Executioner's Throw.gif` + the verified `Proficiency Augment Damage.gif` **only** for the exact Executioner's Throw spell key, not for generic or unrelated base_damage perks.
+- Entire 700-level public proficiency catalog coverage **373/373 mapped (100%)** across 32 eligible trees and eight weapon-family checks. Live public audit `38170417763` **SUCCESS**: https://github.com/Charrels22/huntnexus/actions/runs/38170417763 . This measures nonempty verified-name candidates for all perks, **NOT** actual browser loading of every icon, nor visual equality to the RubinOT client.
+- `tests/proficiency-sprite-coverage.mjs` also asserts exact-item perk mapping and that an unrelated spell does not inherit the Soulshredder-specific asset; regression `38170438790` **SUCCESS**.
+- Continue the separate browser/headless five-tree visual regression; 37/37 checked before mapping completion. A second browser run is pending verification at checkpoint update.
