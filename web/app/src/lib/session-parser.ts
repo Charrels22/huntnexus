@@ -140,13 +140,13 @@ function lines(text: string | undefined) {
 }
 
 function parseIntegerLike(value: string | undefined): number | null {
-  if (!value) return null;
-  const negative = value.trim().startsWith("-");
-  const digits = value.replace(/[^0-9]/g, "");
-  if (!digits) return null;
-  const parsed = Number(digits);
-  if (!Number.isFinite(parsed)) return null;
-  return negative ? -parsed : parsed;
+  if (value == null) return null;
+  const raw = value.trim();
+  const plainInteger = /^[+-]?[0-9]+$/;
+  const groupedInteger = /^[+-]?[0-9]{1,3}(?:[,\.\s][0-9]{3})+$/;
+  if (!plainInteger.test(raw) && !groupedInteger.test(raw)) return null;
+  const parsed = Number(raw.replace(/[,\.\s]/g, ""));
+  return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
 function parseDecimalLike(value: string | undefined): number | null {
