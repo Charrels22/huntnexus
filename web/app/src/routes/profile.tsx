@@ -46,6 +46,7 @@ type FormState = {
 type ProficiencyPerk = {
   perk_order: number;
   level_number: number | null;
+  position_in_level: number | null;
   effect_key: string;
   numeric_value: number | null;
   unit: string | null;
@@ -93,6 +94,18 @@ type ProficiencyTree = {
   eligible: boolean;
   levels_declared: number | null;
   topology_status: string | null;
+  topology_source?: {
+    source_kind?: string;
+    repository?: string;
+    revision?: string;
+    path?: string;
+    profile_name?: string;
+    proficiency_id?: number;
+    profile_version?: number;
+    confidence?: string;
+    validation_status?: string;
+    levels?: number[];
+  } | null;
   perk_count: number;
   perks: ProficiencyPerk[];
 };
@@ -386,16 +399,36 @@ function ProfilePage() {
     window.dispatchEvent(new Event("huntnexus:inventory-changed"));
   }
 
-  function togglePerk(itemKey: string, perkOrder: number) {
+  function togglePerk(tree: ProficiencyTree, perk: ProficiencyPerk) {
     setProficiencySelections((current) => {
-      const selected = new Set(current[itemKey] ?? []);
-      if (selected.has(perkOrder)) selected.delete(perkOrder);
-      else selected.add(perkOrder);
+      const selected = new Set(current[tree.item_key] ?? []);
+      const alreadyActive = selected.has(perk.perk_order);
+
+      if (alreadyActive) {
+        selected.delete(perk.perk_order);
+      } else {
+        const topologyKnown =
+          tree.topology_status === "source_backed_level_position" &&
+          perk.level_number != null;
+
+        if (topologyKnown) {
+          for (const treePerk of tree.perks) {
+            if (
+              treePerk.level_number === perk.level_number &&
+              treePerk.perk_order !== perk.perk_order
+            ) {
+              selected.delete(treePerk.perk_order);
+            }
+          }
+        }
+
+        selected.add(perk.perk_order);
+      }
 
       const next = { ...current };
       const values = [...selected].sort((a, b) => a - b);
-      if (values.length) next[itemKey] = values;
-      else delete next[itemKey];
+      if (values.length) next[tree.item_key] = values;
+      else delete next[tree.item_key];
       return next;
     });
   }
@@ -685,56 +718,11 @@ function ProfilePage() {
 
                   {isOpen && (
                     <div className="border-t border-white/7 p-4">
-                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Mapa de perks</div>
-                          <div className="mt-1 text-[11px] text-slate-500">Ordem preservada da fonte. Conexões exatas ainda não são inferidas.</div>
-                        </div>
-                        <span className="rounded-full border border-white/7 px-2.5 py-1 text-[10px] text-slate-500">
-                          {tree.levels_declared ?? "?"} níveis declarados
-                        </span>
-                      </div>
-
-                      <div className="relative overflow-hidden rounded-2xl border border-white/6 bg-[#07101b] p-4">
-                        <div className="pointer-events-none absolute left-6 right-6 top-1/2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                        <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                          {tree.perks.map((perk) => {
-                            const active = selected.has(perk.perk_order);
-                            return (
-                              <button
-                                key={perk.perk_order}
-                                type="button"
-                                onClick={() => togglePerk(tree.item_key, perk.perk_order)}
-                                title={perk.description_raw || perk.effect_key}
-                                className={`group relative min-h-[126px] rounded-2xl border p-3 text-center transition ${
-                                  active
-                                    ? "border-emerald-400/50 bg-emerald-400/[0.08] shadow-[0_0_0_1px_rgba(52,211,153,.06)]"
-                                    : "border-white/8 bg-slate-950/75 hover:border-cyan-400/25 hover:bg-cyan-400/[0.035]"
-                                }`}
-                              >
-                                <span className={`absolute right-2 top-2 grid size-5 place-items-center rounded-full border ${
-                                  active
-                                    ? "border-emerald-300 bg-emerald-300 text-slate-950"
-                                    : "border-white/12 bg-slate-950 text-transparent"
-                                }`}>
-                                  <Check className="size-3.5" />
-                                </span>
-
-                                <div className="mx-auto grid size-16 place-items-center rounded-2xl border border-white/8 bg-black/25">
-                                  <ProficiencyPerkIcon perk={perk} />
-                                </div>
-
-                                <div className="mt-2 text-[10px] font-black uppercase tracking-wide text-slate-500">
-                                  Perk {perk.perk_order}
-                                </div>
-                                <div className="mt-1 line-clamp-2 text-[11px] font-semibold leading-4 text-slate-300">
-                                  {perk.description_raw || perk.effect_key}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      <ProficiencyTreeMap
+                        tree={tree}
+                        selected={selected}
+                        onToggle={(perk) => togglePerk(tree, perk)}
+                      />
                     </div>
                   )}
                 </article>
@@ -743,8 +731,8 @@ function ProfilePage() {
           </div>
         )}
 
-        <div className="mt-4 rounded-xl border border-amber-400/10 bg-amber-400/[0.035] p-4 text-xs leading-5 text-slate-500">
-          A fonte atual confirma a ordem dos perks, mas não prova todas as conexões/dependências da árvore. Por isso o HuntNexus não desbloqueia perks automaticamente nem presume que selecionar um perk ativa os anteriores.
+        <div className="mt-4 rounded-xl border border-white/7 bg-white/[0.02] p-4 text-xs leading-5 text-slate-500">
+          Árvores com topologia validada respeitam <strong className="text-slate-300">um perk ativo por nível</strong>. Armas ainda sem topologia estruturada continuam em modo conservador, sem conexões ou níveis inventados.
         </div>
       </section>
 
@@ -970,6 +958,175 @@ function ProfilePage() {
         </button>
       </div>
     </div>
+  );
+}
+
+function ProficiencyTreeMap({
+  tree,
+  selected,
+  onToggle,
+}: {
+  tree: ProficiencyTree;
+  selected: Set<number>;
+  onToggle: (perk: ProficiencyPerk) => void;
+}) {
+  const topologyKnown =
+    tree.topology_status === "source_backed_level_position" &&
+    tree.perks.length > 0 &&
+    tree.perks.every((perk) => perk.level_number != null && perk.position_in_level != null);
+
+  if (!topologyKnown) {
+    return (
+      <div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Mapa de perks</div>
+            <div className="mt-1 text-[11px] text-slate-500">
+              Topologia ainda não comprovada; exibindo somente a ordem observada.
+            </div>
+          </div>
+          <span className="rounded-full border border-amber-400/10 bg-amber-400/[0.035] px-2.5 py-1 text-[10px] text-amber-200/70">
+            ordem achatada
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {tree.perks.map((perk) => (
+            <ProficiencyPerkNode
+              key={perk.perk_order}
+              perk={perk}
+              active={selected.has(perk.perk_order)}
+              onClick={() => onToggle(perk)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const levels = Array.from(
+    new Set(tree.perks.map((perk) => Number(perk.level_number))),
+  ).sort((a,b) => a-b);
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Árvore de Weapon Proficiency</div>
+          <div className="mt-1 text-[11px] text-slate-500">
+            Níveis e posições validados por fonte estruturada. Selecione no máximo um perk por nível.
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full border border-emerald-400/15 bg-emerald-400/[0.05] px-2.5 py-1 text-[10px] text-emerald-300">
+            topologia validada
+          </span>
+          <span className="rounded-full border border-white/7 px-2.5 py-1 text-[10px] text-slate-500">
+            {levels.length} níveis
+          </span>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto pb-2">
+        <div
+          className="grid min-w-[920px] gap-3"
+          style={{ gridTemplateColumns: `repeat(${levels.length}, minmax(118px, 1fr))` }}
+        >
+          {levels.map((level) => {
+            const perks = tree.perks
+              .filter((perk) => perk.level_number === level)
+              .sort((a,b) => Number(a.position_in_level) - Number(b.position_in_level));
+            const activeInLevel = perks.find((perk) => selected.has(perk.perk_order));
+
+            return (
+              <div key={level} className="relative rounded-2xl border border-white/7 bg-[#07101b] p-2.5">
+                <div className="mb-3 text-center">
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-600">Nível</div>
+                  <div className="mt-0.5 text-lg font-black text-slate-300">{level}</div>
+                </div>
+
+                <div className="relative space-y-3">
+                  {perks.map((perk,index) => (
+                    <div key={perk.perk_order} className="relative">
+                      {index > 0 && (
+                        <div className="pointer-events-none absolute -top-3 left-1/2 h-3 w-px -translate-x-1/2 bg-white/10" />
+                      )}
+                      <ProficiencyPerkNode
+                        perk={perk}
+                        active={selected.has(perk.perk_order)}
+                        onClick={() => onToggle(perk)}
+                        compact
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 min-h-4 text-center text-[9px] text-slate-600">
+                  {activeInLevel ? `Perk ${activeInLevel.position_in_level} ativo` : "nenhum ativo"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {tree.topology_source && (
+        <div className="mt-3 text-[9px] leading-4 text-slate-700">
+          Topologia: {tree.topology_source.profile_name}
+          {tree.topology_source.profile_version ? ` · versão ${tree.topology_source.profile_version}` : ""}
+          {tree.topology_source.confidence ? ` · confiança ${tree.topology_source.confidence}` : ""}.
+          A descrição/efeito dos perks continua vinculada às fontes já registradas no HuntNexus.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProficiencyPerkNode({
+  perk,
+  active,
+  onClick,
+  compact = false,
+}: {
+  perk: ProficiencyPerk;
+  active: boolean;
+  onClick: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={perk.description_raw || perk.effect_key}
+      className={`group relative w-full rounded-2xl border text-center transition ${
+        compact ? "min-h-[118px] p-2" : "min-h-[126px] p-3"
+      } ${
+        active
+          ? "border-emerald-400/50 bg-emerald-400/[0.08] shadow-[0_0_0_1px_rgba(52,211,153,.06)]"
+          : "border-white/8 bg-slate-950/75 hover:border-cyan-400/25 hover:bg-cyan-400/[0.035]"
+      }`}
+    >
+      <span className={`absolute right-2 top-2 grid size-5 place-items-center rounded-full border ${
+        active
+          ? "border-emerald-300 bg-emerald-300 text-slate-950"
+          : "border-white/12 bg-slate-950 text-transparent"
+      }`}>
+        <Check className="size-3.5" />
+      </span>
+
+      <div className={`mx-auto grid place-items-center rounded-2xl border border-white/8 bg-black/25 ${compact ? "size-14" : "size-16"}`}>
+        <ProficiencyPerkIcon perk={perk} />
+      </div>
+
+      <div className="mt-2 text-[9px] font-black uppercase tracking-wide text-slate-600">
+        {perk.level_number != null
+          ? `posição ${perk.position_in_level ?? perk.perk_order}`
+          : `perk ${perk.perk_order}`}
+      </div>
+      <div className="mt-1 line-clamp-3 text-[10px] font-semibold leading-4 text-slate-300">
+        {perk.description_raw || perk.effect_key}
+      </div>
+    </button>
   );
 }
 
