@@ -35,3 +35,24 @@ These are individual measured runs, not statistical benchmarks or latency SLOs.
 - Bring average production latency down further; current long-lived RPC consumes database resources. Do not open external community pilot without rate limiting/abuse mitigation and concurrency controls for this expensive public action.
 - Ensure UI clearly labels the 100-set candidate cap, truncation and user-visible latency.
 - Frontend visual QA, real analyzers/hunts from EK/RP/ED/MS/EM players, magic link delivery/cross-device auth and external community validation remain separate gates.
+
+
+## Five-class production run (pass)
+
+GitHub Actions https://github.com/Charrels22/huntnexus/actions/runs/38142018318 — success using the deployed Cloudflare API, sequential per-class setup:
+
+| Vocation | Hunt | HTTP time | Valid concrete candidates | Pareto sets | Returned |
+|---|---|---:|---:|---:|---:|
+| EK | cobra-bastion | 11.21s | 100 | 64 | 20 |
+| RP | iksupan-last-stand | 7.60s | 100 | 32 | 20 |
+| ED | nimmersatts-breeding-ground | 7.76s | 100 | 100 | 20 |
+| MS | podzilla | 7.41s | 100 | 16 | 16 |
+| EM | grounds-of-undeath | 6.80s | 100 | 48 | 20 |
+
+All returned concrete selections passed checks for valid structure, real weapon slot and comparable dimensions. The returned result count is capped at 20 and the generated candidate universe at 100. Repeated calls/concurrent workloads may vary in runtime.
+
+## Scope transparency update
+- `hunt_detail_setup` now exposes `data.execution.enumeration_set_limit=100`, `frontier_limit=100`, `returned_set_limit=20`, `exhaustive_all_possible_combinations=false` and a source methodology tag.
+- Hunt Detail Setup explicitly states how many sets were examined, how many stayed undominated, how many were returned and that the result is NOT exhaustive across every game item.
+- Users can expand all sets returned by the API rather than seeing only the first eight with no explanation.
+- `tests/full-optimizer-vocations-smoke.mjs` includes assertions for API candidate-cap metadata; latest verification should be re-checked after Worker deployment.
