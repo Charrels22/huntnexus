@@ -20,6 +20,7 @@ async function post(body) {
 
 const clientId = crypto.randomUUID();
 let sessionId = null;
+let charmSessionId = null;
 let inventoryIds = [];
 
 try {
@@ -157,12 +158,52 @@ try {
   assert(parsed?.damage?.charm_damage_status === "not_observed", "standard analyzer charm status regression");
   assert(parsed?.damage?.charm_damage_available === false, "standard analyzer must not invent charm damage");
 
+  const charmImported = await post({
+    action: "session_import_save",
+    client_id: clientId,
+    blocks: {
+      hunt: [
+        "Session: 00:30h",
+        "XP Gain: 3,000,000",
+        "XP/h: 6,000,000",
+        "Loot: 300,000",
+        "Supplies: 100,000",
+        "Balance: 200,000",
+      ].join("\n"),
+      misc: [
+        "Charm Damage: 250,000",
+        "Charm Damage/h: 500,000",
+      ].join("\n"),
+    },
+    metadata: {
+      character: "Smoke Tester",
+      server: "RubinOT",
+      vocation: "EK",
+      level: "700",
+      location: "Cobra Bastion",
+      hunt_key: "cobra-bastion",
+      observation: "explicit charm smoke",
+      tags: ["smoke","charm"],
+      type: "normal",
+      favorite: false,
+      publishHighscores: false,
+      rareDrops: "",
+    },
+  });
+
+  charmSessionId = charmImported?.data?.session_id;
+  assert(charmSessionId, "charm session_id missing");
+  assert(charmImported?.parsed?.damage?.charm_damage_status === "observed", "explicit charm status regression");
+  assert(charmImported?.parsed?.damage?.charm_damage_available === true, "explicit charm availability regression");
+  assert(charmImported?.parsed?.damage?.charm_damage_total === 250000, "explicit charm total regression");
+  assert(charmImported?.parsed?.damage?.charm_damage_per_hour === 500000, "explicit charm per-hour regression");
+
   const list = await post({
     action: "player_session_list",
     client_id: clientId,
     limit: 10,
   });
-  assert(list?.data?.summary?.returned === 1, "private list regression");
+  assert(list?.data?.summary?.returned === 2, "private list regression");
   assert(list?.data?.sessions?.[0]?.hunt_name === "Cobra Bastion", "hunt metadata regression");
   assert(list?.data?.sessions?.[0]?.hunt_key === "cobra-bastion", "hunt key list regression");
 
@@ -223,6 +264,7 @@ try {
     loadout_snapshot_source: detail.data.loadout_snapshot.source,
     loadout_snapshot_weapon: detail.data.loadout_snapshot.selection.weapon,
     build_performance_sample_status: buildPerformance.data.builds[0].sample_status,
+    explicit_charm_total: charmImported.parsed.damage.charm_damage_total,
   }, null, 2));
 } finally {
   if (sessionId) {
@@ -232,6 +274,15 @@ try {
       session_id: sessionId,
     });
     assert(deleted?.data?.deleted === true, "smoke cleanup regression");
+  }
+
+  if (charmSessionId) {
+    const deletedCharm = await post({
+      action: "player_session_delete",
+      client_id: clientId,
+      session_id: charmSessionId,
+    });
+    assert(deletedCharm?.data?.deleted === true, "charm smoke cleanup regression");
   }
 
   await post({
