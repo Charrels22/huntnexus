@@ -203,8 +203,9 @@ try {
     limit: 10,
   });
   assert(list?.data?.summary?.returned === 2, "private list regression");
-  assert(list?.data?.sessions?.[0]?.hunt_name === "Cobra Bastion", "hunt metadata regression");
-  assert(list?.data?.sessions?.[0]?.hunt_key === "cobra-bastion", "hunt key list regression");
+  const cobraListRow = (list?.data?.sessions ?? []).find((row) => row.session_id === sessionId);
+  assert(cobraListRow?.hunt_name === "Cobra Bastion", "hunt metadata regression");
+  assert(cobraListRow?.hunt_key === "cobra-bastion", "hunt key list regression");
 
   const detail = await post({
     action: "player_session_detail",
