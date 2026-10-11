@@ -27,6 +27,29 @@ assert(
 );
 
 
+// Creature Explorer must be reachable through the public Worker, not only via SQL.
+const creatureSearch = await post({ action: "search_creatures", query: "cobra", limit: 10 });
+assert(
+  creatureSearch?.data?.methodology?.stage === "creature_search_v1",
+  "creature search API stage regression",
+);
+const firstCreature = creatureSearch?.data?.creatures?.find((row) => row.creature_key === "cobra-assassin")
+  ?? creatureSearch?.data?.creatures?.[0];
+assert(firstCreature?.creature_key, "creature search should return a canonical creature key");
+
+const creatureDetail = await post({ action: "creature_detail", creature_key: firstCreature.creature_key });
+assert(
+  creatureDetail?.data?.methodology?.stage === "creature_detail_v1",
+  "creature detail API stage regression",
+);
+assert(
+  creatureDetail?.data?.creature?.creature_key === firstCreature.creature_key,
+  "creature detail must match the selected creature",
+);
+for (const field of ["vulnerabilities", "abilities", "loot"]) {
+  assert(Array.isArray(creatureDetail?.data?.[field]), `creature detail ${field} must be an array`);
+}
+
 const importClientId = crypto.randomUUID();
 let importedSessionId = null;
 try {
