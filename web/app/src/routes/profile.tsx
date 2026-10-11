@@ -480,11 +480,26 @@ function ProfilePage() {
         },
       });
 
-      if (!response?.data?.saved) throw new Error("profile_not_saved");
+      if (!response?.data?.saved) {
+        const result = response?.data;
+        if (result?.error === "invalid_proficiency_selections") {
+          const issues = Array.isArray(result?.validation?.issues) ? result.validation.issues : [];
+          const issueLabels = issues.slice(0, 4).map((issue: any) => {
+            const itemName = proficiencyTrees.find((tree) => tree.item_key === issue.item_key)?.item_name || issue.item_key || "Arma";
+            if (issue.level_number != null) return `${itemName}: há mais de um perk ativo no nível ${issue.level_number}`;
+            if (issue.reason === "unknown_perk_order") return `${itemName}: existe um perk não reconhecido`;
+            return `${itemName}: a seleção precisa ser revisada`;
+          });
+          throw new Error(issueLabels.length
+            ? `Weapon Proficiency inválida. ${issueLabels.join("; ")}. Corrija antes de salvar.`
+            : "Weapon Proficiency inválida. Revise as seleções antes de salvar.");
+        }
+        throw new Error("Não foi possível confirmar o salvamento do perfil.");
+      }
       setMessage("Perfil salvo. Hunt Planner e Session Analyzer usarão esses dados automaticamente.");
       window.dispatchEvent(new Event("huntnexus:profile-changed"));
-    } catch {
-      setError("Não foi possível salvar o perfil.");
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Não foi possível salvar o perfil.");
     } finally {
       setSaving(false);
     }
