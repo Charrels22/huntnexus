@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Cloud, Loader2, LogOut, Mail, RefreshCw, ShieldCheck } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
@@ -16,6 +16,7 @@ function AccountPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [syncInfo, setSyncInfo] = useState<any>(null);
+  const resolvingRef = useRef(false);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -43,7 +44,8 @@ function AccountPage() {
 
   async function resolveAccount(currentSession: Session) {
     const localClientId = getOrCreateClientId();
-    if (!localClientId || !currentSession.access_token || syncing) return;
+    if (!localClientId || !currentSession.access_token || resolvingRef.current) return;
+    resolvingRef.current = true;
     setSyncing(true);
     setError("");
     try {
@@ -67,6 +69,7 @@ function AccountPage() {
     } catch {
       setError("Não foi possível sincronizar a conta com seus dados do HuntNexus.");
     } finally {
+      resolvingRef.current = false;
       setSyncing(false);
     }
   }
@@ -92,10 +95,18 @@ function AccountPage() {
   async function signOut() {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
-    await supabase.auth.signOut();
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      setError("Não foi possível encerrar sua sessão. Tente novamente.");
+      return;
+    }
+    // A canonical client identity is protected by the authenticated account.
+    // After sign-out, a new guest UUID prevents accidental 401s or access to
+    // the previously bound profile without signing in again.
+    setClientId(window.crypto.randomUUID());
     setSession(null);
     setSyncInfo(null);
-    setMessage("Você saiu da conta. Os dados locais continuam neste navegador.");
+    setMessage("Sessão encerrada. Os dados vinculados continuam na sua conta; este navegador iniciou um novo perfil convidado.");
   }
 
   return (
