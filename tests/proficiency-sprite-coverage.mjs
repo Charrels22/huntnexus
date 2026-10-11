@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
 import { proficiencyIconFiles, tibiaWikiFile } from "../web/app/src/lib/proficiency-icons.ts";
 
+assert.deepEqual(
+  proficiencyIconFiles({effect_key:"base_damage",spell_key:"executioners-throw"}),
+  ["Proficiency Spell Executioner's Throw.gif","Proficiency Augment Damage.gif"],
+  "Executioner's Throw source-backed perk must display verified spell + augment icons",
+);
+assert.deepEqual(
+  proficiencyIconFiles({effect_key:"base_damage",spell_key:"unrelated-spell"}),
+  [],
+  "Unknown spell must not inherit the Soulshredder/Executioner's Throw image",
+);
+
 const endpoint = process.env.HUNTNEXUS_ENDPOINT ??
   "https://huntnexus.charr3ls22.workers.dev/api/huntnexus";
 const families = [
