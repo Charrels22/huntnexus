@@ -259,19 +259,18 @@ function Analyse({ data }: { data: any }) {
         <Kpi icon={Coins} label="Balance" value={formatCompact(a.balance_value)} />
         <Kpi icon={Swords} label="Damage" value={formatCompact(a.total_damage)} />
         <Kpi icon={HeartPulse} label="Healing" value={formatCompact(a.total_healing)} />
-        <Kpi icon={Clock3} label="Kills" value={formatNumber(Number(a.total_kills || 0))} />
+        <Kpi icon={Clock3} label="Kills" value={a.total_kills == null ? "Não informado" : formatNumber(Number(a.total_kills))} />
       </div>
 
       <SessionLoadoutSnapshot snapshot={data.loadout_snapshot} />
 
       <div className="grid gap-4 xl:grid-cols-[1.3fr_.7fr]">
-        <div className="hn-chart-placeholder">
-          <div className="relative z-10">
-            <div className="text-sm font-semibold text-slate-200">Resumo visual da sessão</div>
-            <div className="mt-1 text-xs text-slate-500">A timeline detalhada entra quando tivermos snapshots temporais da sessão.</div>
-          </div>
-          <div className="absolute inset-x-6 bottom-6 flex h-28 items-end gap-2">
-            {[38,52,48,65,58,79,67,86,72,90,81,88].map((h,i) => <div key={i} className="flex-1 rounded-t bg-cyan-400/20" style={{height:`${h}%`}} />)}
+        <div className="rounded-2xl border border-white/7 bg-slate-950/40 p-5">
+          <div className="text-sm font-semibold text-slate-200">Indicadores observados</div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">Comparação de XP/h e Raw XP/h provenientes do analyzer, sem timeline simulada.</div>
+          <ObservedRateComparison current={a.xp_per_hour} raw={a.raw_xp_per_hour} />
+          <div className="mt-4 border-t border-white/7 pt-3 text-xs leading-5 text-slate-500">
+            Uma curva temporal exige amostras com horário durante a hunt. Nesta importação, apenas os totais são conhecidos.
           </div>
         </div>
         <div className="space-y-3">
@@ -285,6 +284,30 @@ function Analyse({ data }: { data: any }) {
           <DataRow label="Party" value={Number(a.party_size || 1) > 1 ? `x${a.party_size}` : "Solo"} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function ObservedRateComparison({ current, raw }: { current: unknown; raw: unknown }) {
+  const observed = (value: unknown): number | null =>
+    value == null || value === "" || !Number.isFinite(Number(value)) || Number(value) < 0 ? null : Number(value);
+  const entries = [{ label: "XP/h", value: observed(current) }, { label: "Raw XP/h", value: observed(raw) }];
+  const max = Math.max(0, ...entries.map((entry) => entry.value ?? 0));
+  return (
+    <div className="mt-5 space-y-4">
+      {entries.map((entry) => (
+        <div key={entry.label}>
+          <div className="mb-2 flex justify-between gap-3 text-xs">
+            <span className="text-slate-400">{entry.label}</span>
+            <span className="font-semibold tabular-nums text-slate-200">{entry.value == null ? "Não informado" : formatNumber(entry.value)}</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-white/5">
+            {entry.value != null && max > 0 && (
+              <div className="h-full rounded-full bg-cyan-400/65" style={{ width: `${Math.min(100, entry.value / max * 100)}%` }} />
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -514,8 +537,8 @@ function Party({ data }: { data: any }) {
       <PanelHeader eyebrow="Party Hunt" title={`Party x${p.party_size || players.length}`} subtitle="Contribuição observada por membro." />
       <div className="grid gap-4 xl:grid-cols-2">
         {players.map((player:any) => {
-          const damageShare = totalDamage > 0 ? Number(player.damage || 0) / totalDamage * 100 : 0;
-          const healingShare = totalHealing > 0 ? Number(player.healing || 0) / totalHealing * 100 : 0;
+          const damageShare = player.damage != null && totalDamage > 0 ? Number(player.damage) / totalDamage * 100 : null;
+          const healingShare = player.healing != null && totalHealing > 0 ? Number(player.healing) / totalHealing * 100 : null;
           return (
             <div key={player.player_id || player.name} className="rounded-2xl border border-white/7 bg-slate-950/45 p-4">
               <div className="flex items-center justify-between gap-3">
@@ -525,13 +548,13 @@ function Party({ data }: { data: any }) {
                     {[player.vocation, player.level ? `Level ${player.level}` : null, player.leader ? "Leader" : null].filter(Boolean).join(" · ") || "Dados do Party Hunt Analyzer"}
                   </div>
                 </div>
-                <span className="rounded-full border border-cyan-400/15 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-200">{formatNumber(damageShare,1)}% dmg</span>
+                <span className="rounded-full border border-cyan-400/15 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-200">{damageShare === null ? "Dano não informado" : `${formatNumber(damageShare,1)}% dmg`}</span>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <Mini label="Damage" value={formatCompact(player.damage)} />
                 <Mini label="Healing" value={formatCompact(player.healing)} />
-                <Mini label="Damage share" value={`${formatNumber(damageShare,1)}%`} />
-                <Mini label="Healing share" value={`${formatNumber(healingShare,1)}%`} />
+                <Mini label="Damage share" value={damageShare === null ? "Não informado" : `${formatNumber(damageShare,1)}%`} />
+                <Mini label="Healing share" value={healingShare === null ? "Não informado" : `${formatNumber(healingShare,1)}%`} />
               </div>
             </div>
           );
@@ -574,6 +597,7 @@ function formatDuration(seconds: unknown) {
   return h > 0 ? `${h}h ${String(m).padStart(2,"0")}m` : `${m}m`;
 }
 function formatCompact(value: unknown) {
+  if (value === null || value === undefined || value === "") return "—";
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
   const abs = Math.abs(n);
@@ -583,6 +607,7 @@ function formatCompact(value: unknown) {
   return formatNumber(n);
 }
 function rate(value: unknown, seconds: unknown) {
+  if (value === null || value === undefined || value === "" || seconds === null || seconds === undefined || seconds === "") return null;
   const v = Number(value);
   const s = Number(seconds);
   return Number.isFinite(v) && Number.isFinite(s) && s > 0 ? v * 3600 / s : null;
