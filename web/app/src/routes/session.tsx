@@ -725,6 +725,7 @@ function PreviewMetric({ label, value }: { label: string; value: string }) {
 }
 
 function formatCompactPreview(value: unknown) {
+  if (value === null || value === undefined || value === "") return "—";
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
   const abs = Math.abs(n);
