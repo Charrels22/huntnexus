@@ -1,6 +1,9 @@
 // Canonical TibiaWiki sprite candidates. Filename mapping is distinct from
 // successful HTTP retrieval and from RubinOT-specific asset verification.
 // Unmapped effects deliberately return []; the UI shows a numeric fallback.
+// The newly added file candidates below were verified as loadable 32x32
+// spell icons / 16x16 augment icons in headless Chromium on 2026-10-11.
+// They remain canonical Tier B references, not RubinOT client confirmation.
 
 export function tibiaWikiFile(filename: string) {
   return `https://www.tibiawiki.com.br/wiki/Special:Redirect/file/${encodeURIComponent(filename).replace(/%20/g, "_")}`;
@@ -28,6 +31,8 @@ export function proficiencyIconFiles(perk: {effect_key:string;description_raw?:s
     bestiary_damage_magical: ["Proficiency Type Bestiary Dmg Magical.gif"],
     perfect_shot_damage: ["Proficiency Type Perfect Shot Damage.gif"],
     magic_level_spell_extra_healing_percent: ["Proficiency Type Perc Spell Heal Magic.gif"],
+    magic_level_auto_attack_extra_damage_percent: ["Proficiency Type Perc Auto Atk Magic.gif"],
+    heal_friend_healing: ["Proficiency Spell Heal Friend.gif","Proficiency Augment Healing.gif"],
     auto_attack_critical_extra_damage_percent: ["Proficiency Type Auto Atk Critical Dmg.gif"],
     earth_magic_level_bonus: ["Proficiency Type Magic Boost Earth.gif"],
     ice_magic_level_bonus: ["Proficiency Type Magic Boost Ice.gif"],
@@ -81,6 +86,11 @@ export function proficiencyIconFiles(perk: {effect_key:string;description_raw?:s
     chained_penance: "Chained Penance",
     sweeping_takedown: "Sweeping Takedown",
     thousand_fist_blows: "Thousand Fist Blows",
+    eternal_winter: "Eternal Winter",
+    ice_burst: "Ice Burst",
+    strong_ice_wave: "Strong Ice Wave",
+    terra_wave: "Terra Wave",
+    devastating_knockout: "Devastating Knockout",
   };
   for (const [spellKey, spellLabel] of Object.entries(spells)) {
     if (!effectKey.startsWith(spellKey + "_")) continue;
