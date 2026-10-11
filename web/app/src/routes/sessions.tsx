@@ -16,6 +16,7 @@ import {
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { sessionImportWarningLabel } from "@/lib/session-parser";
 
 export const Route = createFileRoute("/sessions")({ component: SessionHistoryPage });
 
@@ -297,12 +298,6 @@ function Analyse({ data }: { data: any }) {
 function SessionEvidenceSummary({ data }: { data: any }) {
   const parser = data.parser ?? {};
   const warnings = Array.isArray(data.validation?.warnings) ? data.validation.warnings : [];
-  const explanation: Record<string, string> = {
-    hunt_analyzer_missing: "Hunt Analyzer ausente",
-    no_primary_metrics_recognized: "Métricas principais não reconhecidas",
-    party_block_present_but_no_players_recognized: "Party enviada, mas nenhum jogador foi reconhecido",
-    input_block_present_but_no_damage_rows_recognized: "Damage Input enviado sem linhas de dano reconhecidas",
-  };
   return (
     <div className="rounded-2xl border border-white/7 bg-slate-950/35 p-4 text-xs leading-5 text-slate-500">
       <div className="flex flex-wrap gap-x-5 gap-y-1">
@@ -312,7 +307,7 @@ function SessionEvidenceSummary({ data }: { data: any }) {
         {parser.raw_blocks_preserved && <span>Blocos originais preservados</span>}
       </div>
       {warnings.length > 0 && (
-        <div className="mt-2 text-amber-200/80">Para revisar: {warnings.map((warning: string) => explanation[warning] || warning).join(" · ")}</div>
+        <div className="mt-2 text-amber-200/80">Para revisar: {warnings.map((warning: string) => sessionImportWarningLabel(warning)).join(" · ")}</div>
       )}
     </div>
   );
