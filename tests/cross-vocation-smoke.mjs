@@ -85,6 +85,14 @@ for (const current of cases) {
     `${current.vocation} Hunt Detail factual elements shape regression`);
   assert(detail?.data?.observed && typeof detail.data.observed === "object",
     `${current.vocation} Hunt Detail observed contract regression`);
+  assert(detail.data.observed?.methodology?.layer === "community_observations",
+    `${current.vocation} Tier C provenance must be explicit`);
+  assert(detail.data.observed?.methodology?.final_recommendation === false,
+    `${current.vocation} observed samples must not claim to be a final recommendation`);
+  assert(Number(detail.data.observed?.performance?.session_count) > 0,
+    `${current.vocation} source-backed real hunt must have nonzero community sessions`);
+  assert(Number(detail.data.observed?.performance?.median_xp_per_hour) > 0,
+    `${current.vocation} observed hunt median XP must come from a real positive sample`);
   assert(detail?.data?.methodology?.stage === "hunt_detail_lazy_heavy_v1",
     `${current.vocation} Hunt Detail must load factual data without full optimizer`);
   assert(detail?.data?.set_selection === undefined && detail?.data?.spells === undefined,
@@ -111,6 +119,8 @@ for (const current of cases) {
     family: current.family,
     hunt_key: huntKey,
     factual_creatures: factual.monsters.length,
+    community_observed_sessions_all_vocations: detail.data.observed.performance.session_count,
+    observation_layer: detail.data.observed.methodology.layer,
     imbuement_contract: true,
     spell_contract: true,
     composition_available: spellDetail.data.availability.vocation_composition === "available",
