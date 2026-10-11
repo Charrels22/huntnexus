@@ -215,7 +215,7 @@ function HuntDetailPage() {
   const setSummary = data.set_selection?.summary ?? {};
   const combatElements = (Array.isArray(data.factual?.elements) ? data.factual.elements : [])
     .filter((e:any) => ["physical","fire","ice","earth","energy","death","holy"].includes(String(e.element)))
-    .filter((e:any) => Number.isFinite(Number(e.avg_modifier_percent)));
+    .filter((e:any) => e.avg_modifier_percent != null && Number.isFinite(Number(e.avg_modifier_percent)));
   const strongestElement = [...combatElements].sort(
     (a:any,b:any) => Number(b.avg_modifier_percent) - Number(a.avg_modifier_percent),
   )[0] ?? null;
@@ -373,7 +373,7 @@ function Overview({ data }: { data:any }) {
             .map((e:any) => (
               <div key={e.element} className="flex items-center justify-between rounded-xl border border-white/6 bg-slate-950/45 px-3 py-2">
                 <span className="capitalize text-sm text-slate-300">{e.element}</span>
-                <span className="text-sm font-black text-cyan-200">{formatNumber(Number(e.avg_modifier_percent || 0),1)}%</span>
+                <span className="text-sm font-black text-cyan-200">{e.avg_modifier_percent == null ? "Não informado" : `${formatNumber(Number(e.avg_modifier_percent),1)}%`}</span>
               </div>
             ))}
         </div>
@@ -429,7 +429,7 @@ function MapPanel({ hunt, media }: { hunt:any; media:any }) {
 
 function Damage({ defensive }: { defensive:any }) {
   const elements = Array.isArray(defensive?.elements) ? defensive.elements : [];
-  const max = Math.max(1, ...elements.map((e:any) => Number(e.damage_share || 0)));
+  const max = Math.max(0, ...elements.map((e:any) => e.damage_share == null ? 0 : Number(e.damage_share) || 0));
   return (
     <div>
       <SectionTitle title="Dano recebido" subtitle="Observação real por vocação, sem substituir fatos canônicos." />
@@ -438,8 +438,12 @@ function Damage({ defensive }: { defensive:any }) {
           <div className="space-y-4">
             {elements.map((e:any) => (
               <div key={e.element}>
-                <div className="mb-1.5 flex items-center justify-between text-xs"><span className="capitalize text-slate-300">{e.element}</span><span className="text-slate-500">{formatNumber(Number(e.damage_share||0)*100,1)}%</span></div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/5"><div className="h-full rounded-full bg-cyan-400/55" style={{width:`${Math.max(3,Number(e.damage_share||0)/max*100)}%`}} /></div>
+                <div className="mb-1.5 flex items-center justify-between text-xs"><span className="capitalize text-slate-300">{e.element}</span><span className="text-slate-500">{e.damage_share == null ? "Sem percentual observado" : `${formatNumber(Number(e.damage_share)*100,1)}%`}</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/5">
+                  {e.damage_share != null && max > 0 && (
+                    <div className="h-full rounded-full bg-cyan-400/55" style={{width:`${Math.max(0,Math.min(100,Number(e.damage_share)/max*100))}%`}} />
+                  )}
+                </div>
               </div>
             ))}
             {!elements.length && <Muted>Sem dano recebido observado para esta combinação.</Muted>}
@@ -447,7 +451,7 @@ function Damage({ defensive }: { defensive:any }) {
         </Panel>
         <Panel title="Picos observados">
           <div className="space-y-2">
-            {elements.map((e:any) => <Metric key={e.element} label={`${e.element} max DPS mediano`} value={formatNumber(Number(e.median_max_dps || 0))} />)}
+            {elements.map((e:any) => <Metric key={e.element} label={`${e.element} max DPS mediano`} value={e.median_max_dps == null ? "Não observado" : formatNumber(Number(e.median_max_dps))} />)}
           </div>
         </Panel>
       </div>
@@ -1239,7 +1243,7 @@ function elementLabel(value:unknown) {
 function HeroMetric({ label, value }: { label:string; value:string }) { return <div className="rounded-xl border border-white/7 bg-slate-950/35 p-3"><div className="text-[10px] uppercase tracking-wide text-slate-500">{label}</div><div className="mt-1 text-xl font-black text-white">{value}</div></div>; }
 function Badge({ children }: { children:React.ReactNode }) { return <span className="rounded-full border border-cyan-400/15 bg-cyan-400/8 px-2.5 py-1 text-[10px] font-semibold text-cyan-200">{children}</span>; }
 function Muted({ children }: { children:React.ReactNode }) { return <div className="rounded-xl border border-dashed border-white/7 p-4 text-xs text-slate-600">{children}</div>; }
-function compact(value:unknown) { const n=Number(value); if(!Number.isFinite(n)) return "—"; const a=Math.abs(n),s=n<0?"-":""; if(a>=1e6)return `${s}${(a/1e6).toFixed(2)}M`; if(a>=1e3)return `${s}${Math.round(a/1e3)}k`; return String(Math.round(n)); }
+function compact(value:unknown) { if(value == null || value === "") return "—"; const n=Number(value); if(!Number.isFinite(n)) return "—"; const a=Math.abs(n),s=n<0?"-":""; if(a>=1e6)return `${s}${(a/1e6).toFixed(2)}M`; if(a>=1e3)return `${s}${Math.round(a/1e3)}k`; return String(Math.round(n)); }
 function labelObjective(v:string){ return ({offense:"Offense",defense:"Defense",sustain:"Sustain",utility:"Utility",balanced:"Balanced"} as Record<string,string>)[v] ?? v; }
 function cleanLocation(v:unknown){ if(typeof v!=="string") return ""; return v.replace(/\{\{[^}]+\}\}/g,"").trim(); }
 function slugToName(value:string){ return value.split("-").filter(Boolean).map((part)=>part.charAt(0).toUpperCase()+part.slice(1)).join(" "); }
