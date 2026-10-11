@@ -27,6 +27,19 @@ const UniversalCharacterProfile = z.object({
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("health") }),
   z.object({
+    action: z.literal("account_resolve"),
+    access_token: z.string().min(20).max(8192),
+    local_client_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("account_status"),
+    access_token: z.string().min(20).max(8192),
+  }),
+  z.object({
+    action: z.literal("account_unbind"),
+    access_token: z.string().min(20).max(8192),
+  }),
+  z.object({
     action: z.literal("player_profile_get"),
     client_id: z.string().uuid(),
   }),
@@ -311,11 +324,45 @@ export const Route = createFileRoute("/api/huntnexus")({
           }
           return data;
         };
+        const authUserId = async (accessToken: string) => {
+          const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
+          if (error || !data?.user?.id) return null;
+          return data.user.id;
+        };
+
         const b = parsed.data;
         try {
           switch (b.action) {
             case "health":
               return json({ data: await rpc("huntnexus_api_health") });
+            case "account_resolve": {
+              const userId = await authUserId(b.access_token);
+              if (!userId) return json({ error: "invalid_auth_token" }, 401);
+              return json({
+                data: await rpc("huntnexus_account_resolve", {
+                  p_auth_user_id: userId,
+                  p_local_client_id: b.local_client_id,
+                }),
+              });
+            }
+            case "account_status": {
+              const userId = await authUserId(b.access_token);
+              if (!userId) return json({ error: "invalid_auth_token" }, 401);
+              return json({
+                data: await rpc("huntnexus_account_binding_status", {
+                  p_auth_user_id: userId,
+                }),
+              });
+            }
+            case "account_unbind": {
+              const userId = await authUserId(b.access_token);
+              if (!userId) return json({ error: "invalid_auth_token" }, 401);
+              return json({
+                data: await rpc("huntnexus_account_unbind", {
+                  p_auth_user_id: userId,
+                }),
+              });
+            }
             case "player_profile_get":
               return json({
                 data: await rpc("huntnexus_player_profile_get", {
