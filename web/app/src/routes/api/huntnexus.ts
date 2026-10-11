@@ -232,6 +232,15 @@ const Body = z.discriminatedUnion("action", [
     limit: z.coerce.number().int().min(1).max(50).default(20),
   }),
   z.object({
+    action: z.literal("search_creatures"),
+    query: z.string().max(100).default(""),
+    limit: z.coerce.number().int().min(1).max(50).default(30),
+  }),
+  z.object({
+    action: z.literal("creature_detail"),
+    creature_key: z.string().trim().min(1).max(160),
+  }),
+  z.object({
     action: z.literal("search_bosses"),
     query: z.string().max(100).default(""),
     limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -667,6 +676,10 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_session_id: b.session_id,
                 }),
               });
+            case "search_creatures":
+              return json({ data: await rpc("huntnexus_search_creatures", { p_query: b.query, p_limit: b.limit }) });
+            case "creature_detail":
+              return json({ data: await rpc("huntnexus_creature_detail", { p_creature_key: b.creature_key }) });
             case "search_hunts":
               return json({ data: await rpc("huntnexus_search_hunts", { p_query: b.query, p_limit: b.limit }) });
             case "search_bosses":
