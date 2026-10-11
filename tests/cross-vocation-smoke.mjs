@@ -93,6 +93,24 @@ for (const current of cases) {
     `${current.vocation} source-backed real hunt must have nonzero community sessions`);
   assert(Number(detail.data.observed?.performance?.median_xp_per_hour) > 0,
     `${current.vocation} observed hunt median XP must come from a real positive sample`);
+  const vocationSample = detail?.data?.vocation_observed;
+  assert(vocationSample?.methodology?.stage === "hunt_vocation_observation_sample_v1",
+    `${current.vocation} source-backed vocation sample contract regression`);
+  assert(vocationSample?.methodology?.layer === "community_observations" &&
+    vocationSample?.methodology?.party_level_metrics_not_attributable_to_individual_vocation === true,
+    `${current.vocation} party data must not be misrepresented as individual vocation performance`);
+  assert(vocationSample?.vocation === current.vocation && vocationSample?.hunt_key === huntKey,
+    `${current.vocation} observed sample not scoped to selected hunt or vocation`);
+  assert(Number(vocationSample?.sample?.sourced_session_count) > 0,
+    `${current.vocation} matched hunt lacks Tier C sourced sample`);
+  if (Number(vocationSample.sample.xp_sample_count) < 3) {
+    assert(vocationSample.sample.median_xp_per_hour === null,
+      `${current.vocation} undersampled XP median must remain unknown`);
+  }
+  if (Number(vocationSample.sample.balance_sample_count) < 3) {
+    assert(vocationSample.sample.median_balance_per_hour === null,
+      `${current.vocation} undersampled Profit median must remain unknown`);
+  }
   assert(detail?.data?.methodology?.stage === "hunt_detail_lazy_heavy_v1",
     `${current.vocation} Hunt Detail must load factual data without full optimizer`);
   assert(detail?.data?.set_selection === undefined && detail?.data?.spells === undefined,
@@ -121,6 +139,8 @@ for (const current of cases) {
     factual_creatures: factual.monsters.length,
     community_observed_sessions_all_vocations: detail.data.observed.performance.session_count,
     observation_layer: detail.data.observed.methodology.layer,
+    vocation_sourced_sample: vocationSample.sample.sourced_session_count,
+    vocation_xp_median_available: vocationSample.sample.median_xp_per_hour !== null,
     imbuement_contract: true,
     spell_contract: true,
     composition_available: spellDetail.data.availability.vocation_composition === "available",
