@@ -84,7 +84,7 @@ function CreatureExplorer() {
 
   const strongest = useMemo(() => {
     return vulnerabilities
-      .filter((row:any) => Number.isFinite(Number(row.modifier_percent)))
+      .filter((row:any) => row.modifier_percent != null && Number.isFinite(Number(row.modifier_percent)))
       .sort((a:any,b:any) => Number(b.modifier_percent) - Number(a.modifier_percent))[0] ?? null;
   }, [vulnerabilities]);
 
@@ -190,10 +190,10 @@ function CreatureExplorer() {
               <div className="grid gap-4 lg:grid-cols-3">
                 <InfoPanel icon={Shield} title="Resistências">
                   <div className="space-y-2">
-                    {vulnerabilities.filter((row:any) => !["healing","life_drain","drown"].includes(row.element)).map((row:any) => (
+                    {vulnerabilities.filter((row:any) => row.modifier_percent != null && Number.isFinite(Number(row.modifier_percent)) && !["healing","life_drain","drown"].includes(row.element)).map((row:any) => (
                       <ResistanceRow key={row.element} element={row.element} modifier={Number(row.modifier_percent)} />
                     ))}
-                    {vulnerabilities.length === 0 && <Muted>Nenhuma resistência normalizada disponível.</Muted>}
+                    {!vulnerabilities.some((row:any) => row.modifier_percent != null && Number.isFinite(Number(row.modifier_percent)) && !["healing","life_drain","drown"].includes(row.element)) && <Muted>Nenhuma resistência normalizada disponível.</Muted>}
                   </div>
                   {strongest && Number(strongest.modifier_percent) > 100 && (
                     <div className="mt-3 text-[10px] leading-4 text-slate-600">
@@ -216,7 +216,7 @@ function CreatureExplorer() {
 
                 <InfoPanel icon={Sparkles} title="Fonte">
                   <div className="space-y-2 text-xs text-slate-500">
-                    <div>Catálogo canônico Tibia/RubinOT</div>
+                    <div>Fonte: catálogo canônico Tibia. Diferenças específicas do RubinOT exigem confirmação oficial.</div>
                     <div>Vulnerabilidades normalizadas: {detail?.summary?.vulnerability_rows ?? 0}</div>
                     <div>Linhas de habilidade: {detail?.summary?.ability_rows ?? 0}</div>
                     <div>Loot catalogado: {detail?.summary?.loot_rows ?? 0}</div>
@@ -325,6 +325,7 @@ function Muted({ children }: { children:React.ReactNode }) {
 }
 
 function formatCompact(value:unknown) {
+  if (value === null || value === undefined || value === "") return "—";
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
   if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
