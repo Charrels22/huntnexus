@@ -309,6 +309,11 @@ export const Route = createFileRoute("/api/huntnexus")({
         } catch {
           return json({ error: "invalid_json" }, 400);
         }
+        const rawRecord = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+        const requestAccessToken = typeof rawRecord["access_token"] === "string"
+          ? rawRecord["access_token"]
+          : null;
+
         const parsed = Body.safeParse(raw);
         if (!parsed.success) {
           return json({ error: "invalid_input", detail: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") }, 400);
@@ -331,6 +336,40 @@ export const Route = createFileRoute("/api/huntnexus")({
         };
 
         const b = parsed.data;
+
+        const scopedClientId =
+          "client_id" in b && typeof b.client_id === "string"
+            ? b.client_id
+            : null;
+
+        if (scopedClientId) {
+          const { data: binding, error: bindingError } = await supabaseAdmin
+            .from("player_account_bindings")
+            .select("auth_user_id")
+            .eq("client_id", scopedClientId)
+            .maybeSingle();
+
+          if (bindingError) {
+            console.error("[huntnexus-api] account scope lookup failed:", bindingError.message);
+            return json({ error: "account_scope_lookup_failed" }, 500);
+          }
+
+          if (binding?.auth_user_id) {
+            if (!requestAccessToken) {
+              return json({ error: "authentication_required_for_bound_client" }, 401);
+            }
+
+            const userId = await authUserId(requestAccessToken);
+            if (!userId) {
+              return json({ error: "invalid_auth_token" }, 401);
+            }
+
+            if (userId !== binding.auth_user_id) {
+              return json({ error: "forbidden_client_scope" }, 403);
+            }
+          }
+        }
+
         try {
           switch (b.action) {
             case "health":
