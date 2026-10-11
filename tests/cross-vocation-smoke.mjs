@@ -85,12 +85,27 @@ for (const current of cases) {
     `${current.vocation} Hunt Detail factual elements shape regression`);
   assert(detail?.data?.observed && typeof detail.data.observed === "object",
     `${current.vocation} Hunt Detail observed contract regression`);
-  assert(detail?.data?.set_selection?.methodology?.stage,
-    `${current.vocation} Hunt Detail optimizer selection contract regression`);
+  assert(detail?.data?.methodology?.stage === "hunt_detail_lazy_heavy_v1",
+    `${current.vocation} Hunt Detail must load factual data without full optimizer`);
+  assert(detail?.data?.set_selection === undefined && detail?.data?.spells === undefined,
+    `${current.vocation} heavy contracts must remain lazy`);
   assert(detail?.data?.imbuements && typeof detail.data.imbuements === "object",
     `${current.vocation} Hunt Detail imbuements contract regression`);
   assert(detail?.data?.vocation_composition && typeof detail.data.vocation_composition === "object",
     `${current.vocation} Hunt Detail vocation composition contract regression`);
+
+  const spellDetail = await post({
+    action: "hunt_detail_spells",
+    hunt_key: huntKey,
+    vocation: current.vocation,
+    level: 700,
+  });
+  assert(spellDetail?.data?.vocation_composition?.methodology?.stage ===
+    "vocation_composition_universal_v1",
+    `${current.vocation} on-demand composition regression`);
+  assert(spellDetail?.data?.spells?.methodology?.stage ===
+    "spell_candidates_with_unlocks_universal_v1",
+    `${current.vocation} on-demand spell catalog regression`);
 
   results.push({
     vocation: current.vocation,
@@ -98,7 +113,8 @@ for (const current of cases) {
     hunt_key: huntKey,
     factual_creatures: factual.monsters.length,
     imbuement_contract: true,
-    set_selection_stage: detail.data.set_selection.methodology.stage,
+    spell_contract: true,
+    universal_setup_deferred: true,
     proficiency_trees: proficiency.data.summary.eligible_tree_count,
   });
 }
@@ -109,6 +125,7 @@ console.log(JSON.stringify({
   level: 700,
   human_playtest_complete: false,
   factual_hunt_detail_checked: true,
+  heavy_set_optimizer_runtime_verified: false,
   frontend_visual_validation_complete: false,
   results,
 }, null, 2));
