@@ -73,14 +73,17 @@ try {
   // it does not impersonate a real authenticated user or claim Magic Link QA.
   const oldGuestId = "90a00000-0000-4000-8000-000000000072";
   const restore = await browser.newPage({ viewport: { width: 1160, height: 830 } });
-  await restore.addInitScript((guestId) => {
+  await restore.goto(baseUrl + "/account", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await restore.evaluate((guestId) => {
     window.localStorage.setItem("huntnexus.unmerged-guest-client-id.v1", guestId);
   }, oldGuestId);
-  await restore.goto(baseUrl + "/account", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await restore.reload({ waitUntil: "domcontentloaded" });
   await restore.getByRole("button", { name: "Retomar perfil convidado anterior" }).waitFor({ timeout: 12000 });
   await restore.screenshot({ path: resolve(output, "account-guest-recovery.png"), fullPage: true });
-  await restore.getByRole("button", { name: "Retomar perfil convidado anterior" }).click();
-  await restore.waitForLoadState("domcontentloaded");
+  await Promise.all([
+    restore.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15000 }),
+    restore.getByRole("button", { name: "Retomar perfil convidado anterior" }).click(),
+  ]);
   const recoveredIdentity = await restore.evaluate(() => ({
     current: window.localStorage.getItem("huntnexus.client-id.v1"),
     pending: window.localStorage.getItem("huntnexus.unmerged-guest-client-id.v1"),
