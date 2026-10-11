@@ -284,6 +284,15 @@ const Body = z.discriminatedUnion("action", [
     vocation: Vocation,
     level: Level,
   }),
+  z.object({
+    action: z.literal("loadout_preview"),
+    hunt_key: z.string().min(1).max(200),
+    vocation: Vocation,
+    level: Level,
+    objective: z.enum(["offense","defense","sustain","utility","balanced"]).default("balanced"),
+    per_dimension: z.coerce.number().int().min(1).max(5).default(2),
+    character_profile: UniversalCharacterProfile.default({}),
+  }),
 ]);
 
 const json = (body: unknown, status = 200) =>
@@ -865,6 +874,17 @@ export const Route = createFileRoute("/api/huntnexus")({
               ]);
               return json({ data, warnings: Array.isArray(warnings) ? warnings : [] });
             }
+            case "loadout_preview":
+              return json({
+                data: await rpc("huntnexus_loadout_set_preview_profiled", {
+                  p_hunt_key: b.hunt_key,
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_objective: b.objective,
+                  p_per_dimension: b.per_dimension,
+                  p_character_profile: b.character_profile,
+                }),
+              });
           }
         } catch {
           return json({ error: "upstream_error", detail: "A consulta ao banco falhou." }, 502);
