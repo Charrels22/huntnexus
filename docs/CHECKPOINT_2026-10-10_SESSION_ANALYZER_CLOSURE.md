@@ -68,3 +68,12 @@ Session Analyzer -> Profile / Proficiency -> cobertura factual -> Planner / Hunt
 2. Validar visualmente os sprites de proficiency por árvore e completar os ainda sem fonte confirmada; verificar topologia e seleções EK/RP/ED/MS/EM.
 3. Regressões de conteúdo factual, Planner/Hunt Detail, optimizer/imbuements e autenticação/sincronização.
 4. Piloto externo por vocação somente após privacidade, determinismo dos resultados e QA integral.
+
+
+### FE-16 verification at handoff
+- Latest code commit: `f93cc9c68dc3ae7109a9a520f1835c79aa08d100`.
+- Web CI `38102047487` — **success** (build, TS, parser regression).
+- Player Inventory Smoke `38102047481` — **success**.
+- Profile Smoke `38102047475` — **success**.
+- Public Smoke `38101689114` — **success** após atualização do contrato individual de proficiency v2.
+- These are CI/API pass signals, **not** a browser visual approval and **not** proof of source-to-Cloudflare deployment parity.
