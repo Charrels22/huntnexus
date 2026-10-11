@@ -7,6 +7,8 @@ const candidates = [
   "Proficiency Spell Strong Ice Wave.gif",
   "Proficiency Spell Terra Wave.gif",
   "Proficiency Spell Devastating Knockout.gif",
+  "Proficiency Spell Executioners Throw.gif",
+  "Proficiency Spell Executioner\'s Throw.gif",
   "Proficiency Type Perc Auto Atk Magic.gif",
   "Proficiency Type Damage.gif",
   "Proficiency Augment Damage.gif",
