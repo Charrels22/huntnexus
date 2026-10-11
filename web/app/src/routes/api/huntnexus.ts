@@ -626,22 +626,20 @@ export const Route = createFileRoute("/api/huntnexus")({
               return json({ data: setSelection });
             }
             case "hunt_detail_spells": {
-              const [composition, spells] = await Promise.all([
-                rpc("huntnexus_vocation_composition_universal", {
-                  p_vocation: b.vocation,
-                  p_level: b.level,
-                  p_unlocked_requirement_keys: [],
-                  p_hunt_key: b.hunt_key,
-                }),
-                rpc("huntnexus_spell_candidates_with_unlocks_universal", {
-                  p_vocation: b.vocation,
-                  p_level: b.level,
-                  p_unlocked_requirement_keys: [],
-                  p_attack_type: null,
-                  p_element: null,
-                  p_limit: 250,
-                }),
-              ]);
+              const composition = await rpc("huntnexus_vocation_composition_universal", {
+                p_vocation: b.vocation,
+                p_level: b.level,
+                p_unlocked_requirement_keys: [],
+                p_hunt_key: b.hunt_key,
+              });
+              const spells = await rpc("huntnexus_spell_candidates_with_unlocks_universal", {
+                p_vocation: b.vocation,
+                p_level: b.level,
+                p_unlocked_requirement_keys: [],
+                p_attack_type: null,
+                p_element: null,
+                p_limit: 250,
+              });
               return json({ data: { vocation_composition: composition, spells } });
             }
             case "session_import_save": {
