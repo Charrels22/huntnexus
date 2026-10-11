@@ -34,6 +34,17 @@ if (!(Number(second.headers.get("retry-after")) >= 1)) {
   throw new Error("429 must provide Retry-After header");
 }
 
+const bypassAttempt = await fetch(endpoint, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ action: "final_optimizer", vocation: "EK", level: 700 }),
+  signal: AbortSignal.timeout(15000),
+});
+const bypass = await bypassAttempt.json().catch(() => ({}));
+if (bypassAttempt.status !== 429 || bypass.reason !== "subject_busy") {
+  throw new Error(`Alternate final_optimizer must share admission limit; got ${bypassAttempt.status}: ${JSON.stringify(bypass)}`);
+}
+
 const health = await fetch(endpoint, {
   method: "POST",
   headers: { "content-type": "application/json" },
@@ -59,6 +70,7 @@ console.log(JSON.stringify({
   stage: "optimizer_admission_public_smoke",
   duplicate_request_status: second.status,
   duplicate_request_reason: denied.reason,
+  alternate_optimizer_status: bypassAttempt.status,
   retry_after: second.headers.get("retry-after"),
   health_unaffected: true,
   admitted_optimizer_completed: true,
