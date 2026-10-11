@@ -51,7 +51,7 @@ export type ParsedSessionImport = {
     session_data_raw: string | null;
     session_from_raw: string | null;
     session_to_raw: string | null;
-    total_kills: number;
+    total_kills: number | null;
     party_size: number | null;
   };
   misc: {
@@ -521,7 +521,9 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
       session_data_raw: range.raw,
       session_from_raw: range.from_raw,
       session_to_raw: range.to_raw,
-      total_kills: creatures.reduce((sum, row) => sum + row.kills, 0),
+      total_kills: huntLines.some((line) => /^Killed Monsters:?$/i.test(line))
+        ? creatures.reduce((sum, row) => sum + row.kills, 0)
+        : null,
       party_size: partySize,
     },
     misc: {
