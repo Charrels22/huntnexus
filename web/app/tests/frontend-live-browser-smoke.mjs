@@ -99,6 +99,82 @@ try {
   });
   await restore.close();
 
+  // Source-backed Weapon Proficiency catalog per vocation. Mock ONLY the
+  // private profile read to select the vocation; catalog and sprites are live.
+  // This does not create accounts, inventory or synthetic community sessions.
+  const vocationFamilies = [
+    ["EK", "sword"], ["RP", "bow"], ["ED", "rod"], ["MS", "wand"], ["EM", "fist"],
+  ];
+  for (const [vocation, family] of vocationFamilies) {
+    const profilePage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const errors = [];
+    profilePage.on("pageerror", (error) => errors.push(error.message));
+    await profilePage.route("**/api/huntnexus", async (route) => {
+      const request = route.request();
+      const body = request.postDataJSON();
+      if (body?.action === "player_profile_get") {
+        await route.fulfill({
+          status: 200, contentType: "application/json",
+          body: JSON.stringify({ data: { exists: true, profile: {
+            character_name: "Local UI QA",
+            world_name: "RubinOT",
+            vocation, level: 700,
+            manual_stats: { weapon_family: family },
+            proficiency_selections: {},
+            defaults: { hunt_objective: "balanced", set_objective: "balanced", party_size: 1 },
+          } } }),
+        });
+        return;
+      }
+      if (body?.action === "player_inventory_get") {
+        await route.fulfill({
+          status: 200, contentType: "application/json",
+          body: JSON.stringify({ data: {
+            main_set: {}, backpack: [],
+            summary: { main_slots: 0, backpack_items: 0 },
+          } }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+    const catalogPromise = profilePage.waitForResponse((response) =>
+      response.url().includes("/api/huntnexus") &&
+      response.request().postData()?.includes('"action":"player_profile_proficiency_catalog"') &&
+      response.request().postData()?.includes('"vocation":"' + vocation + '"'),
+      { timeout: 30000 },
+    );
+    await profilePage.goto(baseUrl + "/profile", { waitUntil: "domcontentloaded", timeout: 30000 });
+    const catalog = await (await catalogPromise).json();
+    if (!(Number(catalog?.data?.summary?.eligible_tree_count) > 0)) {
+      throw new Error(vocation + ": live proficiency catalog returned no eligible trees");
+    }
+    const firstTree = (catalog?.data?.trees ?? []).find((tree) => tree.eligible && tree.perk_count > 0);
+    if (!firstTree) throw new Error(vocation + ": no eligible source-backed proficiency tree");
+    const treeButton = profilePage.locator("article > button").filter({ hasText: firstTree.item_name }).first();
+    await treeButton.click();
+    await profilePage.getByText("Árvore de Weapon Proficiency").first().waitFor({ timeout: 12000 });
+    await profilePage.waitForTimeout(2800);
+    const iconCoverage = await profilePage.locator('img[src*="Proficiency"]').evaluateAll((images) =>
+      images.map((image) => ({
+        filename: decodeURIComponent((image.getAttribute("src") ?? "").split("/").pop() ?? ""),
+        loaded: image.complete && image.naturalWidth > 0,
+      })),
+    );
+    const filename = "weapon-proficiency-" + vocation.toLowerCase() + ".png";
+    await profilePage.screenshot({ path: resolve(output, filename), fullPage: true });
+    if (errors.length) throw new Error(vocation + ": browser runtime error: " + errors.slice(0, 2).join("; "));
+    results.push({
+      route: "/profile#weapon-proficiency-" + vocation.toLowerCase(),
+      vocation, family, eligible_trees: catalog.data.summary.eligible_tree_count,
+      selected_tree: firstTree.item_key, icon_mappings_examined: iconCoverage.length,
+      loaded_icons: iconCoverage.filter((x) => x.loaded).length,
+      failed_external_icons: iconCoverage.filter((x) => !x.loaded).map((x) => x.filename),
+      screenshot: filename, actual_human_profile_used: false,
+    });
+    await profilePage.close();
+  }
+
   const mobileAccount = await audit("/account", /Sincronize seu personagem entre dispositivos/i, "account-mobile.png", 390, 844);
   await mobileAccount.close();
   const mobileHunt = await audit("/hunts/cobra-bastion", /Cobra Bastion/i, "hunt-detail-mobile.png", 390, 844);
