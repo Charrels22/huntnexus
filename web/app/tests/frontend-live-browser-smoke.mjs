@@ -69,6 +69,33 @@ try {
   results.push({ route: "/hunts/cobra-bastion#community", tier_c_vocation_sample_visible: true, screenshot: "hunt-community-vocation.png" });
   await hunt.close();
 
+  // Guest identity recovery UI regression. This verifies the browser control;
+  // it does not impersonate a real authenticated user or claim Magic Link QA.
+  const oldGuestId = "90a00000-0000-4000-8000-000000000072";
+  const restore = await browser.newPage({ viewport: { width: 1160, height: 830 } });
+  await restore.addInitScript((guestId) => {
+    window.localStorage.setItem("huntnexus.unmerged-guest-client-id.v1", guestId);
+  }, oldGuestId);
+  await restore.goto(baseUrl + "/account", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await restore.getByRole("button", { name: "Retomar perfil convidado anterior" }).waitFor({ timeout: 12000 });
+  await restore.screenshot({ path: resolve(output, "account-guest-recovery.png"), fullPage: true });
+  await restore.getByRole("button", { name: "Retomar perfil convidado anterior" }).click();
+  await restore.waitForLoadState("domcontentloaded");
+  const recoveredIdentity = await restore.evaluate(() => ({
+    current: window.localStorage.getItem("huntnexus.client-id.v1"),
+    pending: window.localStorage.getItem("huntnexus.unmerged-guest-client-id.v1"),
+  }));
+  if (recoveredIdentity.current !== oldGuestId || recoveredIdentity.pending !== null) {
+    throw new Error("Explicit guest recovery did not restore previous client ID and remove pending marker");
+  }
+  results.push({
+    route: "/account#guest-recovery",
+    restored_previous_guest_identity: true,
+    screenshot: "account-guest-recovery.png",
+    real_magic_link_tested: false,
+  });
+  await restore.close();
+
   const mobileAccount = await audit("/account", /Sincronize seu personagem entre dispositivos/i, "account-mobile.png", 390, 844);
   await mobileAccount.close();
   const mobileHunt = await audit("/hunts/cobra-bastion", /Cobra Bastion/i, "hunt-detail-mobile.png", 390, 844);
