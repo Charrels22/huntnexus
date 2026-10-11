@@ -56,3 +56,23 @@ All returned concrete selections passed checks for valid structure, real weapon 
 - Hunt Detail Setup explicitly states how many sets were examined, how many stayed undominated, how many were returned and that the result is NOT exhaustive across every game item.
 - Users can expand all sets returned by the API rather than seeing only the first eight with no explanation.
 - `tests/full-optimizer-vocations-smoke.mjs` includes assertions for API candidate-cap metadata; latest verification should be re-checked after Worker deployment.
+
+
+## Post-change verification — scope-aware UI/API and database advisors
+- Scope-aware `hunt_detail_setup` API now returns `execution.enumeration_set_limit=100`, `execution.returned_set_limit=20`, and `execution.exhaustive_all_possible_combinations=false`. The frontend shows the cap, comparison scope, co-winners and returned count and lets users expand all returned sets.
+- Five-vocation HTTP regression **38142232270** — SUCCESS with this new scope assertion: https://github.com/Charrels22/huntnexus/actions/runs/38142232270
+  - EK 10.85 s, RP 8.26 s, ED 7.97 s, MS 7.68 s, EM 7.37 s; 100 valid sets examined per test.
+  - This verifies the deployed API action and normalized result, not browser-rendered visuals.
+- Web CI **38142215553** — SUCCESS on the updated Hunt Detail UI: https://github.com/Charrels22/huntnexus/actions/runs/38142215553
+- Player inventory smoke **38142215548**, Player Session smoke **38142188658**, Profile smoke **38142188602**, and Cross Vocation factual smoke **38142188576** — SUCCESS on their relevant commits.
+- Production database function config independently verified: only `huntnexus_optimizer_set_selection_universal` has `statement_timeout=25s`; the underlying item vector/proficiency functions retain original configuration.
+- Re-ran `huntnexus_product_readiness_audit()`: **9/9 backend contract checks ready**, 454 eligible hunts with core complete, 34 proficiency trees, 24 Powerful Imbuements; this audit explicitly excludes public performance tests, frontend visual QA and real class playtests.
+
+### Advisor review
+- Security linter: 24 `rls_enabled_no_policy` INFORMATION notices on service-role/data-source tables; these lack direct client access by design and remain denied to ordinary clients. Must periodically verify intentional privileges rather than adding permissive policies.
+- Security linter: one `extension_in_public` WARNING for existing `pg_net`; remediation requires reviewing dependencies before moving the extension. Ref: https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public
+- Performance linter: 75 informational foreign-key indexing suggestions and 6 potentially unused indexes. Review hot-path evidence first; do not indiscriminately create/drop indexes. Ref: https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
+- These are remaining infrastructure hardening tasks, not a reason to retroactively mark the proven five-class optimizer RPC as failed.
+
+### Handoff
+**Optimizer blocker:** resolved for the tested 100-set configuration across EK, RP, ED, MS and EM via real deployed HTTP, with average latency still a product-performance concern. Before opening a broad external pilot, add distributed rate limits/concurrency protection to the advanced endpoint; verify browser visuals, official-vs-canonical provenance, account cross-device Magic Link, and real-game session cases for each vocation.
