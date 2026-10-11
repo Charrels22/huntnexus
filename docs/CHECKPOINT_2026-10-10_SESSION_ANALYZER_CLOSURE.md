@@ -44,3 +44,27 @@ Session Analyzer -> Profile / Proficiency -> cobertura factual -> Planner / Hunt
 - Snapshot de setup deve resistir a alterações posteriores no Profile/BP.
 - Evidências privadas jamais entram na comunidade sem fluxo explícito de publicação.
 - CI, smokes, publicação e validação visual são gates independentes.
+
+
+## Continuação FE-16 — Parser numérico, Profile e Weapon Proficiency
+- Public Smoke `38101689114`: **success** após alinhar o contrato individual de impacto de proficiency com `weapon_proficiency_impact_preview_v2`. Consulta direta ao Supabase confirmou as duas seleções da Grand Sanguine Blade/Razor e o par `weapon_proficiency_pair_for_items_v2`. Não foi necessário enfraquecer asserts de vínculo real ou origem `item_key`.
+- `parseIntegerLike` aceita apenas inteiros simples ou milhares explicitamente agrupados, rejeitando sufixos ou formas ambíguas como `1.2kk`, `2.5M` e `9e12`. Valores inválidos permanecem `null`; a lista de avisos inclui `invalid_numeric_format:<label>`.
+- `tests/session-parser-contract.mjs` cobre formatos com ponto/vírgula/espaço, números inválidos, valores desconhecidos, party parcial, dano e charm. O `HuntNexus Web CI` roda esse contrato junto com build e typecheck (execução `38101707261`: success).
+- A prévia do Session Analyzer apresenta avisos legíveis antes de salvar; sessões salvas mostram avisos de proveniência; colagem de outro analyzer do mesmo tipo exige confirmação antes de substituir um bloco preenchido.
+- Profile agora transforma erros `invalid_proficiency_selections` em mensagens concretas por arma e nível. `tests/player-profile-smoke.mjs` tenta salvar dois perks no mesmo nível de uma árvore validada e verifica rejeição sem alterar o perfil anterior. Execução `38101877425`: success.
+- Mapeamentos adicionais de sprites de Weapon Proficiency foram vinculados a nomes de arquivos **documentados**, incluindo attack, auto attack critical, leech, recursos on hit/kill, bestiary, Perfect Shot e spells de EK/RP/EM. Ícones ainda sem correspondência validada aparecem como pendentes no cabeçalho da árvore; não reivindicar cobertura integral.
+- As associações de ícones são evidências canônicas TibiaWiki (tier B), não evidências RubinOT oficiais: 
+  - https://www.tibiawiki.com.br/wiki/Perk_Shaping_Options
+  - https://www.tibiawiki.com.br/wiki/Grand_Sanguine_Bow
+  - https://www.tibiawiki.com.br/wiki/Sanguine_Razor
+  - https://www.tibiawiki.com.br/wiki/Soulhexer
+  - https://www.tibiawiki.com.br/wiki/Sanguine_Claws
+  - https://www.tibiawiki.com.br/wiki/Soulpiercer
+  - Consultadas em 2026-10-10 (BRT); precisa conferir sprites renderizados e eventuais divergências RubinOT.
+- Cloudflare registrou publicações Wrangler recentes durante a rodada, mas não há prova de paridade commit->versão Worker para todas as mudanças de interface. Smoke API e deploy da UI são verificações separadas.
+
+### Próximo foco obrigatório
+1. CI mais recente verde, correspondência código publicado e QA de Session Analyzer (browser/colagens reais).
+2. Validar visualmente os sprites de proficiency por árvore e completar os ainda sem fonte confirmada; verificar topologia e seleções EK/RP/ED/MS/EM.
+3. Regressões de conteúdo factual, Planner/Hunt Detail, optimizer/imbuements e autenticação/sincronização.
+4. Piloto externo por vocação somente após privacidade, determinismo dos resultados e QA integral.
