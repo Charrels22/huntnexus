@@ -554,6 +554,7 @@ function Setup({
   loadingPersonalReview:boolean;
 }) {
   const [selectedOwnedOption, setSelectedOwnedOption] = useState(1);
+  const [showAllUniversalSets, setShowAllUniversalSets] = useState(false);
   const sets = Array.isArray(selection?.selected_sets) ? selection.selected_sets : [];
   const mainSet = Array.isArray(personalReview?.baseline?.main_set) ? personalReview.baseline.main_set : [];
   const ownedAlternatives = Array.isArray(personalReview?.owned_alternatives) ? personalReview.owned_alternatives : [];
@@ -704,16 +705,25 @@ function Setup({
       )}
 
       <div className="mt-7 border-t border-white/7 pt-5">
-        <SectionTitle title="Frontier universal" subtitle={selection ? `${selection?.summary?.co_winners ?? sets.length} co-vencedores preservados no catálogo completo` : "Cálculo pesado separado do Set Main/BP para não atrasar a abertura da hunt"} />
+        <SectionTitle title="Frontier universal" subtitle={selection ? `${selection?.summary?.co_winners ?? sets.length} co-vencedores dentro da amostra enumerada` : "Cálculo pesado separado do Set Main/BP para não atrasar a abertura da hunt"} />
       </div>
 
+      {selection && (
+        <div className="mt-3 rounded-xl border border-cyan-400/10 bg-cyan-400/[0.025] px-4 py-3 text-xs leading-5 text-slate-400">
+          Foram analisados <strong className="text-slate-200">{selection?.source_summary?.valid_sets_considered ?? "—"} sets válidos</strong> entre
+          as primeiras {selection?.execution?.enumeration_set_limit ?? 100} combinações enumeradas.
+          O cálculo encontrou {selection?.summary?.co_winners ?? "—"} opções não dominadas nesse recorte e retornou {sets.length} opções
+          (limite de {selection?.execution?.returned_set_limit ?? 20}).
+          Essa análise não cobre necessariamente todas as combinações possíveis de itens do jogo.
+        </div>
+      )}
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
         {!selection && !loadingSelection && !selectionError && (
           <button type="button" className="hn-secondary-button col-span-full justify-center" onClick={onRetrySelection}>
             Calcular frontier universal (processamento avançado)
           </button>
         )}
-        {sets.slice(0,8).map((set:any, index:number) => {
+        {(showAllUniversalSets ? sets : sets.slice(0,8)).map((set:any, index:number) => {
           const slots = set.selection ?? {};
           return (
             <div key={set.set_order ?? index} className="rounded-2xl border border-white/7 bg-slate-950/40 p-4">
@@ -732,6 +742,11 @@ function Setup({
             </div>
           );
         })}
+        {sets.length > 8 && (
+          <button type="button" className="hn-secondary-button col-span-full justify-center" onClick={() => setShowAllUniversalSets((current) => !current)}>
+            {showAllUniversalSets ? "Mostrar apenas as primeiras 8 opções" : `Mostrar todas as ${sets.length} opções retornadas`}
+          </button>
+        )}
         {loadingSelection && <div className="flex items-center gap-2 text-xs text-cyan-300"><Loader2 className="size-4 animate-spin" />Calculando combinações universais...</div>}
         {selectionError && (
           <div className="col-span-full rounded-xl border border-amber-400/15 bg-amber-400/[0.035] p-3 text-xs text-amber-200">
