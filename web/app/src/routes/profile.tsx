@@ -713,6 +713,7 @@ function ProfilePage() {
             {proficiencyTrees.map((tree) => {
               const selected = new Set(proficiencySelections[tree.item_key] ?? []);
               const isOpen = openTreeKey === tree.item_key;
+              const unverifiedIcons = tree.perks.filter((perk) => proficiencyIconFiles(perk).length === 0).length;
 
               return (
                 <article key={tree.item_key} className="overflow-hidden rounded-2xl border border-white/7 bg-slate-950/45">
@@ -725,7 +726,7 @@ function ProfilePage() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-bold text-white">{tree.item_name}</div>
                       <div className="mt-1 text-[11px] text-slate-500">
-                        Level {tree.level_required ?? "—"} · {tree.perk_count} perks · {selected.size} ativos
+                        Level {tree.level_required ?? "—"} · {tree.perk_count} perks · {selected.size} ativos{unverifiedIcons > 0 ? ` · ${unverifiedIcons} ícones pendentes` : ""}
                       </div>
                     </div>
                     <ChevronDown className={`size-4 shrink-0 text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
