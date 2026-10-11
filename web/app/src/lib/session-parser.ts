@@ -7,6 +7,20 @@ export type SessionImportBlocks = {
 
 export type AnalyzerType = "hunt" | "party" | "input" | "misc";
 
+export function sessionImportWarningLabel(warning: string): string {
+  if (warning.startsWith("invalid_numeric_format:")) {
+    return `Formato numérico não reconhecido em ${warning.slice("invalid_numeric_format:".length)}`;
+  }
+  const labels: Record<string, string> = {
+    hunt_analyzer_missing: "Hunt Analyzer ausente",
+    no_primary_metrics_recognized: "Métricas principais não reconhecidas",
+    party_block_present_but_no_players_recognized: "Party enviada, mas nenhum jogador foi reconhecido",
+    input_block_present_but_no_damage_rows_recognized: "Damage Input enviado sem linhas de dano reconhecidas",
+  };
+  return labels[warning] ?? warning;
+}
+
+
 export function detectAnalyzerType(text: string): AnalyzerType | null {
   const normalized = text.replace(/\r\n?/g, "\n").trim();
   if (!normalized) return null;
