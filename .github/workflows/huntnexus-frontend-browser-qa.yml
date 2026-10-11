@@ -6,6 +6,11 @@ on:
     branches: [main]
     paths:
       - "web/app/tests/frontend-live-browser-smoke.mjs"
+      - "web/app/src/routes/account.tsx"
+      - "web/app/src/routes/profile.tsx"
+      - "web/app/src/routes/session.tsx"
+      - "web/app/src/routes/planner.tsx"
+      - 'web/app/src/routes/hunts.$huntKey.tsx'
       - ".github/workflows/huntnexus-frontend-browser-qa.yml"
 
 permissions:
