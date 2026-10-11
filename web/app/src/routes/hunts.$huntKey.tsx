@@ -303,13 +303,14 @@ function HuntDetailPage() {
               <Badge>{search.vocation}</Badge>
               <Badge>Level {search.level}</Badge>
               <Badge>{labelObjective(search.setObjective)}</Badge>
-              <Badge>{perf.session_count ? `${perf.session_count} sessões observadas` : "Sem sessões observadas"}</Badge>
+              <Badge>{perf.session_count ? `${perf.session_count} sessões comunitárias · todas as vocações` : "Sem sessões comunitárias observadas"}</Badge>
             </div>
             <div className="mt-6 grid max-w-3xl gap-3 sm:grid-cols-3">
-              <HeroMetric label="XP/h mediana" value={compact(perf.median_xp_per_hour)} />
-              <HeroMetric label="Profit/h mediano" value={compact(perf.median_balance_per_hour)} />
+              <HeroMetric label="XP/h mediana · amostra geral" value={compact(perf.median_xp_per_hour)} />
+              <HeroMetric label="Profit/h mediano · amostra geral" value={compact(perf.median_balance_per_hour)} />
               <HeroMetric label="Sets co-vencedores" value={currentSetup ? String(setSummary.co_winners ?? "—") : "Ver Setup"} />
             </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">As medianas são observações da hunt em diferentes vocações e níveis (Tier C), não projeções específicas para {search.vocation} level {search.level}.</p>
           </div>
           <div className="relative overflow-hidden border-l border-white/7 bg-slate-950/55 p-5 md:p-7">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(34,211,238,.11),transparent_55%)]" />
@@ -429,9 +430,9 @@ function Overview({ data }: { data:any }) {
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
-      <Panel title="Performance observada">
+      <Panel title="Performance observada · todas as vocações">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Metric label="Sessões" value={formatNumber(Number(perf.session_count || 0))} />
+          <Metric label="Sessões" value={perf.session_count == null ? "Sem observações" : formatNumber(Number(perf.session_count))} />
           <Metric label="Duração média" value={perf.avg_duration_minutes != null ? `${formatNumber(Number(perf.avg_duration_minutes),1)} min` : "—"} />
           <Metric label="XP/h mínima" value={compact(perf.min_xp_per_hour)} />
           <Metric label="XP/h máxima" value={compact(perf.max_xp_per_hour)} />
@@ -816,14 +817,14 @@ function Community({ observed }: { observed:any }) {
   const mix = Array.isArray(observed?.kill_mix) ? observed.kill_mix : [];
   return (
     <div>
-      <SectionTitle title="Community" subtitle="Sessões reais como evidência, sem misturar observação com fato oficial." />
+      <SectionTitle title="Community" subtitle="Amostra agregada da hunt (todas as vocações e níveis), Tier C: observação real, não estimativa personalizada." />
       <div className="mt-5 grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
         <Panel title="Amostra">
           <div className="space-y-2">
-            <Metric label="Sessões" value={formatNumber(Number(p.session_count || 0))} />
-            <Metric label="Solo" value={formatNumber(Number(p.solo_sessions || 0))} />
-            <Metric label="Duo" value={formatNumber(Number(p.duo_sessions || 0))} />
-            <Metric label="Party" value={formatNumber(Number(p.party_sessions || 0))} />
+            <Metric label="Sessões" value={p.session_count == null ? "Sem observações" : formatNumber(Number(p.session_count))} />
+            <Metric label="Solo" value={p.solo_sessions == null ? "Não observado" : formatNumber(Number(p.solo_sessions))} />
+            <Metric label="Duo" value={p.duo_sessions == null ? "Não observado" : formatNumber(Number(p.duo_sessions))} />
+            <Metric label="Party" value={p.party_sessions == null ? "Não observado" : formatNumber(Number(p.party_sessions))} />
           </div>
         </Panel>
         <Panel title="Kill mix observado">
