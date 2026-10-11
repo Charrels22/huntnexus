@@ -1,0 +1,33 @@
+name: HuntNexus Proficiency Candidate Sprite Probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "web/app/tests/proficiency-sprite-candidate-probe.mjs"
+      - ".github/workflows/huntnexus-proficiency-candidate-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-wiki-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Probe candidate icon URLs (informational)
+        run: node tests/proficiency-sprite-candidate-probe.mjs
