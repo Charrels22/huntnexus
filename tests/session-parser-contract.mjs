@@ -94,6 +94,20 @@ assert.equal(ambiguousNumbers.hunt_analyse.supplies_value, null, "ambiguous grou
 assert.equal(ambiguousNumbers.hunt_analyse.total_damage, null, "scientific notation is unsupported, must not become 912");
 assert.ok(ambiguousNumbers.validation.recognized_metric_count > 0, "valid duration remains observed");
 
+const invalidMinutes = parseSessionImport({ hunt: "Session: 01:90h\nXP Gain: 120,000" });
+assert.equal(invalidMinutes.hunt_analyse.duration_seconds, null, "90 minutes is invalid");
+assert.ok(invalidMinutes.validation.warnings.includes("invalid_duration_format"),
+  "invalid duration must produce visible warning");
+const trailingDuration = parseSessionImport({ hunt: "Session: 01:30h error\nXP Gain: 120,000" });
+assert.equal(trailingDuration.hunt_analyse.duration_seconds, null,
+  "duration with trailing arbitrary text must not be accepted");
+const validHourMinutes = parseSessionImport({ hunt: "Session: 1h 30m\nXP Gain: 120,000" });
+assert.equal(validHourMinutes.hunt_analyse.duration_seconds, 5400,
+  "explicit hours/minutes remains supported");
+const overflowMinutes = parseSessionImport({ hunt: "Session: 1h 75m\nXP Gain: 120,000" });
+assert.equal(overflowMinutes.hunt_analyse.duration_seconds, null,
+  "overlong minutes field must not roll into hours");
+
 console.log(JSON.stringify({
   status: "ok",
   stage: "session_parser_contract_v3",
