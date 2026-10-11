@@ -29,6 +29,7 @@
 - Smoke de perfil, de sessões, de inventário e de múltiplas vocações: **success** no commit `50abdb7`.
 - O smoke público `38099746942` falhou com 400 em `search_creatures` porque o Worker publicado ainda estava em versão anterior; isto aponta ausência de deploy das alterações, não falha da nova rotina SQL.
 - Último deploy Cloudflare observado neste checkpoint: 2026-10-10 21:38 BRT (2026-10-11 00:38 UTC), anterior aos commits de correção; origem `wrangler`. Não tratar novo código como publicado até confirmar deploy e smoke verde.
+- Consultas à configuração do Cloudflare Builds retornaram nenhum build/hook e erro `12040: No build configuration associated with that script tag`; não há pipeline de deploy automático configurado neste Worker. A publicação deve usar uma rotina autenticada de Wrangler ou exigir criação explícita de Cloudflare Builds.
 
 ## Próxima ordem de execução
 1. **Deploy:** publicar a nova versão de `web/app` no Cloudflare Worker preservando secrets de runtime, a partir do GitHub canônico; confirmar versão/commit realmente aplicado.
