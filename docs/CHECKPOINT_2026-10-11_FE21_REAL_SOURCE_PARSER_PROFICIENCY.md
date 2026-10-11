@@ -66,3 +66,12 @@ These URLs were present in the production database; website retrievability throu
 - Entire 700-level public proficiency catalog coverage **373/373 mapped (100%)** across 32 eligible trees and eight weapon-family checks. Live public audit `38170417763` **SUCCESS**: https://github.com/Charrels22/huntnexus/actions/runs/38170417763 . This measures nonempty verified-name candidates for all perks, **NOT** actual browser loading of every icon, nor visual equality to the RubinOT client.
 - `tests/proficiency-sprite-coverage.mjs` also asserts exact-item perk mapping and that an unrelated spell does not inherit the Soulshredder-specific asset; regression `38170438790` **SUCCESS**.
 - Continue the separate browser/headless five-tree visual regression; 37/37 checked before mapping completion. A second browser run is pending verification at checkpoint update.
+
+
+## Latest frontend/code final gates
+
+- **Web CI (post complete mapper) SUCCESS**: https://github.com/Charrels22/huntnexus/actions/runs/38170417827 — React/Vite build, TypeScript, synthetic duration/parser tests and 5-vocation public-source numeric reconstruction.
+- **Live Playwright Frontend Browser QA (post complete mapper) SUCCESS**: https://github.com/Charrels22/huntnexus/actions/runs/38170417750 — profile/perk trees for EK, RP, ED, MS, EM, desktop/mobile and lazy Hunt Detail; all sampled source file images loaded; artifact `huntnexus-live-frontend-qa`, ~5.6 MB, 15 screenshots.
+- **Full 8-family Proficiency sprite coverage**: https://github.com/Charrels22/huntnexus/actions/runs/38170438790 — SUCCESS, all 373 eligible perk occurrences mapped with exact-weapon spell rule, no unknown spell inherits Executioner's Throw.
+- **Public source candidate image probe**: https://github.com/Charrels22/huntnexus/actions/runs/38170282340 — confirmed apostrophized 32x32 Executioner's Throw icon and explicitly rejected unavailable unpunctuated candidate.
+- **Remaining signoff is not automated:** real RubinOT screenshots per class/perk, original raw Hunt Analyzer texts from consenting EK/RP/ED/MS/EM players, and actual Magic Link recovery on two devices. Do not publish an open pilot or claim product is 100% operational solely from the above automated checks.
