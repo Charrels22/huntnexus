@@ -515,6 +515,25 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
   if (partyLines.length && partyPlayers.length === 0) warnings.push("party_block_present_but_no_players_recognized");
   if (inputLines.length && input.elements.length === 0 && input.sources.length === 0) warnings.push("input_block_present_but_no_damage_rows_recognized");
 
+  for (const [label, source, aliases] of [
+    ["Raw XP Gain", huntLines, ["Raw XP Gain"]],
+    ["XP Gain", huntLines, ["XP Gain"]],
+    ["XP/h", huntLines, ["XP/h"]],
+    ["Raw XP/h", huntLines, ["Raw XP/h", "Raw XP/hour"]],
+    ["Loot", primary, ["Loot"]],
+    ["Supplies", primary, ["Supplies"]],
+    ["Balance", primary, ["Balance"]],
+    ["Damage", primary, ["Damage"]],
+    ["Damage/h", primary, ["Damage/h", "Damage/hour"]],
+    ["Healing", primary, ["Healing"]],
+    ["Healing/h", primary, ["Healing/h", "Healing/hour"]],
+  ] as Array<[string, string[], string[]]>) {
+    if (textMetric(source, aliases) !== null && metric(source, aliases) === null) {
+      warnings.push(`invalid_numeric_format:${label}`);
+    }
+  }
+
+
   return {
     hunt_analyse: {
       ...metrics,
