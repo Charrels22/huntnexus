@@ -80,7 +80,7 @@ function HuntDetailPage() {
   }, [huntKey, search.vocation, search.level, search.setObjective]);
 
   useEffect(() => {
-    if (tab !== "setup" || (setupLoad?.key === setupKey && setupRetry === 0)) return;
+    if (tab !== "setup" || (setupLoad?.key === setupKey && !setupError)) return;
     let active = true;
     setSetupLoading(true);
     setSetupError("");
