@@ -55,6 +55,7 @@ function HuntDetailPage() {
   const [setupLoading, setSetupLoading] = useState(false);
   const [setupError, setSetupError] = useState("");
   const [setupRetry, setSetupRetry] = useState(0);
+  const [setupRequestedKey, setSetupRequestedKey] = useState<string | null>(null);
   const [spellsLoad, setSpellsLoad] = useState<{ key: string; data: any } | null>(null);
   const [spellsLoading, setSpellsLoading] = useState(false);
   const [spellsError, setSpellsError] = useState("");
@@ -80,7 +81,7 @@ function HuntDetailPage() {
   }, [huntKey, search.vocation, search.level, search.setObjective]);
 
   useEffect(() => {
-    if (tab !== "setup" || (setupLoad?.key === setupKey && !setupError)) return;
+    if (tab !== "setup" || setupRequestedKey !== setupKey || (setupLoad?.key === setupKey && !setupError)) return;
     let active = true;
     setSetupLoading(true);
     setSetupError("");
@@ -97,11 +98,14 @@ function HuntDetailPage() {
         if (active) setSetupLoad({ key: setupKey, data: response?.data ?? null });
       })
       .catch(() => {
-        if (active) setSetupError("Não foi possível calcular o frontier universal. Os dados factuais e o seu Set Main continuam disponíveis.");
+        if (active) {
+          setSetupError("Não foi possível calcular o frontier universal. Os dados factuais e o seu Set Main continuam disponíveis.");
+          setSetupRequestedKey(null);
+        }
       })
       .finally(() => { if (active) setSetupLoading(false); });
     return () => { active = false; };
-  }, [tab, setupKey, setupRetry]);
+  }, [tab, setupKey, setupRequestedKey, setupRetry]);
 
   useEffect(() => {
     if (tab !== "spells" || spellsLoad?.key === spellsKey) return;
@@ -383,7 +387,7 @@ function HuntDetailPage() {
             selection={currentSetup}
             loadingSelection={setupLoading}
             selectionError={setupError}
-            onRetrySelection={() => { setSetupRetry((value) => value + 1); }}
+            onRetrySelection={() => { setSetupRequestedKey(setupKey); setSetupRetry((value) => value + 1); }}
             personalReview={personalReview}
             ownedBuildOptions={ownedBuildOptions}
             personalBuildPerformance={personalBuildPerformance}
@@ -700,10 +704,15 @@ function Setup({
       )}
 
       <div className="mt-7 border-t border-white/7 pt-5">
-        <SectionTitle title="Frontier universal" subtitle={selection ? `${selection?.summary?.co_winners ?? sets.length} co-vencedores preservados no catálogo completo` : "Cálculo completo executado somente ao abrir o Setup"} />
+        <SectionTitle title="Frontier universal" subtitle={selection ? `${selection?.summary?.co_winners ?? sets.length} co-vencedores preservados no catálogo completo` : "Cálculo pesado separado do Set Main/BP para não atrasar a abertura da hunt"} />
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
+        {!selection && !loadingSelection && !selectionError && (
+          <button type="button" className="hn-secondary-button col-span-full justify-center" onClick={onRetrySelection}>
+            Calcular frontier universal (processamento avançado)
+          </button>
+        )}
         {sets.slice(0,8).map((set:any, index:number) => {
           const slots = set.selection ?? {};
           return (
