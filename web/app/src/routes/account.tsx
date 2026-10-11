@@ -23,9 +23,10 @@ function AccountPage() {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
     let active = true;
+    let authStateEventSeen = false;
 
     supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
+      if (!active || authStateEventSeen) return;
       accessTokenRef.current = data.session?.access_token ?? null;
       setSession(data.session ?? null);
       if (data.session) void resolveAccount(data.session);
@@ -33,6 +34,7 @@ function AccountPage() {
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!active) return;
+      authStateEventSeen = true;
       accessTokenRef.current = nextSession?.access_token ?? null;
       setSession(nextSession);
       if (nextSession) void resolveAccount(nextSession);
@@ -64,7 +66,7 @@ function AccountPage() {
       setSyncInfo(response.data);
       if (canonical && canonical !== localClientId) {
         setClientId(canonical);
-        setMessage("Dados sincronizados com a identidade canônica da sua conta.");
+        setMessage("Conta existente recuperada. Dados convidados deste navegador não são mesclados automaticamente; os dados salvos anteriormente na conta foram preservados.");
         window.setTimeout(() => window.location.reload(), 350);
       } else {
         setMessage(response.data.created
@@ -128,7 +130,7 @@ function AccountPage() {
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Conta HuntNexus</div>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-white md:text-4xl">Sincronize seu personagem entre dispositivos.</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Profile, Set Main, BP, sessões e builds continuam privados e passam a usar a mesma identidade canônica quando você entra na sua conta.</p>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Profile, Set Main, BP, sessões e builds continuam privados e passam a usar a mesma identidade canônica quando você entra na sua conta. Dados convidados de outro perfil não são mesclados automaticamente.</p>
           </div>
           <div className="rounded-2xl border border-white/7 bg-slate-950/45 p-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-200"><Cloud className="size-4 text-cyan-300" />Status da sincronização</div>
@@ -165,6 +167,11 @@ function AccountPage() {
               <button type="button" className="hn-secondary-button" onClick={() => void signOut()}><LogOut className="size-4" />Sair</button>
             </div>
           </div>
+          {syncInfo?.client_id_changed && syncInfo?.guest_data_merge_applied === false && (
+            <div role="status" className="mt-4 rounded-xl border border-amber-300/15 bg-amber-300/[0.035] px-4 py-3 text-xs leading-5 text-amber-100/90">
+              Este navegador passou a acessar o perfil já associado à conta. Dados convidados anteriores não foram mesclados ou excluídos; a troca de identidade não transfere automaticamente inventário, sessões ou builds.
+            </div>
+          )}
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <InfoCard title="Identidade canônica" text={syncInfo?.canonical_client_id || "Resolvendo..."} />
             <InfoCard title="Comportamento" text={syncInfo?.client_id_changed ? "Este dispositivo foi ligado aos dados já existentes da conta." : "Os dados atuais deste navegador são a base desta conta."} />
