@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "web/app/**"
+      - "tests/session-parser-contract.mjs"
       - ".github/workflows/huntnexus-web-ci.yml"
   workflow_dispatch:
 
@@ -32,3 +33,6 @@ jobs:
 
       - name: Build and typecheck
         run: npm run build
+
+      - name: Session Parser synthetic regression
+        run: node --experimental-strip-types ../../tests/session-parser-contract.mjs
