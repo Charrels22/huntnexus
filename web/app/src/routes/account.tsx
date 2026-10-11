@@ -111,10 +111,14 @@ function AccountPage() {
     // After sign-out, a new guest UUID prevents accidental 401s or access to
     // the previously bound profile without signing in again.
     accessTokenRef.current = null;
+    // Raw analyzer drafts can contain player names and private combat data.
+    // Do not leak a signed-in account's unsaved draft into guest mode.
+    window.localStorage.removeItem("huntnexus.session-import.draft.v1");
+    window.sessionStorage.removeItem("huntnexus.open-player-session");
     setClientId(window.crypto.randomUUID());
     setSession(null);
     setSyncInfo(null);
-    setMessage("Sessão encerrada. Os dados vinculados continuam na sua conta; este navegador iniciou um novo perfil convidado.");
+    setMessage("Sessão encerrada. Os dados salvos continuam na sua conta; rascunhos locais não salvos foram limpos e este navegador iniciou um novo perfil convidado.");
   }
 
   return (
