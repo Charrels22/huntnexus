@@ -15,7 +15,7 @@ async function post(body) {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${JSON.stringify(payload)}`);
+    throw new Error(`HTTP ${response.status} action=${body.action} vocation=${body.vocation ?? "n/a"} hunt=${body.hunt_key ?? "n/a"}: ${JSON.stringify(payload)}`);
   }
   return payload;
 }
