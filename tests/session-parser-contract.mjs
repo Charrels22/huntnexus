@@ -77,6 +77,23 @@ assert.equal(garbage.validation.recognized_metric_count, 0);
 assert.equal(garbage.availability.hunt_analyse, false);
 assert.ok(garbage.validation.warnings.includes("no_primary_metrics_recognized"));
 
+
+const groupedFormats = parseSessionImport({
+  hunt: "Session: 00:30h\nXP Gain: 1.234.567\nLoot: 2,500,000\nSupplies: -30 000",
+});
+assert.equal(groupedFormats.hunt_analyse.xp_gain, 1234567, "dot thousands formatting");
+assert.equal(groupedFormats.hunt_analyse.loot_value, 2500000, "comma thousands formatting");
+assert.equal(groupedFormats.hunt_analyse.supplies_value, -30000, "signed spaced thousands formatting");
+
+const ambiguousNumbers = parseSessionImport({
+  hunt: "Session: 00:30h\nXP Gain: 1.2kk\nLoot: 2.5M\nSupplies: 1,00\nDamage: 9e12",
+});
+assert.equal(ambiguousNumbers.hunt_analyse.xp_gain, null, "malformed XP must not become 12");
+assert.equal(ambiguousNumbers.hunt_analyse.loot_value, null, "abbreviated Loot must not become 25");
+assert.equal(ambiguousNumbers.hunt_analyse.supplies_value, null, "ambiguous grouping must not become 100");
+assert.equal(ambiguousNumbers.hunt_analyse.total_damage, null, "scientific notation is unsupported, must not become 912");
+assert.ok(ambiguousNumbers.validation.recognized_metric_count > 0, "valid duration remains observed");
+
 console.log(JSON.stringify({
   status: "ok",
   stage: "session_parser_contract_v3",
