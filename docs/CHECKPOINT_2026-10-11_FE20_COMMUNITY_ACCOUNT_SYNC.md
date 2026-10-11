@@ -38,3 +38,13 @@ Read-only aggregate production audit of `community_sessions` and `session_player
 3. Real player analyzer imports for EK/RP/ED/MS/EM, with class members reviewing setups and live game outcomes, remain undone. Tier C imported tracker entries are not equivalent to a player-supplied Hunt Analyzer raw text fixture.
 4. Review the browser screenshots manually for aesthetics and sprite completeness; current browser QA verifies headings, responsiveness, runtime exceptions and important interactions.
 5. Keep limiter and data security monitoring before opening invitations to the broader community.
+
+
+## FE-20 final verification update
+
+- Latest **Web CI SUCCESS** on `8087f447...` (browser-test fixture repair): https://github.com/Charrels22/huntnexus/actions/runs/38151061488
+- Latest **live Playwright Browser QA SUCCESS** (includes recovery of an intentionally seeded previous guest identity, newly sourced Community panel and normal desktop/mobile routes): https://github.com/Charrels22/huntnexus/actions/runs/38151061578
+- **Cross Vocation HTTP Smoke SUCCESS** after Worker had deployed source-sample API: https://github.com/Charrels22/huntnexus/actions/runs/38150842194 . An earlier attempt on that run failed when the backend deployment had not yet incorporated the new RPC; the successful rerun verified production, not just source code.
+- SQL Phase 72 Tier C provenance and Phase 73 canonical recovery executed in production, both returned `status: ok`; the source sample RPC was checked to be inaccessible to `anon` / `authenticated` and to return `n=0, median=null` for an unknown hunt.
+- Initial guest-recovery Playwright test reinserted its `localStorage` marker on reload and failed as a test-fixture artifact. Fixed fixture to seed only before reload; **latest run** checked the actual restored client ID and cleared marker successfully.
+- The resulting evidence is **technical and browser automated**. It is not consented account-email delivery validation, does not include actual five-class Hunt Analyzer files, and is not a manual review of every sprite.
