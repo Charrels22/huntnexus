@@ -1,1 +1,164 @@
-import { createFileRoute } from "@tanstack/react-router";\nimport { useEffect, useState } from "react";\nimport { CheckCircle2, Cloud, Loader2, LogOut, Mail, RefreshCw, ShieldCheck } from "lucide-react";\nimport type { Session } from "@supabase/supabase-js";\nimport { callHuntNexusApi } from "@/lib/api/huntnexus";\nimport { getOrCreateClientId, setClientId } from "@/lib/client-id";\nimport { getSupabaseBrowserClient } from "@/integrations/supabase/client.browser";\n\nexport const Route = createFileRoute("/account")({ component: AccountPage });\n\nfunction AccountPage() {\n  const [session, setSession] = useState<Session | null>(null);\n  const [email, setEmail] = useState("");\n  const [sending, setSending] = useState(false);\n  const [syncing, setSyncing] = useState(false);\n  const [message, setMessage] = useState("");\n  const [error, setError] = useState("");\n  const [syncInfo, setSyncInfo] = useState<any>(null);\n\n  useEffect(() => {\n    const supabase = getSupabaseBrowserClient();\n    if (!supabase) return;\n    let active = true;\n\n    supabase.auth.getSession().then(({ data }) => {\n      if (!active) return;\n      setSession(data.session ?? null);\n      if (data.session) void resolveAccount(data.session);\n    });\n\n    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {\n      if (!active) return;\n      setSession(nextSession);\n      if (nextSession) void resolveAccount(nextSession);\n      else setSyncInfo(null);\n    });\n\n    return () => {\n      active = false;\n      subscription.subscription.unsubscribe();\n    };\n  }, []);\n\n  async function resolveAccount(currentSession: Session) {\n    const localClientId = getOrCreateClientId();\n    if (!localClientId || !currentSession.access_token || syncing) return;\n    setSyncing(true);\n    setError("");\n    try {\n      const response = await callHuntNexusApi<any>({\n        action: "account_resolve",\n        access_token: currentSession.access_token,\n        local_client_id: localClientId,\n      });\n      if (!response?.data?.resolved) throw new Error(response?.data?.error || "account_not_resolved");\n      const canonical = response.data.canonical_client_id;\n      setSyncInfo(response.data);\n      if (canonical && canonical !== localClientId) {\n        setClientId(canonical);\n        setMessage("Dados sincronizados com a identidade canônica da sua conta.");\n        window.setTimeout(() => window.location.reload(), 350);\n      } else {\n        setMessage(response.data.created\n          ? "Conta vinculada aos dados atuais deste navegador."\n          : "Conta sincronizada.");\n      }\n    } catch {\n      setError("Não foi possível sincronizar a conta com seus dados do HuntNexus.");\n    } finally {\n      setSyncing(false);\n    }\n  }\n\n  async function sendMagicLink() {\n    const supabase = getSupabaseBrowserClient();\n    if (!supabase || !email.trim() || sending) return;\n    setSending(true);\n    setError("");\n    setMessage("");\n    const { error: authError } = await supabase.auth.signInWithOtp({\n      email: email.trim(),\n      options: {\n        emailRedirectTo: window.location.origin + "/account",\n        shouldCreateUser: true,\n      },\n    });\n    if (authError) setError(authError.message);\n    else setMessage("Enviamos um link de acesso para o seu e-mail.");\n    setSending(false);\n  }\n\n  async function signOut() {\n    const supabase = getSupabaseBrowserClient();\n    if (!supabase) return;\n    await supabase.auth.signOut();\n    setSession(null);\n    setSyncInfo(null);\n    setMessage("Você saiu da conta. Os dados locais continuam neste navegador.");\n  }\n\n  return (\n    <div className="mx-auto max-w-5xl space-y-6">\n      <section className="hn-hero rounded-3xl border border-white/8 p-6 md:p-8">\n        <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">\n          <div>\n            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Conta HuntNexus</div>\n            <h1 className="mt-2 text-3xl font-black tracking-tight text-white md:text-4xl">Sincronize seu personagem entre dispositivos.</h1>\n            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Profile, Set Main, BP, sessões e builds continuam privados e passam a usar a mesma identidade canônica quando você entra na sua conta.</p>\n          </div>\n          <div className="rounded-2xl border border-white/7 bg-slate-950/45 p-5">\n            <div className="flex items-center gap-2 text-sm font-semibold text-slate-200"><Cloud className="size-4 text-cyan-300" />Status da sincronização</div>\n            <div className="mt-4 space-y-2">\n              <StatusRow label="Conta" value={session?.user?.email || "Modo convidado"} ok={Boolean(session)} />\n              <StatusRow label="Dados" value={syncInfo?.resolved ? "Sincronizados" : session ? "Sincronizando..." : "Somente neste navegador"} ok={Boolean(syncInfo?.resolved)} />\n              <StatusRow label="Privacidade" value="Dados pessoais separados da comunidade" ok />\n            </div>\n          </div>\n        </div>\n      </section>\n\n      {!session ? (\n        <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">\n          <div className="flex items-start gap-3">\n            <div className="grid size-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300"><Mail className="size-4" /></div>\n            <div><div className="font-bold text-white">Entrar por e-mail</div><div className="mt-1 text-xs text-slate-500">Sem senha. Você recebe um link de acesso no e-mail.</div></div>\n          </div>\n          <div className="mt-5 flex flex-col gap-3 sm:flex-row">\n            <input type="email" className="hn-control flex-1" placeholder="seu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMagicLink(); }} />\n            <button className="hn-primary-button" disabled={sending || !email.trim()} onClick={() => void sendMagicLink()}>\n              {sending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}\n              Enviar link\n            </button>\n          </div>\n          <div className="mt-4 rounded-xl border border-white/7 bg-white/[0.02] p-3 text-xs leading-5 text-slate-500">O modo convidado continua disponível. Criar uma conta serve para recuperar os mesmos dados em outro navegador ou computador.</div>\n        </section>\n      ) : (\n        <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">\n          <div className="flex flex-wrap items-center justify-between gap-4">\n            <div><div className="flex items-center gap-2 font-bold text-white"><ShieldCheck className="size-4 text-emerald-300" />Conta autenticada</div><div className="mt-1 text-sm text-slate-400">{session.user.email}</div></div>\n            <div className="flex flex-wrap gap-2">\n              <button type="button" className="hn-secondary-button" disabled={syncing} onClick={() => void resolveAccount(session)}>{syncing ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Sincronizar</button>\n              <button type="button" className="hn-secondary-button" onClick={() => void signOut()}><LogOut className="size-4" />Sair</button>\n            </div>\n          </div>\n          <div className="mt-5 grid gap-3 sm:grid-cols-2">\n            <InfoCard title="Identidade canônica" text={syncInfo?.canonical_client_id || "Resolvendo..."} />\n            <InfoCard title="Comportamento" text={syncInfo?.client_id_changed ? "Este dispositivo foi ligado aos dados já existentes da conta." : "Os dados atuais deste navegador são a base desta conta."} />\n          </div>\n        </section>\n      )}\n\n      {message && <div className="text-sm text-emerald-300">{message}</div>}\n      {error && <div className="text-sm text-red-300">{error}</div>}\n    </div>\n  );\n}\n\nfunction StatusRow({ label, value, ok = false }: { label:string; value:string; ok?:boolean }) {\n  return <div className="flex items-center justify-between gap-3 rounded-xl border border-white/6 bg-white/[0.025] px-3 py-2.5"><span className="text-xs text-slate-500">{label}</span><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">{ok && <CheckCircle2 className="size-3.5 text-emerald-300" />}{value}</span></div>;\n}\n\nfunction InfoCard({ title, text }: { title:string; text:string }) {\n  return <div className="rounded-xl border border-white/7 bg-white/[0.02] p-4"><div className="text-[10px] uppercase tracking-wide text-slate-600">{title}</div><div className="mt-2 break-all text-sm font-semibold text-slate-300">{text}</div></div>;\n}
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Cloud, Loader2, LogOut, Mail, RefreshCw, ShieldCheck } from "lucide-react";
+import type { Session } from "@supabase/supabase-js";
+import { callHuntNexusApi } from "@/lib/api/huntnexus";
+import { getOrCreateClientId, setClientId } from "@/lib/client-id";
+import { getSupabaseBrowserClient } from "@/integrations/supabase/client.browser";
+
+export const Route = createFileRoute("/account")({ component: AccountPage });
+
+function AccountPage() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [syncInfo, setSyncInfo] = useState<any>(null);
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setSession(data.session ?? null);
+      if (data.session) void resolveAccount(data.session);
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!active) return;
+      setSession(nextSession);
+      if (nextSession) void resolveAccount(nextSession);
+      else setSyncInfo(null);
+    });
+
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
+  async function resolveAccount(currentSession: Session) {
+    const localClientId = getOrCreateClientId();
+    if (!localClientId || !currentSession.access_token || syncing) return;
+    setSyncing(true);
+    setError("");
+    try {
+      const response = await callHuntNexusApi<any>({
+        action: "account_resolve",
+        access_token: currentSession.access_token,
+        local_client_id: localClientId,
+      });
+      if (!response?.data?.resolved) throw new Error(response?.data?.error || "account_not_resolved");
+      const canonical = response.data.canonical_client_id;
+      setSyncInfo(response.data);
+      if (canonical && canonical !== localClientId) {
+        setClientId(canonical);
+        setMessage("Dados sincronizados com a identidade canônica da sua conta.");
+        window.setTimeout(() => window.location.reload(), 350);
+      } else {
+        setMessage(response.data.created
+          ? "Conta vinculada aos dados atuais deste navegador."
+          : "Conta sincronizada.");
+      }
+    } catch {
+      setError("Não foi possível sincronizar a conta com seus dados do HuntNexus.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function sendMagicLink() {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase || !email.trim() || sending) return;
+    setSending(true);
+    setError("");
+    setMessage("");
+    const { error: authError } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        emailRedirectTo: window.location.origin + "/account",
+        shouldCreateUser: true,
+      },
+    });
+    if (authError) setError(authError.message);
+    else setMessage("Enviamos um link de acesso para o seu e-mail.");
+    setSending(false);
+  }
+
+  async function signOut() {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    setSession(null);
+    setSyncInfo(null);
+    setMessage("Você saiu da conta. Os dados locais continuam neste navegador.");
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      <section className="hn-hero rounded-3xl border border-white/8 p-6 md:p-8">
+        <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Conta HuntNexus</div>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-white md:text-4xl">Sincronize seu personagem entre dispositivos.</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Profile, Set Main, BP, sessões e builds continuam privados e passam a usar a mesma identidade canônica quando você entra na sua conta.</p>
+          </div>
+          <div className="rounded-2xl border border-white/7 bg-slate-950/45 p-5">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-200"><Cloud className="size-4 text-cyan-300" />Status da sincronização</div>
+            <div className="mt-4 space-y-2">
+              <StatusRow label="Conta" value={session?.user?.email || "Modo convidado"} ok={Boolean(session)} />
+              <StatusRow label="Dados" value={syncInfo?.resolved ? "Sincronizados" : session ? "Sincronizando..." : "Somente neste navegador"} ok={Boolean(syncInfo?.resolved)} />
+              <StatusRow label="Privacidade" value="Dados pessoais separados da comunidade" ok />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {!session ? (
+        <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">
+          <div className="flex items-start gap-3">
+            <div className="grid size-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300"><Mail className="size-4" /></div>
+            <div><div className="font-bold text-white">Entrar por e-mail</div><div className="mt-1 text-xs text-slate-500">Sem senha. Você recebe um link de acesso no e-mail.</div></div>
+          </div>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <input type="email" className="hn-control flex-1" placeholder="seu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMagicLink(); }} />
+            <button className="hn-primary-button" disabled={sending || !email.trim()} onClick={() => void sendMagicLink()}>
+              {sending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+              Enviar link
+            </button>
+          </div>
+          <div className="mt-4 rounded-xl border border-white/7 bg-white/[0.02] p-3 text-xs leading-5 text-slate-500">O modo convidado continua disponível. Criar uma conta serve para recuperar os mesmos dados em outro navegador ou computador.</div>
+        </section>
+      ) : (
+        <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div><div className="flex items-center gap-2 font-bold text-white"><ShieldCheck className="size-4 text-emerald-300" />Conta autenticada</div><div className="mt-1 text-sm text-slate-400">{session.user.email}</div></div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="hn-secondary-button" disabled={syncing} onClick={() => void resolveAccount(session)}>{syncing ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Sincronizar</button>
+              <button type="button" className="hn-secondary-button" onClick={() => void signOut()}><LogOut className="size-4" />Sair</button>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <InfoCard title="Identidade canônica" text={syncInfo?.canonical_client_id || "Resolvendo..."} />
+            <InfoCard title="Comportamento" text={syncInfo?.client_id_changed ? "Este dispositivo foi ligado aos dados já existentes da conta." : "Os dados atuais deste navegador são a base desta conta."} />
+          </div>
+        </section>
+      )}
+
+      {message && <div className="text-sm text-emerald-300">{message}</div>}
+      {error && <div className="text-sm text-red-300">{error}</div>}
+    </div>
+  );
+}
+
+function StatusRow({ label, value, ok = false }: { label:string; value:string; ok?:boolean }) {
+  return <div className="flex items-center justify-between gap-3 rounded-xl border border-white/6 bg-white/[0.025] px-3 py-2.5"><span className="text-xs text-slate-500">{label}</span><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">{ok && <CheckCircle2 className="size-3.5 text-emerald-300" />}{value}</span></div>;
+}
+
+function InfoCard({ title, text }: { title:string; text:string }) {
+  return <div className="rounded-xl border border-white/7 bg-white/[0.02] p-4"><div className="text-[10px] uppercase tracking-wide text-slate-600">{title}</div><div className="mt-2 break-all text-sm font-semibold text-slate-300">{text}</div></div>;
+}
