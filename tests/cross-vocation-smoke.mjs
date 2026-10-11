@@ -98,9 +98,10 @@ for (const current of cases) {
     vocation: current.vocation,
     level: 700,
   });
-  assert(spellDetail?.data?.vocation_composition?.methodology?.stage ===
-    "vocation_composition_universal_v1",
-    `${current.vocation} on-demand composition regression`);
+  assert(spellDetail?.data?.methodology?.stage === "hunt_detail_spells_resilient_v1",
+    `${current.vocation} Spells resilient contract regression`);
+  assert(["available","unavailable"].includes(spellDetail?.data?.availability?.vocation_composition),
+    `${current.vocation} must report composition availability`);
   assert(spellDetail?.data?.spells?.methodology?.stage ===
     "spell_candidates_with_unlocks_universal_v1",
     `${current.vocation} on-demand spell catalog regression`);
@@ -112,6 +113,7 @@ for (const current of cases) {
     factual_creatures: factual.monsters.length,
     imbuement_contract: true,
     spell_contract: true,
+    composition_available: spellDetail.data.availability.vocation_composition === "available",
     universal_setup_deferred: true,
     proficiency_trees: proficiency.data.summary.eligible_tree_count,
   });
