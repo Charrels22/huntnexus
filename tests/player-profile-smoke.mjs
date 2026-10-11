@@ -70,12 +70,24 @@ const catalog = await post({
   weapon_family: "wand",
 });
 
-assert(catalog?.data?.methodology?.stage === "player_profile_proficiency_catalog_v1", "catalog stage regression");
+assert(catalog?.data?.methodology?.stage === "player_profile_proficiency_catalog_v2", "catalog stage regression");
+assert(Number(catalog?.data?.summary?.source_backed_topology_count) >= 4, "source-backed topology coverage regression");
 assert(Number(catalog?.data?.summary?.eligible_tree_count) >= 4, "MS 655 wand tree coverage regression");
 assert(
   catalog?.data?.trees?.some((tree) => tree.item_key === "amber-wand" && tree.eligible === true),
   "Amber Wand tree regression",
 );
+
+const soulTree = catalog?.data?.trees?.find((tree) => tree.item_key === "soultainter");
+assert(soulTree?.topology_status === "source_backed_level_position", "Soultainter topology status regression");
+assert(soulTree?.topology_source?.profile_name === "Soul 1H Wand", "Soultainter topology source regression");
+assert(
+  soulTree?.perks?.some((perk) => perk.perk_order === 14 && perk.level_number === 7 && perk.position_in_level === 1),
+  "Soultainter final level topology regression",
+);
+
+const eldritchTree = catalog?.data?.trees?.find((tree) => tree.item_key === "eldritch-wand");
+assert(eldritchTree?.levels_declared === 5, "Eldritch Wand level count regression");
 
 console.log(JSON.stringify({
   status: "ok",
