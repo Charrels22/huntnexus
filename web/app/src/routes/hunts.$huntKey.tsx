@@ -411,7 +411,7 @@ function HuntDetailPage() {
           <Spells spells={spellsLoad.data?.spells} composition={spellsLoad.data?.vocation_composition} />
         ) : <Muted>Carregando spells e composição da vocação...</Muted>)}
         {tab === "imbuements" && <Imbuements data={data.imbuements} />}
-        {tab === "community" && <Community observed={data.observed} />}
+        {tab === "community" && <Community observed={data.observed} vocationObserved={data.vocation_observed} vocation={search.vocation} />}
       </section>
     </div>
   );
@@ -812,12 +812,32 @@ function Imbuements({ data }: { data:any }) {
   );
 }
 
-function Community({ observed }: { observed:any }) {
+function Community({ observed, vocationObserved, vocation }: { observed:any; vocationObserved:any; vocation:string }) {
   const p = observed?.performance ?? {};
   const mix = Array.isArray(observed?.kill_mix) ? observed.kill_mix : [];
+  const sample = vocationObserved?.sample ?? {};
+  const methodology = vocationObserved?.methodology ?? {};
+  const insufficient = Number(sample.session_count ?? 0) < Number(methodology.minimum_sample_for_median ?? 3);
   return (
     <div>
       <SectionTitle title="Community" subtitle="Amostra agregada da hunt (todas as vocações e níveis), Tier C: observação real, não estimativa personalizada." />
+      <div className="mt-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.035] p-4 md:p-5">
+        <div className="text-sm font-bold text-cyan-200">Amostra de sessões com {vocation} · Tier C</div>
+        <p className="mt-1 text-xs leading-5 text-slate-400">
+          São sessões verificáveis que incluíram a vocação, não necessariamente hunts solo. XP e loot de uma party
+          não são atribuídos a um jogador individual. Medianas são exibidas somente com pelo menos 3 sessões válidas.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <Metric label="Sessões com fonte" value={formatNumber(Number(sample.sourced_session_count ?? 0))} />
+          <Metric label="XP/h mediana da amostra" value={sample.median_xp_per_hour == null ? "Amostra insuficiente" : compact(sample.median_xp_per_hour)} />
+          <Metric label="Profit/h mediano da amostra" value={sample.median_balance_per_hour == null ? "Amostra insuficiente" : compact(sample.median_balance_per_hour)} />
+        </div>
+        {insufficient && (
+          <p className="mt-3 text-xs text-amber-200/85">
+            Existem {sample.session_count ?? 0} sessões com {vocation} nesta hunt; amostra pequena demais para exibir medianas.
+          </p>
+        )}
+      </div>
       <div className="mt-5 grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
         <Panel title="Amostra">
           <div className="space-y-2">
