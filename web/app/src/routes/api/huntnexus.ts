@@ -638,9 +638,10 @@ export const Route = createFileRoute("/api/huntnexus")({
                 }),
               });
             case "hunt_detail": {
-              const [factual, observed, defensive, imbuements, media] = await Promise.all([
+              const [factual, observed, vocationObserved, defensive, imbuements, media] = await Promise.all([
                 rpc("huntnexus_hunt_factual_profile", { p_hunt_key: b.hunt_key }),
                 rpc("huntnexus_hunt_observed_profile", { p_hunt_key: b.hunt_key }),
+                rpc("huntnexus_hunt_vocation_observation_sample", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
                 rpc("huntnexus_hunt_defensive_profile", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
                 rpc("huntnexus_imbuement_hunt_context_universal", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
                 rpc("huntnexus_hunt_media_context", { p_hunt_key: b.hunt_key }),
@@ -649,6 +650,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                 data: {
                   factual,
                   observed,
+                  vocation_observed: vocationObserved,
                   defensive,
                   imbuements,
                   media,
