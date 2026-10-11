@@ -89,6 +89,47 @@ assert(
 const eldritchTree = catalog?.data?.trees?.find((tree) => tree.item_key === "eldritch-wand");
 assert(eldritchTree?.levels_declared === 5, "Eldritch Wand level count regression");
 
+const conflictingTree = catalog.data.trees.find((tree) =>
+  tree.topology_status === "source_backed_level_position" &&
+  tree.eligible === true &&
+  Array.isArray(tree.perks) &&
+  tree.perks.some((perk) =>
+    perk.level_number != null &&
+    tree.perks.some((other) => other.perk_order !== perk.perk_order && other.level_number === perk.level_number)
+  )
+);
+assert(conflictingTree, "no eligible source-backed proficiency tree with multiple choices");
+const conflictingPerks = conflictingTree.perks.filter(
+  (perk) => perk.level_number != null &&
+    conflictingTree.perks.filter((p) => p.level_number === perk.level_number).length > 1
+).slice(0, 2);
+assert(conflictingPerks.length === 2 && conflictingPerks[0].level_number === conflictingPerks[1].level_number,
+  "unable to select two perks from the same known level");
+const rejected = await post({
+  action: "player_profile_save",
+  client_id: clientId,
+  profile: {
+    character_name: "Profile Smoke",
+    world_name: "Elysian",
+    vocation: "MS",
+    level: "655",
+    proficiency_selections: {
+      [conflictingTree.item_key]: conflictingPerks.map((perk) => perk.perk_order),
+    },
+  },
+});
+assert(rejected?.data?.saved === false, "same-level perks must be rejected");
+assert(rejected?.data?.error === "invalid_proficiency_selections", "expected actionable validation error");
+assert(rejected?.data?.validation?.issues?.some(
+  (issue) => issue.item_key === conflictingTree.item_key &&
+    issue.level_number === conflictingPerks[0].level_number
+), "validation should identify the conflicting weapon and level");
+const afterRejected = await post({ action: "player_profile_get", client_id: clientId });
+assert(
+  JSON.stringify(afterRejected?.data?.profile?.proficiency_selections?.["amber-wand"]) === JSON.stringify([1, 3, 9]),
+  "rejected perks must not mutate previously saved profile",
+);
+
 console.log(JSON.stringify({
   status: "ok",
   stage: "player_profile_public_smoke",
