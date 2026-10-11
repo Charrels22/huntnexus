@@ -267,6 +267,7 @@ function Analyse({ data }: { data: any }) {
         <Kpi icon={Clock3} label="Kills" value={a.total_kills == null ? "Não informado" : formatNumber(Number(a.total_kills))} />
       </div>
 
+      <SessionEvidenceSummary data={data} />
       <SessionLoadoutSnapshot snapshot={data.loadout_snapshot} />
 
       <div className="grid gap-4 xl:grid-cols-[1.3fr_.7fr]">
@@ -289,6 +290,30 @@ function Analyse({ data }: { data: any }) {
           <DataRow label="Party" value={Number(a.party_size || 1) > 1 ? `x${a.party_size}` : "Solo"} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function SessionEvidenceSummary({ data }: { data: any }) {
+  const parser = data.parser ?? {};
+  const warnings = Array.isArray(data.validation?.warnings) ? data.validation.warnings : [];
+  const explanation: Record<string, string> = {
+    hunt_analyzer_missing: "Hunt Analyzer ausente",
+    no_primary_metrics_recognized: "Métricas principais não reconhecidas",
+    party_block_present_but_no_players_recognized: "Party enviada, mas nenhum jogador foi reconhecido",
+    input_block_present_but_no_damage_rows_recognized: "Damage Input enviado sem linhas de dano reconhecidas",
+  };
+  return (
+    <div className="rounded-2xl border border-white/7 bg-slate-950/35 p-4 text-xs leading-5 text-slate-500">
+      <div className="flex flex-wrap gap-x-5 gap-y-1">
+        <span>Origem: analyzers importados</span>
+        <span>Dados: privados{parser.community_evidence_written === false ? ", sem publicação comunitária" : ""}</span>
+        {parser.version && <span>Parser: {parser.version}</span>}
+        {parser.raw_blocks_preserved && <span>Blocos originais preservados</span>}
+      </div>
+      {warnings.length > 0 && (
+        <div className="mt-2 text-amber-200/80">Para revisar: {warnings.map((warning: string) => explanation[warning] || warning).join(" · ")}</div>
+      )}
     </div>
   );
 }
@@ -448,7 +473,7 @@ function Damage({ data }: { data: any }) {
   const d = data.damage ?? {};
   const elements = Array.isArray(d.incoming_by_element) ? d.incoming_by_element : [];
   const sources = Array.isArray(d.incoming_by_source) ? d.incoming_by_source : [];
-  const maxShare = Math.max(1, ...elements.map((x:any) => Number(x.share_percent || 0)));
+  const maxShare = Math.max(1, ...elements.map((x:any) => x.share_percent == null ? 0 : Number(x.share_percent) || 0));
   return (
     <div className="space-y-6">
       <PanelHeader eyebrow="Damage" title="Dano causado e recebido" subtitle="Breakdown normalizado da sessão." />
@@ -475,10 +500,10 @@ function Damage({ data }: { data: any }) {
               <div key={`${e.player_id}-${e.element}-${i}`}>
                 <div className="mb-1.5 flex items-center justify-between text-xs">
                   <span className="capitalize text-slate-300">{e.element}</span>
-                  <span className="text-slate-500">{formatNumber(Number(e.damage || 0))} · {formatNumber(Number(e.share_percent || 0),1)}%</span>
+                  <span className="text-slate-500">{e.damage == null ? "—" : formatNumber(Number(e.damage))} · {e.share_percent == null ? "Percentual não informado" : `${formatNumber(Number(e.share_percent),1)}%`}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                  <div className="h-full rounded-full bg-cyan-400/55 transition-all" style={{width:`${Math.max(3,(Number(e.share_percent || 0)/maxShare)*100)}%`}} />
+                  {e.share_percent != null && <div className="h-full rounded-full bg-cyan-400/55 transition-all" style={{width:`${Math.min(100, Math.max(0, Number(e.share_percent)/maxShare*100))}%`}} />}
                 </div>
               </div>
             ))}
@@ -489,7 +514,7 @@ function Damage({ data }: { data: any }) {
         <Block title="Maiores fontes de dano recebido">
           <div className="space-y-2">
             {sources.slice(0,12).map((s:any, i:number) => (
-              <DataRow key={`${s.player_id || "p"}-${s.monster_key || s.source_name_raw || i}`} label={s.monster_name_raw || s.source_name_raw || s.monster_key || "Fonte"} value={`${formatNumber(Number(s.damage || 0))} · ${s.share_percent == null ? "—" : formatNumber(Number(s.share_percent || 0),1) + "%"}`} />
+              <DataRow key={`${s.player_id || "p"}-${s.monster_key || s.source_name_raw || i}`} label={s.monster_name_raw || s.source_name_raw || s.monster_key || "Fonte"} value={`${s.damage == null ? "—" : formatNumber(Number(s.damage))} · ${s.share_percent == null ? "Percentual não informado" : formatNumber(Number(s.share_percent),1) + "%"}`} />
             ))}
             {!sources.length && <Muted>Fontes de dano recebido não disponíveis.</Muted>}
           </div>
