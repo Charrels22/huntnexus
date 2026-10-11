@@ -41,3 +41,14 @@ Date: 2026-10-11, BRT.
 3. Validate real session analyzers, contextual build and actual item images/perks for EK, RP, ED, MS and EM with source-linked player fixtures.
 4. Load test admission under multiple distinct IPs, monitor global 429 rate and tune quotas prior to external invitation. Optimize full universal set compute beyond current ~7–11 second single-case response.
 5. Continue Supabase security/performance advisor remediation with change-impact review; in particular existing `pg_net` extension warning.
+
+
+## Final FE-19 CI confirmation
+- Latest Account/Analyzer draft-isolation code Web CI: **SUCCESS**, https://github.com/Charrels22/huntnexus/actions/runs/38147216921
+- Latest deployed-browser desktop/mobile QA: **SUCCESS**, https://github.com/Charrels22/huntnexus/actions/runs/38147216855
+  - All expected page headings appeared; 8 screenshots captured, no uncaught JS errors and no overflow on 390px mobile views in the sampled screens; lazy Setup did not invoke the expensive RPC.
+  - GitHub screenshot artifact name: `huntnexus-live-frontend-qa` (available from the run's Artifacts section). Visual aesthetic/content/manual player review remains pending.
+- Account invalid-token HTTP smoke: **SUCCESS**, https://github.com/Charrels22/huntnexus/actions/runs/38146720864
+- Shared Setup and Final Optimizer limiter public HTTP smoke: **SUCCESS**, https://github.com/Charrels22/huntnexus/actions/runs/38146498954
+- Other latest verified existing regression gates: Profile, Inventory, Player Sessions and Cross Vocation Smokes all **SUCCESS** following shared admission API refactor on commit `d73ab857...`.
+- Backend database lease cleanup checked; zero active or expired rows following production smoke.
