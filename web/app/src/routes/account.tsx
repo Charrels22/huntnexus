@@ -17,6 +17,7 @@ function AccountPage() {
   const [error, setError] = useState("");
   const [syncInfo, setSyncInfo] = useState<any>(null);
   const resolvingRef = useRef(false);
+  const accessTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -25,12 +26,14 @@ function AccountPage() {
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
+      accessTokenRef.current = data.session?.access_token ?? null;
       setSession(data.session ?? null);
       if (data.session) void resolveAccount(data.session);
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!active) return;
+      accessTokenRef.current = nextSession?.access_token ?? null;
       setSession(nextSession);
       if (nextSession) void resolveAccount(nextSession);
       else setSyncInfo(null);
@@ -49,11 +52,13 @@ function AccountPage() {
     setSyncing(true);
     setError("");
     try {
+      const requestedAccessToken = currentSession.access_token;
       const response = await callHuntNexusApi<any>({
         action: "account_resolve",
         access_token: currentSession.access_token,
         local_client_id: localClientId,
       });
+      if (accessTokenRef.current !== requestedAccessToken) return;
       if (!response?.data?.resolved) throw new Error(response?.data?.error || "account_not_resolved");
       const canonical = response.data.canonical_client_id;
       setSyncInfo(response.data);
@@ -67,7 +72,9 @@ function AccountPage() {
           : "Conta sincronizada.");
       }
     } catch {
-      setError("Não foi possível sincronizar a conta com seus dados do HuntNexus.");
+      if (accessTokenRef.current === currentSession.access_token) {
+        setError("Não foi possível sincronizar a conta com seus dados do HuntNexus.");
+      }
     } finally {
       resolvingRef.current = false;
       setSyncing(false);
@@ -103,6 +110,7 @@ function AccountPage() {
     // A canonical client identity is protected by the authenticated account.
     // After sign-out, a new guest UUID prevents accidental 401s or access to
     // the previously bound profile without signing in again.
+    accessTokenRef.current = null;
     setClientId(window.crypto.randomUUID());
     setSession(null);
     setSyncInfo(null);
