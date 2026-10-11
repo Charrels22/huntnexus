@@ -34,6 +34,11 @@ for (const current of cases) {
   if (data?.methodology?.stage !== "optimizer_set_selection_universal_v1") {
     throw new Error(`${current.vocation}: missing real universal optimizer stage`);
   }
+  if (data?.execution?.enumeration_set_limit !== 100 ||
+      data?.execution?.returned_set_limit !== 20 ||
+      data?.execution?.exhaustive_all_possible_combinations !== false) {
+    throw new Error(`${current.vocation}: missing transparent bounded enumeration contract`);
+  }
   if (!Array.isArray(data?.selected_sets) || !data.selected_sets.length) {
     throw new Error(`${current.vocation}: no concrete set options returned`);
   }
