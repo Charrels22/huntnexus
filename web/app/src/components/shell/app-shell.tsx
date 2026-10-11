@@ -14,6 +14,7 @@ import {
   Swords,
   Users,
   UserRound,
+  UserRoundCog,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -30,6 +31,7 @@ const nav = [
   { to: "/bosses", label: "Bosses", icon: Shield },
   { to: "/community", label: "Community", icon: Users },
   { to: "/profile", label: "Profile", icon: UserRound },
+  { to: "/account", label: "Conta", icon: UserRoundCog },
 ] as const;
 
 function Brand() {
