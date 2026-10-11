@@ -755,7 +755,9 @@ function Spells({ spells, composition }: { spells:any; composition:any }) {
           </div>
         </Panel>
         <Panel title="Composição da vocação">
-          <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-500">{JSON.stringify(compactComposition(composition),null,2)}</pre>
+          {composition ? (
+            <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-500">{JSON.stringify(compactComposition(composition),null,2)}</pre>
+          ) : <Muted>Composição contextual indisponível nesta consulta. As spells elegíveis permanecem disponíveis, sem estimativas substitutas.</Muted>}
         </Panel>
       </div>
     </div>
