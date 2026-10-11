@@ -1,0 +1,81 @@
+{
+  "stage": "real_source_metrics_reconstruction_fixture_v1",
+  "observed_from": "public.community_sessions + public.session_players",
+  "captured_date": "2026-10-11",
+  "classification": "Tier C source-linked session metrics; constructed input text, NOT original Hunt Analyzer",
+  "human_player_analyzer_text_obtained": false,
+  "original_analyzer_text_available_in_data_source": false,
+  "reconstruction_intended_only_for_parser_regression": true,
+  "cases": [
+    {
+      "vocation": "EK",
+      "hunt_key": "cobra-bastion",
+      "source_url": "https://www.hunt-analyser.com/hunt_sessions/58543",
+      "duration_seconds": 3600,
+      "xp_gain": 23815357,
+      "xp_per_hour": 23815357,
+      "loot_value": null,
+      "supplies_value": null,
+      "balance_value": 1745769,
+      "total_damage": 7769938,
+      "total_healing": 1831761,
+      "party_size": 1
+    },
+    {
+      "vocation": "RP",
+      "hunt_key": "iksupan-last-stand",
+      "source_url": "https://www.hunt-analyser.com/hunt_sessions/58667",
+      "duration_seconds": 1080,
+      "xp_gain": 6002428,
+      "xp_per_hour": 20008093,
+      "loot_value": null,
+      "supplies_value": null,
+      "balance_value": 683753,
+      "total_damage": 2038062,
+      "total_healing": 332760,
+      "party_size": 1
+    },
+    {
+      "vocation": "ED",
+      "hunt_key": "nimmersatts-breeding-ground",
+      "source_url": "https://www.hunt-analyser.com/hunt_sessions/58511",
+      "duration_seconds": 1860,
+      "xp_gain": 11311182,
+      "xp_per_hour": 21892610,
+      "loot_value": null,
+      "supplies_value": null,
+      "balance_value": 1273025,
+      "total_damage": 6381733,
+      "total_healing": 1066041,
+      "party_size": 1
+    },
+    {
+      "vocation": "MS",
+      "hunt_key": "podzilla",
+      "source_url": "https://www.hunt-analyser.com/hunt_sessions/58564",
+      "duration_seconds": 10440,
+      "xp_gain": 72177970,
+      "xp_per_hour": 24888955,
+      "loot_value": null,
+      "supplies_value": null,
+      "balance_value": 5183853,
+      "total_damage": 49283559,
+      "total_healing": 10000958,
+      "party_size": 1
+    },
+    {
+      "vocation": "EM",
+      "hunt_key": "grounds-of-undeath",
+      "source_url": "https://www.hunt-analyser.com/hunt_sessions/58264",
+      "duration_seconds": 3600,
+      "xp_gain": 12943567,
+      "xp_per_hour": 12943567,
+      "loot_value": null,
+      "supplies_value": null,
+      "balance_value": 2494667,
+      "total_damage": 10784276,
+      "total_healing": 1163958,
+      "party_size": 1
+    }
+  ]
+}
