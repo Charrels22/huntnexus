@@ -14,6 +14,7 @@ export function sessionImportWarningLabel(warning: string): string {
   const labels: Record<string, string> = {
     hunt_analyzer_missing: "Hunt Analyzer ausente",
     no_primary_metrics_recognized: "Métricas principais não reconhecidas",
+    invalid_duration_format: "A duração informada está fora do formato aceito (HH:MMh) ou contém minutos inválidos",
     party_block_present_but_no_players_recognized: "Party enviada, mas nenhum jogador foi reconhecido",
     input_block_present_but_no_damage_rows_recognized: "Damage Input enviado sem linhas de dano reconhecidas",
   };
@@ -202,10 +203,19 @@ function textMetric(textLines: string[], labels: string[]): string | null {
 function parseDurationSeconds(textLines: string[]) {
   const raw = textMetric(textLines, ["Session"]);
   if (!raw) return null;
-  const h = raw.match(/(\d+)\s*:\s*(\d+)\s*h/i);
-  if (h?.[1] && h?.[2]) return Number(h[1]) * 3600 + Number(h[2]) * 60;
-  const hm = raw.match(/(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?/i);
-  if (hm && (hm[1] || hm[2])) return Number(hm[1] || 0) * 3600 + Number(hm[2] || 0) * 60;
+  const h = raw.match(/^(\d+)\s*:\s*([0-5]\d)\s*h$/i);
+  if (h?.[1] && h?.[2]) {
+    const seconds = Number(h[1]) * 3600 + Number(h[2]) * 60;
+    return Number.isSafeInteger(seconds) ? seconds : null;
+  }
+  const hm = raw.match(/^(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?$/i);
+  if (hm && (hm[1] || hm[2])) {
+    const hours = Number(hm[1] || 0);
+    const minutes = Number(hm[2] || 0);
+    if (minutes >= 60) return null;
+    const seconds = hours * 3600 + minutes * 60;
+    return Number.isSafeInteger(seconds) ? seconds : null;
+  }
   return null;
 }
 
@@ -526,6 +536,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
   const warnings: string[] = [];
   if (!huntLines.length) warnings.push("hunt_analyzer_missing");
   if (recognizedMetricCount === 0) warnings.push("no_primary_metrics_recognized");
+  if (textMetric(primary, ["Session"]) !== null && metrics.duration_seconds === null) warnings.push("invalid_duration_format");
   if (partyLines.length && partyPlayers.length === 0) warnings.push("party_block_present_but_no_players_recognized");
   if (inputLines.length && input.elements.length === 0 && input.sources.length === 0) warnings.push("input_block_present_but_no_damage_rows_recognized");
 
