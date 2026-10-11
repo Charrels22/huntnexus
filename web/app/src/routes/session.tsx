@@ -18,7 +18,7 @@ import {
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
 import { CanonicalSprite } from "@/components/shared/canonical-sprite";
-import { detectAnalyzerType, parseSessionImport } from "@/lib/session-parser";
+import { detectAnalyzerType, parseSessionImport, sessionImportWarningLabel } from "@/lib/session-parser";
 
 export const Route = createFileRoute("/session")({ component: SessionImportPage });
 
@@ -421,6 +421,16 @@ function SessionImportPage() {
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.incoming_element_rows} elementos recebidos</span>
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.incoming_source_rows} fontes de dano</span>
           </div>
+          {preview.validation.warnings.length > 0 && (
+            <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-400/[0.035] p-3 text-xs leading-5 text-amber-100/85">
+              <div className="font-semibold">Pontos para revisar antes de salvar</div>
+              <ul className="mt-1 list-inside list-disc">
+                {preview.validation.warnings.map((warning) => (
+                  <li key={warning}>{sessionImportWarningLabel(warning)}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 
@@ -658,7 +668,7 @@ function SessionImportPage() {
 
       {validationWarnings.length > 0 && (
         <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.04] p-4 text-xs leading-5 text-amber-100/80">
-          O parser salvou a entrada, mas marcou pontos para revisão: {validationWarnings.join(", ")}.
+          O parser salvou a entrada, mas marcou pontos para revisão: {validationWarnings.map(sessionImportWarningLabel).join(", ")}.
         </div>
       )}
 
