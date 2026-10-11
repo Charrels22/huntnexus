@@ -1,0 +1,27 @@
+name: HuntNexus Proficiency Sprite Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "web/app/src/lib/proficiency-icons.ts"
+      - "tests/proficiency-sprite-coverage.mjs"
+      - ".github/workflows/huntnexus-proficiency-sprite-coverage.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  sprite-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Audit all eligible class/family effect mappings against live catalog
+        run: node --experimental-strip-types tests/proficiency-sprite-coverage.mjs
