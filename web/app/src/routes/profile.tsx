@@ -1175,7 +1175,6 @@ function proficiencyIconFiles(perk: ProficiencyPerk) {
   const effectKey = perk.effect_key;
   const exact: Record<string,string[]> = {
     attack: ["Proficiency Type Attack.gif"],
-    base_damage: ["Proficiency Augment Damage.gif"],
     defense: ["Proficiency Type Defence.gif"],
     defense_modifier: ["Proficiency Type Defence.gif"],
     auto_attack_critical_chance: ["Proficiency Type Auto Atk Critical Chance.gif"],
