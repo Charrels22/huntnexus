@@ -161,7 +161,7 @@ function LoadoutExplorer() {
             {preview?.methodology?.final_damage_formula_applied?"Fórmula final aplicada.":"Sem fórmula final de DPS inventada."} {preview?.methodology?.combined_numeric_score?"Score combinado aplicado.":"Sem score numérico cruzando métricas incompatíveis."}
           </div>
 
-          {hunt?.hunt_key&&<Link to="/hunts/$huntKey" params={{huntKey:hunt.hunt_key}} search={{vocation,level:Number(level),objective:"balanced",setObjective:objective as any,party:1}} className="hn-secondary-button inline-flex">Abrir Setup completo da hunt</Link>}
+          {hunt?.hunt_key&&<Link to="/hunts/$huntKey" params={{huntKey:hunt.hunt_key}} search={{vocation,level:Number(level),setObjective:objective}} className="hn-secondary-button inline-flex">Abrir Setup completo da hunt</Link>}
         </div>}
       </section>
     </div>
