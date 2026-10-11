@@ -62,6 +62,11 @@ try {
   }
   await hunt.screenshot({ path: resolve(output, "hunt-setup-before-calculation.png"), fullPage: true });
   results.push({ route: "/hunts/cobra-bastion#setup", lazy_optimizer_respected: true, screenshot: "hunt-setup-before-calculation.png" });
+  await hunt.getByRole("button", { name: "Community", exact: true }).click();
+  await hunt.getByText("Amostra de sessões com EK").first().waitFor({ timeout: 15000 });
+  await hunt.getByText("São sessões verificáveis que incluíram a vocação").first().waitFor();
+  await hunt.screenshot({ path: resolve(output, "hunt-community-vocation.png"), fullPage: true });
+  results.push({ route: "/hunts/cobra-bastion#community", tier_c_vocation_sample_visible: true, screenshot: "hunt-community-vocation.png" });
   await hunt.close();
 
   const mobileAccount = await audit("/account", /Sincronize seu personagem entre dispositivos/i, "account-mobile.png", 390, 844);
