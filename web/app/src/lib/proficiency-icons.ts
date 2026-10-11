@@ -9,7 +9,7 @@ export function tibiaWikiFile(filename: string) {
   return `https://www.tibiawiki.com.br/wiki/Special:Redirect/file/${encodeURIComponent(filename).replace(/%20/g, "_")}`;
 }
 
-export function proficiencyIconFiles(perk: {effect_key:string;description_raw?:string | null}) {
+export function proficiencyIconFiles(perk: {effect_key:string;description_raw?:string | null;spell_key?:string | null}) {
   const effectKey = perk.effect_key;
   const exact: Record<string,string[]> = {
     attack: ["Proficiency Type Attack.gif"],
@@ -72,6 +72,13 @@ export function proficiencyIconFiles(perk: {effect_key:string;description_raw?:s
     rage_of_the_skies_mana_leech: ["Proficiency Spell Rage of the Skies.gif","Proficiency Augment Mana Leech.gif"],
   };
   if (exact[effectKey]) return exact[effectKey];
+
+  // The generic base_damage effect has different spell contexts. Only the
+  // source-backed Soulshredder Executioner's Throw perk uses this spell sprite.
+  // Do not apply this icon to unrelated generic damage bonuses.
+  if (effectKey === "base_damage" && perk.spell_key === "executioners-throw") {
+    return ["Proficiency Spell Executioner's Throw.gif", "Proficiency Augment Damage.gif"];
+  }
 
   const spellAugments: Record<string, string> = {
     base_damage: "Proficiency Augment Damage.gif",
