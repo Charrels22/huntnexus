@@ -280,9 +280,9 @@ assert(
 );
 assert(
   profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
-    ?.one_handed?.methodology?.stage === "weapon_proficiency_impact_preview_v1" &&
+    ?.one_handed?.methodology?.stage === "weapon_proficiency_impact_preview_v2" &&
   profiledRecommendation?.data?.results?.[0]?.actual_weapon_proficiency
-    ?.two_handed?.methodology?.stage === "weapon_proficiency_impact_preview_v1",
+    ?.two_handed?.methodology?.stage === "weapon_proficiency_impact_preview_v2",
   "contextual recommendation actual weapon proficiency payload regression",
 );
 assert(
