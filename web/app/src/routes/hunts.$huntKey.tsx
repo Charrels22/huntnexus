@@ -97,9 +97,14 @@ function HuntDetailPage() {
       .then((response) => {
         if (active) setSetupLoad({ key: setupKey, data: response?.data ?? null });
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (active) {
-          setSetupError("Não foi possível calcular o frontier universal. Os dados factuais e o seu Set Main continuam disponíveis.");
+          const message = error instanceof Error ? error.message : "";
+          setSetupError(
+            message.includes("cálculo avançado") || message.includes("cálculos avançados")
+              ? message
+              : "Não foi possível calcular o frontier universal. Os dados factuais e o seu Set Main continuam disponíveis.",
+          );
           setSetupRequestedKey(null);
         }
       })
