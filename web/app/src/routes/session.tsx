@@ -270,6 +270,11 @@ function SessionImportPage() {
   function acceptAnalyzerText(text: string) {
     if (!text.trim()) return;
     const detected = detectAnalyzerType(text) ?? activeTab;
+    const currentBlock = draft[detected].trim();
+    if (currentBlock && currentBlock !== text.trim()) {
+      setActiveTab(detected);
+      if (!window.confirm("Este tipo de analyzer já contém informações. Substituir o bloco existente?")) return;
+    }
     patch(detected, text);
     setActiveTab(detected);
   }
