@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   BarChart3,
@@ -37,6 +37,7 @@ function SessionHistoryPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const detailRequestRef = useRef(0);
 
   async function loadSessions() {
     const clientId = getOrCreateClientId();
@@ -58,7 +59,7 @@ function SessionHistoryPage() {
         ? requestedId
         : null;
       if (requested) sessionStorage.removeItem("huntnexus.open-player-session");
-      setSelectedId((current) => requested || current || rows[0]?.session_id || "");
+      setSelectedId((current) => requested || (rows.some((row: any) => row.session_id === current) ? current : rows[0]?.session_id || ""));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -66,29 +67,33 @@ function SessionHistoryPage() {
     }
   }
 
-  async function loadDetail(sessionId: string) {
-    const clientId = getOrCreateClientId();
-    if (!clientId || !sessionId) return;
-
-    setLoadingDetail(true);
-    setError("");
-    try {
-      const response = await callHuntNexusApi<any>({
-        action: "player_session_detail",
-        client_id: clientId,
-        session_id: sessionId,
-      });
-      setDetail(response?.data ?? null);
-    } catch (e) {
-      setError((e as Error).message);
-      setDetail(null);
-    } finally {
-      setLoadingDetail(false);
-    }
-  }
-
   useEffect(() => { void loadSessions(); }, []);
-  useEffect(() => { if (selectedId) void loadDetail(selectedId); }, [selectedId]);
+  useEffect(() => {
+    const requestId = ++detailRequestRef.current;
+    if (!selectedId) {
+      setDetail(null);
+      setLoadingDetail(false);
+      return;
+    }
+    const clientId = getOrCreateClientId();
+    if (!clientId) return;
+    setLoadingDetail(true);
+    setDetail(null);
+    setError("");
+    callHuntNexusApi<any>({ action: "player_session_detail", client_id: clientId, session_id: selectedId })
+      .then((response) => {
+        if (detailRequestRef.current === requestId) setDetail(response?.data ?? null);
+      })
+      .catch((error: unknown) => {
+        if (detailRequestRef.current !== requestId) return;
+        setError((error as Error).message);
+        setDetail(null);
+      })
+      .finally(() => {
+        if (detailRequestRef.current === requestId) setLoadingDetail(false);
+      });
+    return () => { detailRequestRef.current++; };
+  }, [selectedId]);
 
   async function deleteSelected() {
     const clientId = getOrCreateClientId();
