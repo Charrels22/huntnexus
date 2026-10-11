@@ -29,3 +29,18 @@ Date: 2026-10-10 (America/Sao_Paulo). Continues docs/CHECKPOINT_2026-10-10_SESSI
 3. Add provenance-aware content completeness UX for hunts lacking Tier C observations; verify with real sourced examples.
 4. Browser visual audit of Session Analyzer / Profile / Proficiency / Hunt Detail and real case fixtures for each vocation.
 5. Auth synchronization and external class-community pilot only after the above gates.
+
+
+## Runtime regression closure — 2026-10-10 23:08 BRT
+- Public Cross Vocation Smoke rerun **38104067122, attempt 3: SUCCESS** at https://github.com/Charrels22/huntnexus/actions/runs/38104067122
+- API published supported real-hunt checks at level 700:
+  - EK sword: `cobra-bastion`, 11 factual creatures, 6 proficiency trees
+  - RP bow: `iksupan-last-stand`, 3 factual creatures, 5 trees
+  - ED rod: `nimmersatts-breeding-ground`, 3 factual creatures, 4 trees
+  - MS wand: `podzilla`, 11 factual creatures, 4 trees
+  - EM fist: `grounds-of-undeath`, 5 factual creatures, 6 trees
+- All five cases reported imbuements, spell contracts and vocation composition available. This is catalog/HTTP regression, **not real gameplay or visual approval**.
+- A real API mismatch in spell RPC arguments was fixed (`p_spell_group` instead of `p_attack_type`), and the script now checks the separated heavy endpoints' contracts without pretending the full optimizer is complete.
+- Core Hunt Detail data loads independently of the expensive optimizer. The universal frontier is now an **explicit button** on Setup, not a mandatory query on tab open; private Main/BP data and hunt facts remain readable if the full optimizer times out.
+- Backend optimizer RPC under `authenticator` has `statement_timeout=8s`, while EK700/Cobra Bastion direct query takes around 18.43 seconds at 100 sets (and still >8 seconds with smaller caps). **Not production-ready**. Do not silently lower the candidate universe or advertise a full validated winner.
+- Web CI **38104067099** and Player Session/Profile/Inventory Smokes **38104067079**, **38104067040**, **38104067050**: SUCCESS on the fixed RPC argument commit. Verify latest Web CI for subsequent explicit button change.
