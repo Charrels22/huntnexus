@@ -1,0 +1,41 @@
+name: HuntNexus Frontend Browser QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "web/app/tests/frontend-live-browser-smoke.mjs"
+      - ".github/workflows/huntnexus-frontend-browser-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Install headless Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Live desktop and mobile browser QA
+        run: node tests/frontend-live-browser-smoke.mjs
+      - name: Preserve visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huntnexus-live-frontend-qa
+          path: web/app/frontend-qa/
+          retention-days: 14
+          if-no-files-found: warn
