@@ -149,11 +149,12 @@ try {
     if (!(Number(catalog?.data?.summary?.eligible_tree_count) > 0)) {
       throw new Error(vocation + ": live proficiency catalog returned no eligible trees");
     }
-    const firstTree = (catalog?.data?.trees ?? []).find((tree) => tree.eligible && tree.perk_count > 0);
+    const firstTree = (catalog?.data?.trees ?? []).find((tree) => tree.eligible && tree.topology_status === "source_backed_level_position" && tree.perk_count > 0)
+      ?? (catalog?.data?.trees ?? []).find((tree) => tree.eligible && tree.perk_count > 0);
     if (!firstTree) throw new Error(vocation + ": no eligible source-backed proficiency tree");
     const treeButton = profilePage.locator("article > button").filter({ hasText: firstTree.item_name }).first();
     await treeButton.click();
-    await profilePage.getByText("Árvore de Weapon Proficiency").first().waitFor({ timeout: 12000 });
+    await profilePage.locator("article button[title]").first().waitFor({ timeout: 12000 });
     await profilePage.waitForTimeout(2800);
     const iconCoverage = await profilePage.locator('img[src*="Proficiency"]').evaluateAll((images) =>
       images.map((image) => ({
