@@ -1,0 +1,26 @@
+name: HuntNexus Five Vocation Full Optimizer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/full-optimizer-vocations-smoke.mjs"
+      - ".github/workflows/huntnexus-five-vocation-full-optimizer.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  cross-vocation-full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Full real candidate setup for EK RP ED MS EM
+        run: node tests/full-optimizer-vocations-smoke.mjs
