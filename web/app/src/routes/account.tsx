@@ -8,6 +8,9 @@ import { getSupabaseBrowserClient } from "@/integrations/supabase/client.browser
 
 export const Route = createFileRoute("/account")({ component: AccountPage });
 
+const unmergedGuestKey = "huntnexus.unmerged-guest-client-id.v1";
+const clientUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function AccountPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
@@ -16,6 +19,7 @@ function AccountPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [syncInfo, setSyncInfo] = useState<any>(null);
+  const [recoverableGuestId, setRecoverableGuestId] = useState<string | null>(null);
   const resolvingRef = useRef(false);
   const accessTokenRef = useRef<string | null>(null);
 
@@ -24,6 +28,10 @@ function AccountPage() {
     if (!supabase) return;
     let active = true;
     let authStateEventSeen = false;
+    const previouslyGuest = window.localStorage.getItem(unmergedGuestKey);
+    if (previouslyGuest && clientUuidPattern.test(previouslyGuest)) {
+      setRecoverableGuestId(previouslyGuest);
+    }
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active || authStateEventSeen) return;
@@ -47,6 +55,30 @@ function AccountPage() {
     };
   }, []);
 
+  async function preserveUnmergedGuestIfPresent(clientId: string, token: string): Promise<boolean> {
+    try {
+      const [profile, inventory, sessions] = await Promise.all([
+        callHuntNexusApi<any>({ action: "player_profile_get", client_id: clientId, access_token: token }),
+        callHuntNexusApi<any>({ action: "player_inventory_get", client_id: clientId, access_token: token }),
+        callHuntNexusApi<any>({ action: "player_session_list", client_id: clientId, limit: 1, access_token: token }),
+      ]);
+      if (accessTokenRef.current !== token) return false;
+      const hasGuestData = profile?.data?.exists === true
+        || Number(inventory?.data?.summary?.main_slots ?? 0) > 0
+        || Number(inventory?.data?.summary?.backpack_items ?? 0) > 0
+        || Number(sessions?.data?.summary?.returned ?? 0) > 0;
+      if (hasGuestData) {
+        window.localStorage.setItem(unmergedGuestKey, clientId);
+        setRecoverableGuestId(clientId);
+      }
+      return hasGuestData;
+    } catch {
+      // Another signed-in account's bound identity is not a recoverable guest.
+      // Scope protection remains authoritative.
+      return false;
+    }
+  }
+
   async function resolveAccount(currentSession: Session) {
     const localClientId = getOrCreateClientId();
     if (!localClientId || !currentSession.access_token || resolvingRef.current) return;
@@ -65,8 +97,12 @@ function AccountPage() {
       const canonical = response.data.canonical_client_id;
       setSyncInfo(response.data);
       if (canonical && canonical !== localClientId) {
+        const guestPreserved = await preserveUnmergedGuestIfPresent(localClientId, requestedAccessToken);
+        if (accessTokenRef.current !== requestedAccessToken) return;
         setClientId(canonical);
-        setMessage("Conta existente recuperada. Dados convidados deste navegador não são mesclados automaticamente; os dados salvos anteriormente na conta foram preservados.");
+        setMessage(guestPreserved
+          ? "Conta recuperada. Seus dados convidados anteriores foram preservados separadamente e poderão ser retomados após sair da conta."
+          : "Conta recuperada. Dados convidados de outro perfil não são mesclados automaticamente.");
         window.setTimeout(() => window.location.reload(), 350);
       } else {
         setMessage(response.data.created
@@ -99,6 +135,14 @@ function AccountPage() {
     if (authError) setError(authError.message);
     else setMessage("Enviamos um link de acesso para o seu e-mail.");
     setSending(false);
+  }
+
+  function restorePreviousGuest() {
+    if (session || !recoverableGuestId || !clientUuidPattern.test(recoverableGuestId)) return;
+    setClientId(recoverableGuestId);
+    window.localStorage.removeItem(unmergedGuestKey);
+    setRecoverableGuestId(null);
+    window.location.reload();
   }
 
   async function signOut() {
@@ -179,6 +223,13 @@ function AccountPage() {
         </section>
       )}
 
+      {!session && recoverableGuestId && (
+        <section className="rounded-2xl border border-amber-300/15 bg-amber-300/[0.035] p-4 text-sm text-slate-300">
+          <div className="font-semibold text-amber-100">Dados convidados anteriores encontrados neste navegador</div>
+          <p className="mt-2 text-xs leading-5 text-slate-400">Esses dados não foram mesclados à conta. É possível voltar ao perfil convidado anterior enquanto estiver desconectado, sem excluir o que foi salvo na conta.</p>
+          <button type="button" className="hn-secondary-button mt-3" onClick={restorePreviousGuest}>Retomar perfil convidado anterior</button>
+        </section>
+      )}
       {message && <div className="text-sm text-emerald-300">{message}</div>}
       {error && <div className="text-sm text-red-300">{error}</div>}
     </div>
