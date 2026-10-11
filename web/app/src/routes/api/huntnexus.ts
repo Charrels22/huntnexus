@@ -319,6 +319,21 @@ const Body = z.discriminatedUnion("action", [
   }),
 ]);
 
+// Cloudflare overwrites cf-connecting-ip at the edge; never trust an arbitrary
+// caller-supplied client_id or x-forwarded-for for expensive admission.
+async function optimizerCallerHash(request: Request): Promise<string> {
+  const secret = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!secret) throw new Error("optimizer_identity_secret_missing");
+  const remoteIp = request.headers.get("cf-connecting-ip")?.trim();
+  const subject = remoteIp && remoteIp.length <= 64 ? remoteIp : "unattributed";
+  const bytes = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", bytes.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, bytes.encode(`huntnexus-optimizer-v1:${subject}`));
+  return Array.from(new Uint8Array(signature), (value) => value.toString(16).padStart(2, "0")).join("");
+}
+
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "cache-control": "no-store" } });
 
@@ -610,31 +625,68 @@ export const Route = createFileRoute("/api/huntnexus")({
               });
             }
             case "hunt_detail_setup": {
-              const setSelection = await rpc("huntnexus_optimizer_set_selection_universal", {
-                p_hunt_key: b.hunt_key,
-                p_vocation: b.vocation,
-                p_level: b.level,
-                p_set_objective: b.set_objective,
-                p_hand_per_source: 3,
-                p_per_body_slot: 2,
-                p_set_limit: 100,
-                p_frontier_limit: 100,
-                p_selection_limit: 20,
-                p_proficiency_selections: b.proficiency_selections,
-                p_character_profile: b.character_profile,
+              // The admission lease is shared between all Worker isolates and
+              // is released in finally; it cannot be bypassed with a client_id.
+              const subjectHash = await optimizerCallerHash(request);
+              const admission = await rpc("huntnexus_optimizer_admit", {
+                p_subject_hash: subjectHash,
               });
-              return json({
-                data: {
-                  ...setSelection,
-                  execution: {
-                    enumeration_set_limit: 100,
-                    frontier_limit: 100,
-                    returned_set_limit: 20,
-                    exhaustive_all_possible_combinations: false,
-                    candidate_scope: "bounded_concrete_enumeration",
+              if (admission?.allowed !== true) {
+                const retryAfter = Math.max(1, Math.min(600, Number(admission?.retry_after) || 10));
+                const detail = admission?.reason === "rate_limit"
+                  ? "Limite temporário de cálculos avançados atingido. Tente novamente mais tarde."
+                  : "Outro cálculo avançado está em execução. Aguarde alguns segundos e tente novamente.";
+                return Response.json({
+                  error: "optimizer_admission_denied",
+                  reason: admission?.reason || "unavailable",
+                  detail,
+                  retry_after_seconds: retryAfter,
+                }, {
+                  status: 429,
+                  headers: { "cache-control": "no-store", "retry-after": String(retryAfter) },
+                });
+              }
+              if (typeof admission.lease_id !== "string") {
+                throw new Error("optimizer_lease_missing");
+              }
+              try {
+                const setSelection = await rpc("huntnexus_optimizer_set_selection_universal", {
+                  p_hunt_key: b.hunt_key,
+                  p_vocation: b.vocation,
+                  p_level: b.level,
+                  p_set_objective: b.set_objective,
+                  p_hand_per_source: 3,
+                  p_per_body_slot: 2,
+                  p_set_limit: 100,
+                  p_frontier_limit: 100,
+                  p_selection_limit: 20,
+                  p_proficiency_selections: b.proficiency_selections,
+                  p_character_profile: b.character_profile,
+                });
+                return json({
+                  data: {
+                    ...setSelection,
+                    execution: {
+                      enumeration_set_limit: 100,
+                      frontier_limit: 100,
+                      returned_set_limit: 20,
+                      exhaustive_all_possible_combinations: false,
+                      candidate_scope: "bounded_concrete_enumeration",
+                      admission_stage: "distributed_optimizer_admission_v1",
+                    },
                   },
-                },
-              });
+                });
+              } finally {
+                try {
+                  await rpc("huntnexus_optimizer_release", {
+                    p_lease_id: admission.lease_id,
+                    p_subject_hash: subjectHash,
+                  });
+                } catch {
+                  // The 35s database lease expiry is the fail-safe.
+                  console.error("[huntnexus-api] optimizer lease release failed");
+                }
+              }
             }
             case "hunt_detail_spells": {
               const spells = await rpc("huntnexus_spell_candidates_with_unlocks_universal", {
