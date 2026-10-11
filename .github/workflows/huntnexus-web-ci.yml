@@ -6,6 +6,8 @@ on:
     paths:
       - "web/app/**"
       - "tests/session-parser-contract.mjs"
+      - "tests/five-vocation-real-source-reconstruction.mjs"
+      - "tests/fixtures/reconstructed-source-sessions-2026-10-11.json"
       - ".github/workflows/huntnexus-web-ci.yml"
   workflow_dispatch:
 
@@ -36,3 +38,6 @@ jobs:
 
       - name: Session Parser synthetic regression
         run: node --experimental-strip-types ../../tests/session-parser-contract.mjs
+
+      - name: Tier C sourced five-vocation numeric reconstruction (not raw gameplay exports)
+        run: node --experimental-strip-types ../../tests/five-vocation-real-source-reconstruction.mjs
