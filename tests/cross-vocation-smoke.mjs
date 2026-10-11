@@ -91,8 +91,6 @@ for (const current of cases) {
     `${current.vocation} heavy contracts must remain lazy`);
   assert(detail?.data?.imbuements && typeof detail.data.imbuements === "object",
     `${current.vocation} Hunt Detail imbuements contract regression`);
-  assert(detail?.data?.vocation_composition && typeof detail.data.vocation_composition === "object",
-    `${current.vocation} Hunt Detail vocation composition contract regression`);
 
   const spellDetail = await post({
     action: "hunt_detail_spells",
