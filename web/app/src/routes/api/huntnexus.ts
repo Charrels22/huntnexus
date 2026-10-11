@@ -623,7 +623,18 @@ export const Route = createFileRoute("/api/huntnexus")({
                 p_proficiency_selections: b.proficiency_selections,
                 p_character_profile: b.character_profile,
               });
-              return json({ data: setSelection });
+              return json({
+                data: {
+                  ...setSelection,
+                  execution: {
+                    enumeration_set_limit: 100,
+                    frontier_limit: 100,
+                    returned_set_limit: 20,
+                    exhaustive_all_possible_combinations: false,
+                    candidate_scope: "bounded_concrete_enumeration",
+                  },
+                },
+              });
             }
             case "hunt_detail_spells": {
               const spells = await rpc("huntnexus_spell_candidates_with_unlocks_universal", {
