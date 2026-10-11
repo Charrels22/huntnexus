@@ -242,7 +242,7 @@ function SessionImportPage() {
     }),
     [draft.hunt, draft.party, draft.input, draft.misc],
   );
-  const canPrepare = draft.hunt.trim().length > 0;
+  const canPrepare = draft.hunt.trim().length > 0 && preview.validation.recognized_metric_count > 0;
 
   function patch<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -411,7 +411,7 @@ function SessionImportPage() {
             <PreviewMetric label="Balance" value={formatCompactPreview(preview.hunt_analyse.balance_value)} />
             <PreviewMetric label="Damage" value={formatCompactPreview(preview.hunt_analyse.total_damage)} />
             <PreviewMetric label="Healing" value={formatCompactPreview(preview.hunt_analyse.total_healing)} />
-            <PreviewMetric label="Kills" value={String(preview.hunt_analyse.total_kills || 0)} />
+            <PreviewMetric label="Kills" value={preview.hunt_analyse.total_kills == null ? "Não informado" : String(preview.hunt_analyse.total_kills)} />
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
@@ -566,7 +566,8 @@ function SessionImportPage() {
               <Toggle active={draft.type === "normal"} onClick={() => patch("type", "normal")}>Normal</Toggle>
               <Toggle active={draft.type === "bounty"} onClick={() => patch("type", "bounty")}>Bounty</Toggle>
               <Toggle active={draft.favorite} onClick={() => patch("favorite", !draft.favorite)}>Favorita</Toggle>
-              <Toggle active={draft.publishHighscores} onClick={() => patch("publishHighscores", !draft.publishHighscores)}>Publicar em rankings</Toggle>
+              <Toggle active={draft.publishHighscores} onClick={() => patch("publishHighscores", !draft.publishHighscores)}>Permitir rankings futuros</Toggle>
+              <div className="mt-2 text-[11px] leading-5 text-slate-500">A sessão é privada. Esta opção registra apenas uma preferência para participação futura em rankings; nada é publicado automaticamente.</div>
             </div>
           </div>
         )}
@@ -635,7 +636,7 @@ function SessionImportPage() {
           disabled={!canPrepare || saving}
           onClick={() => void submitHunt()}
           className="hn-primary-button justify-center disabled:cursor-not-allowed disabled:opacity-40"
-          title={canPrepare ? "Parsear, validar e salvar a hunt" : "Cole o Hunt Analyzer primeiro"}
+          title={canPrepare ? "Validar e salvar a hunt privada" : "Cole um Hunt Analyzer com pelo menos uma métrica reconhecida"}
         >
           {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
           {saving ? "Processando..." : "Salvar hunt"}
