@@ -383,6 +383,43 @@ export const Route = createFileRoute("/api/huntnexus")({
           return data.user.id;
         };
 
+        const withAdvancedOptimizerSlot = async (perform: () => Promise<Response>): Promise<Response> => {
+          const subjectHash = await optimizerCallerHash(request);
+          const admission = await rpc("huntnexus_optimizer_admit", {
+            p_subject_hash: subjectHash,
+          });
+          if (admission?.allowed !== true) {
+            const retryAfter = Math.max(1, Math.min(600, Number(admission?.retry_after) || 10));
+            const detail = admission?.reason === "rate_limit"
+              ? "Limite temporário de cálculos avançados atingido. Tente novamente mais tarde."
+              : "Outro cálculo avançado está em execução. Aguarde alguns segundos e tente novamente.";
+            return Response.json({
+              error: "optimizer_admission_denied",
+              reason: admission?.reason || "unavailable",
+              detail,
+              retry_after_seconds: retryAfter,
+            }, {
+              status: 429,
+              headers: { "cache-control": "no-store", "retry-after": String(retryAfter) },
+            });
+          }
+          if (typeof admission.lease_id !== "string") {
+            throw new Error("optimizer_lease_missing");
+          }
+          try {
+            return await perform();
+          } finally {
+            try {
+              await rpc("huntnexus_optimizer_release", {
+                p_lease_id: admission.lease_id,
+                p_subject_hash: subjectHash,
+              });
+            } catch {
+              console.error("[huntnexus-api] optimizer lease release failed");
+            }
+          }
+        };
+
         const b = parsed.data;
 
         const scopedClientId =
@@ -625,31 +662,7 @@ export const Route = createFileRoute("/api/huntnexus")({
               });
             }
             case "hunt_detail_setup": {
-              // The admission lease is shared between all Worker isolates and
-              // is released in finally; it cannot be bypassed with a client_id.
-              const subjectHash = await optimizerCallerHash(request);
-              const admission = await rpc("huntnexus_optimizer_admit", {
-                p_subject_hash: subjectHash,
-              });
-              if (admission?.allowed !== true) {
-                const retryAfter = Math.max(1, Math.min(600, Number(admission?.retry_after) || 10));
-                const detail = admission?.reason === "rate_limit"
-                  ? "Limite temporário de cálculos avançados atingido. Tente novamente mais tarde."
-                  : "Outro cálculo avançado está em execução. Aguarde alguns segundos e tente novamente.";
-                return Response.json({
-                  error: "optimizer_admission_denied",
-                  reason: admission?.reason || "unavailable",
-                  detail,
-                  retry_after_seconds: retryAfter,
-                }, {
-                  status: 429,
-                  headers: { "cache-control": "no-store", "retry-after": String(retryAfter) },
-                });
-              }
-              if (typeof admission.lease_id !== "string") {
-                throw new Error("optimizer_lease_missing");
-              }
-              try {
+              return withAdvancedOptimizerSlot(async () => {
                 const setSelection = await rpc("huntnexus_optimizer_set_selection_universal", {
                   p_hunt_key: b.hunt_key,
                   p_vocation: b.vocation,
@@ -676,17 +689,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                     },
                   },
                 });
-              } finally {
-                try {
-                  await rpc("huntnexus_optimizer_release", {
-                    p_lease_id: admission.lease_id,
-                    p_subject_hash: subjectHash,
-                  });
-                } catch {
-                  // The 35s database lease expiry is the fail-safe.
-                  console.error("[huntnexus-api] optimizer lease release failed");
-                }
-              }
+              });
             }
             case "hunt_detail_spells": {
               const spells = await rpc("huntnexus_spell_candidates_with_unlocks_universal", {
@@ -893,6 +896,7 @@ export const Route = createFileRoute("/api/huntnexus")({
               });
             }
             case "final_optimizer": {
+              return withAdvancedOptimizerSlot(async () => {
               const params = {
                 p_vocation: b.vocation,
                 p_level: b.level,
@@ -978,6 +982,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                     main_set_is_baseline: true,
                   },
                 },
+              });
               });
             }
             case "boss_build": {
