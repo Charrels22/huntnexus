@@ -126,7 +126,7 @@ try {
   assert(importedSessionId, "session import must return session_id");
   assert(imported?.data?.status === "parsed", "session import must be parsed");
   assert(imported?.data?.community_evidence_written === false, "private import must not write community evidence");
-  assert(imported?.parsed?.methodology?.stage === "session_parser_v1", "session parser stage regression");
+  assert(imported?.parsed?.methodology?.stage === "session_parser_v2", "session parser stage regression");
   assert(imported?.parsed?.hunt_analyse?.duration_seconds === 5400, "session duration parse regression");
   assert(imported?.parsed?.hunt_analyse?.xp_gain === 12000000, "XP Gain parse regression");
   assert(imported?.parsed?.hunt_analyse?.total_kills === 150, "killed monsters parse regression");
