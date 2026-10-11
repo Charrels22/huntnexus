@@ -630,7 +630,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                 p_vocation: b.vocation,
                 p_level: b.level,
                 p_unlocked_requirement_keys: [],
-                p_attack_type: null,
+                p_spell_group: null,
                 p_element: null,
                 p_limit: 250,
               });
