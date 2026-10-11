@@ -173,6 +173,21 @@ const Body = z.discriminatedUnion("action", [
     character_profile: UniversalCharacterProfile.default({}),
   }),
   z.object({
+    action: z.literal("hunt_detail_setup"),
+    hunt_key: z.string().min(1).max(200),
+    vocation: Vocation,
+    level: Level,
+    set_objective: z.enum(["offense", "defense", "sustain", "utility", "balanced"]).default("balanced"),
+    proficiency_selections: ProficiencySelections.default({}),
+    character_profile: UniversalCharacterProfile.default({}),
+  }),
+  z.object({
+    action: z.literal("hunt_detail_spells"),
+    hunt_key: z.string().min(1).max(200),
+    vocation: Vocation,
+    level: Level,
+  }),
+  z.object({
     action: z.literal("session_import_save"),
     client_id: z.string().uuid(),
     blocks: z.object({
@@ -571,24 +586,47 @@ export const Route = createFileRoute("/api/huntnexus")({
                 }),
               });
             case "hunt_detail": {
-              const [factual, observed, defensive, imbuements, setSelection, composition, spells, media] = await Promise.all([
+              const [factual, observed, defensive, imbuements, media] = await Promise.all([
                 rpc("huntnexus_hunt_factual_profile", { p_hunt_key: b.hunt_key }),
                 rpc("huntnexus_hunt_observed_profile", { p_hunt_key: b.hunt_key }),
                 rpc("huntnexus_hunt_defensive_profile", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
                 rpc("huntnexus_imbuement_hunt_context_universal", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
-                rpc("huntnexus_optimizer_set_selection_universal", {
-                  p_hunt_key: b.hunt_key,
-                  p_vocation: b.vocation,
-                  p_level: b.level,
-                  p_set_objective: b.set_objective,
-                  p_hand_per_source: 3,
-                  p_per_body_slot: 2,
-                  p_set_limit: 100,
-                  p_frontier_limit: 100,
-                  p_selection_limit: 20,
-                  p_proficiency_selections: b.proficiency_selections,
-                  p_character_profile: b.character_profile,
-                }),
+                rpc("huntnexus_hunt_media_context", { p_hunt_key: b.hunt_key }),
+              ]);
+              return json({
+                data: {
+                  factual,
+                  observed,
+                  defensive,
+                  imbuements,
+                  media,
+                  methodology: {
+                    stage: "hunt_detail_lazy_heavy_v1",
+                    setup_loaded_on_demand: true,
+                    spells_loaded_on_demand: true,
+                    factual_separate_from_observed: true,
+                  },
+                },
+              });
+            }
+            case "hunt_detail_setup": {
+              const setSelection = await rpc("huntnexus_optimizer_set_selection_universal", {
+                p_hunt_key: b.hunt_key,
+                p_vocation: b.vocation,
+                p_level: b.level,
+                p_set_objective: b.set_objective,
+                p_hand_per_source: 3,
+                p_per_body_slot: 2,
+                p_set_limit: 100,
+                p_frontier_limit: 100,
+                p_selection_limit: 20,
+                p_proficiency_selections: b.proficiency_selections,
+                p_character_profile: b.character_profile,
+              });
+              return json({ data: setSelection });
+            }
+            case "hunt_detail_spells": {
+              const [composition, spells] = await Promise.all([
                 rpc("huntnexus_vocation_composition_universal", {
                   p_vocation: b.vocation,
                   p_level: b.level,
@@ -603,20 +641,8 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_element: null,
                   p_limit: 250,
                 }),
-                rpc("huntnexus_hunt_media_context", { p_hunt_key: b.hunt_key }),
               ]);
-              return json({
-                data: {
-                  factual,
-                  observed,
-                  defensive,
-                  imbuements,
-                  set_selection: setSelection,
-                  vocation_composition: composition,
-                  spells,
-                  media,
-                },
-              });
+              return json({ data: { vocation_composition: composition, spells } });
             }
             case "session_import_save": {
               const { parseSessionImport } = await import("@/lib/session-parser");
