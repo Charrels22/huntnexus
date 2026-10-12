@@ -1,0 +1,30 @@
+name: HuntNexus FE-33 Session Setup Modes QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe33-session-setup-modes-smoke.mjs"
+      - "tests/fe24-five-vocation-private-snapshots-smoke.mjs"
+      - "db/migrations/0158_fe33_session_setup_choice.sql"
+      - "web/app/src/routes/session.tsx"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - ".github/workflows/huntnexus-fe33-session-setup-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  explicit-session-setup-modes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test explicit Main/hunt rejection, no-record mode and legacy auto
+        run: node tests/fe33-session-setup-modes-smoke.mjs
