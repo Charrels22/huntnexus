@@ -1,0 +1,27 @@
+name: HuntNexus FE-31 Live Proficiency QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe31-live-proficiency-catalog-smoke.mjs"
+      - "web/app/tests/frontend-live-browser-smoke.mjs"
+      - ".github/workflows/huntnexus-fe31-proficiency-live-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  live-catalog-five-vocations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Read-only live catalog, 2 passes EK RP ED MS EM
+        run: node tests/fe31-live-proficiency-catalog-smoke.mjs
