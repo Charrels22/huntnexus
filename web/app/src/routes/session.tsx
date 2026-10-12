@@ -360,7 +360,15 @@ function SessionImportPage() {
       window.dispatchEvent(new Event("huntnexus:player-sessions-changed"));
       await navigate({ to: "/sessions" });
     } catch (e) {
-      setSubmitError((e as Error).message || "Não foi possível salvar a hunt.");
+      const code = (e as Error).message || "";
+      const reasons: Record<string, string> = {
+        session_setup_main_unavailable: "Seu Set Main não está disponível. Atualize o Profile e tente novamente.",
+        session_setup_hunt_unavailable: "A build salva desta hunt não está mais disponível. Atualize o setup antes de salvar.",
+        session_setup_hunt_required: "Escolha uma hunt do catálogo para utilizar sua build específica.",
+        session_setup_vocation_required: "Selecione a vocação antes de registrar equipamento.",
+        session_setup_mode_invalid: "O tipo de setup enviado não foi reconhecido.",
+      };
+      setSubmitError(reasons[code] || code || "Não foi possível salvar a hunt.");
     } finally {
       setSaving(false);
     }
