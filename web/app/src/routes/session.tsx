@@ -419,6 +419,22 @@ function SessionImportPage() {
             <PreviewMetric label="Kills" value={preview.hunt_analyse.total_kills == null ? "Não informado" : String(preview.hunt_analyse.total_kills)} />
           </div>
 
+          {draft.party.trim().length > 0 && (
+            <div data-testid="party-totals-preview" className="mt-4 rounded-2xl border border-sky-400/15 bg-sky-400/[0.035] p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-200">Totais da Party Hunt</div>
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                Valores agregados da equipe. Loot, supplies, balance, dano e healing da party não são ganhos individuais
+                de nenhum participante.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                <PreviewMetric label="Loot da party" value={formatCompactPreview(preview.party_hunt.totals.loot_value)} />
+                <PreviewMetric label="Supplies da party" value={formatCompactPreview(preview.party_hunt.totals.supplies_value)} />
+                <PreviewMetric label="Balance da party" value={formatCompactPreview(preview.party_hunt.totals.balance_value)} />
+                <PreviewMetric label="Damage da party" value={formatCompactPreview(preview.party_hunt.totals.total_damage)} />
+                <PreviewMetric label="Healing da party" value={formatCompactPreview(preview.party_hunt.totals.total_healing)} />
+              </div>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.creature_rows} criaturas</span>
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.looted_item_rows} itens de loot</span>
