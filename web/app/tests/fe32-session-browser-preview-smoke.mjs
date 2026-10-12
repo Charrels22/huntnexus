@@ -72,8 +72,8 @@ try{
   await page.getByText("Setup usado na sessão").waitFor();
   const location=page.getByPlaceholder("Selecione no catálogo ou digite o nome da hunt");
   await location.focus();
-  await page.getByRole("button",{name:/The Void \\(Zao\\)/}).waitFor({timeout:15000});
-  await page.getByRole("button",{name:/The Void \\(Zao\\)/}).click();
+  await page.getByRole("button",{name:/The Void \(Zao\)/}).waitFor({timeout:15000});
+  await page.getByRole("button",{name:/The Void \(Zao\)/}).click();
   const setup=page.getByTestId("session-setup-mode");
   await setup.waitFor({timeout:15000});
   await page.getByText("Build da hunt disponível").waitFor({timeout:15000});
