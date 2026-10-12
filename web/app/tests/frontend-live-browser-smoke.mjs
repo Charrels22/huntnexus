@@ -177,7 +177,40 @@ try {
   for (const [vocation, family] of vocationFamilies) {
     const profilePage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const errors = [];
+    const catalogDiagnostics = { requests: [], responses: [], failed: [] };
+    const apiPayload = (request) => {
+      try { return request.postDataJSON(); } catch { return null; }
+    };
     profilePage.on("pageerror", (error) => errors.push(error.message));
+    profilePage.on("request", (request) => {
+      const payload = apiPayload(request);
+      if (request.url().includes("/api/huntnexus") &&
+          (payload?.action === "player_profile_proficiency_catalog" ||
+           payload?.action === "player_profile_get")) {
+        catalogDiagnostics.requests.push({
+          action: payload.action, vocation: payload.vocation ?? null,
+          family: payload.weapon_family ?? null,
+        });
+      }
+    });
+    profilePage.on("response", (response) => {
+      const payload = apiPayload(response.request());
+      if (payload?.action === "player_profile_proficiency_catalog") {
+        catalogDiagnostics.responses.push({
+          vocation: payload.vocation, family: payload.weapon_family,
+          status: response.status(),
+        });
+      }
+    });
+    profilePage.on("requestfailed", (request) => {
+      const payload = apiPayload(request);
+      if (payload?.action === "player_profile_proficiency_catalog") {
+        catalogDiagnostics.failed.push({
+          vocation: payload.vocation, family: payload.weapon_family,
+          reason: request.failure()?.errorText ?? "unknown",
+        });
+      }
+    });
     await profilePage.route("**/api/huntnexus", async (route) => {
       const request = route.request();
       const body = request.postDataJSON();
@@ -207,14 +240,33 @@ try {
       }
       await route.continue();
     });
-    const catalogPromise = profilePage.waitForResponse((response) =>
-      response.url().includes("/api/huntnexus") &&
-      response.request().postData()?.includes('"action":"player_profile_proficiency_catalog"') &&
-      response.request().postData()?.includes('"vocation":"' + vocation + '"'),
-      { timeout: 30000 },
-    );
-    await profilePage.goto(baseUrl + "/profile", { waitUntil: "domcontentloaded", timeout: 30000 });
-    const catalog = await (await catalogPromise).json();
+    // FE-31: match the parsed request, not a fragile JSON-string substring.
+    // Keep the listener active before navigation; never mock factual catalog data.
+    const catalogPromise = profilePage.waitForResponse((response) => {
+      if (!response.url().includes("/api/huntnexus")) return false;
+      const payload = apiPayload(response.request());
+      return payload?.action === "player_profile_proficiency_catalog" &&
+        payload.vocation === vocation && payload.weapon_family === family;
+    }, { timeout: 40000 });
+    let catalogResponse;
+    try {
+      await profilePage.goto(baseUrl + "/profile", { waitUntil: "domcontentloaded", timeout: 30000 });
+      catalogResponse = await catalogPromise;
+    } catch (error) {
+      await profilePage.screenshot({
+        path: resolve(output, "fe31-proficiency-failure-" + vocation.toLowerCase() + ".png"),
+        fullPage: true,
+      }).catch(() => {});
+      throw new Error("FE-31 " + vocation + "/" + family +
+        ": proficiency request/response missing after navigation: " + String(error) +
+        "; diagnostics=" + JSON.stringify(catalogDiagnostics) +
+        "; pageErrors=" + JSON.stringify(errors));
+    }
+    if (!catalogResponse.ok()) {
+      throw new Error("FE-31 " + vocation + ": live proficiency returned HTTP " +
+        catalogResponse.status() + "; diagnostics=" + JSON.stringify(catalogDiagnostics));
+    }
+    const catalog = await catalogResponse.json();
     if (!(Number(catalog?.data?.summary?.eligible_tree_count) > 0)) {
       throw new Error(vocation + ": live proficiency catalog returned no eligible trees");
     }
@@ -237,7 +289,11 @@ try {
     results.push({
       route: "/profile#weapon-proficiency-" + vocation.toLowerCase(),
       vocation, family, eligible_trees: catalog.data.summary.eligible_tree_count,
-      selected_tree: firstTree.item_key, icon_mappings_examined: iconCoverage.length,
+      selected_tree: firstTree.item_key,
+      selected_tree_topology: firstTree.topology_status,
+      verified_source_backed_tree: firstTree.topology_status === "source_backed_level_position",
+      request_diagnostics: catalogDiagnostics,
+      icon_mappings_examined: iconCoverage.length,
       loaded_icons: iconCoverage.filter((x) => x.loaded).length,
       failed_external_icons: iconCoverage.filter((x) => !x.loaded).map((x) => x.filename),
       screenshot: filename, actual_human_profile_used: false,
