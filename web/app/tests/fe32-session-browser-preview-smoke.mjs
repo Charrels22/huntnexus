@@ -15,7 +15,18 @@ try{
   const ctx=await browser.newContext({viewport:{width:1360,height:900}});
   const page=await ctx.newPage();
   const runtimeErrors=[];
+  const imageTraffic=[];
   page.on("pageerror",e=>runtimeErrors.push(e.message));
+  page.on("response",response=>{
+    if(response.url().toLowerCase().includes(".gif")) {
+      imageTraffic.push({status:response.status(),url:response.url().slice(0,220)});
+    }
+  });
+  page.on("requestfailed",request=>{
+    if(request.url().toLowerCase().includes(".gif")) {
+      imageTraffic.push({error:request.failure()?.errorText ?? "unknown",url:request.url().slice(0,220)});
+    }
+  });
   await page.route("**/api/huntnexus", async route=>{
     let request={};
     try{request=route.request().postDataJSON()}catch{}
@@ -59,6 +70,7 @@ try{
   await page.getByRole("button",{name:"Misc",exact:true}).click();
   await page.getByText("blue crystal shard",{exact:true}).waitFor();
   await page.getByText("02:03h",{exact:true}).waitFor();
+  await page.waitForTimeout(4500); // Allow live external GIFs to load or fail.
   const imageNames=await page.locator('img[src*="Especial:Redirect/file/"]').evaluateAll(imgs=>
     imgs.map(img=>({name:img.alt,src:img.getAttribute("src"),complete:img.complete,loaded:img.naturalWidth>0})));
   assert.ok(imageNames.some(x=>x.name==="blue crystal shard"&&x.src?.includes("Blue_Crystal_Shard.gif")),
@@ -68,7 +80,8 @@ try{
   results.push({case:"saved_session_read_with_synthetic_fixture",result:"PASS",
     raw_misc_duration_visible:true,canonical_sprite_filenames_verified:true,
     observed_image_loads:imageNames.filter(x=>x.loaded).length,
-    image_files:imageNames.map(x=>({name:x.name,loaded:x.loaded}))});
+    image_files:imageNames.map(x=>({name:x.name,loaded:x.loaded})),
+    image_traffic:imageTraffic.slice(-15)});
   console.log(JSON.stringify({status:"ok",stage:"fe32_session_browser_preview",
     real_player_session_used:false,real_gameplay_proven:false,real_api_writes:false,
     results},null,2));
