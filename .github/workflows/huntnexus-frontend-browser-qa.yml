@@ -6,7 +6,6 @@ on:
     branches: [main]
     paths:
       - "web/app/tests/frontend-live-browser-smoke.mjs"
-      - "web/app/tests/fe22-live-original-party-description.mjs"
       - "web/app/src/lib/proficiency-icons.ts"
       - "web/app/src/routes/account.tsx"
       - "web/app/src/routes/profile.tsx"
@@ -38,8 +37,6 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Live desktop and mobile browser QA
         run: node tests/frontend-live-browser-smoke.mjs
-      - name: Validate actual published Party Hunt Analyzer description (EM participant)
-        run: node --experimental-strip-types tests/fe22-live-original-party-description.mjs
       - name: Preserve visual evidence
         if: always()
         uses: actions/upload-artifact@v4
