@@ -14,7 +14,8 @@ export function sessionImportWarningLabel(warning: string): string {
   const labels: Record<string, string> = {
     hunt_analyzer_missing: "Hunt Analyzer ausente",
     no_primary_metrics_recognized: "Métricas principais não reconhecidas",
-    invalid_duration_format: "A duração informada está fora do formato aceito (HH:MMh) ou contém minutos inválidos",
+    invalid_duration_format: "Duração não reconhecida na linha Session (aceitos HH:MMh, HH:MM, HH:MM:SS ou 1h 30m)",
+    session_time_range_unrecognized: "O intervalo de datas da sessão não pôde ser interpretado",
     party_block_present_but_no_players_recognized: "Party enviada, mas nenhum jogador foi reconhecido",
     input_block_present_but_no_damage_rows_recognized: "Damage Input enviado sem linhas de dano reconhecidas",
   };
@@ -207,21 +208,49 @@ function textMetric(textLines: string[], labels: string[]): string | null {
 
 function parseDurationSeconds(textLines: string[]) {
   const raw = textMetric(textLines, ["Session"]);
-  if (!raw) return null;
-  const h = raw.match(/^(\d+)\s*:\s*([0-5]\d)\s*h$/i);
-  if (h?.[1] && h?.[2]) {
-    const seconds = Number(h[1]) * 3600 + Number(h[2]) * 60;
-    return Number.isSafeInteger(seconds) ? seconds : null;
+  if (raw) {
+    // Tibia commonly exports HH:MMh; retain earlier 1h 30m support and
+    // accept clock-style HH:MM / HH:MM:SS without guessing from XP/h.
+    const clock = raw.match(/^(\d+)\s*:\s*([0-5]\d)(?::([0-5]\d))?\s*h?$/i);
+    if (clock?.[1] && clock?.[2]) {
+      const seconds = Number(clock[1]) * 3600 + Number(clock[2]) * 60 + Number(clock[3] || 0);
+      return Number.isSafeInteger(seconds) ? seconds : null;
+    }
+    const hm = raw.match(/^(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?$/i);
+    if (hm && (hm[1] || hm[2])) {
+      const hours = Number(hm[1] || 0);
+      const minutes = Number(hm[2] || 0);
+      if (minutes >= 60) return null;
+      const seconds = hours * 3600 + minutes * 60;
+      return Number.isSafeInteger(seconds) ? seconds : null;
+    }
+    // Explicitly invalid Session text must remain invalid, never masked by
+    // guessed time or inferred XP/h.
+    return null;
   }
-  const hm = raw.match(/^(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?$/i);
-  if (hm && (hm[1] || hm[2])) {
-    const hours = Number(hm[1] || 0);
-    const minutes = Number(hm[2] || 0);
-    if (minutes >= 60) return null;
-    const seconds = hours * 3600 + minutes * 60;
-    return Number.isSafeInteger(seconds) ? seconds : null;
+
+  // If the Session line is absent, timestamps copied in "Session data" are
+  // primary evidence for elapsed time. Interpret both timestamps in the same
+  // offset-free clock space; reject calendar overflow and reversed intervals.
+  const range = parseSessionRange(textLines);
+  if (!range.from_raw || !range.to_raw) return null;
+  function timestamp(value: string): number | null {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[, T]+(\d{2}):(\d{2}):(\d{2})$/);
+    if (!match) return null;
+    const [year, month, day, hour, minute, second] = match.slice(1).map(Number);
+    if (!year || !month || !day || hour == null || minute == null || second == null) return null;
+    const stamp = Date.UTC(year, month - 1, day, hour, minute, second);
+    const date = new Date(stamp);
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day || date.getUTCHours() !== hour ||
+        date.getUTCMinutes() !== minute || date.getUTCSeconds() !== second) return null;
+    return stamp;
   }
-  return null;
+  const start = timestamp(range.from_raw);
+  const end = timestamp(range.to_raw);
+  if (start == null || end == null || end < start) return null;
+  const seconds = (end - start) / 1000;
+  return seconds <= 7 * 86400 ? seconds : null;
 }
 
 function parseSessionRange(textLines: string[]) {
@@ -545,6 +574,9 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
   if (!huntLines.length) warnings.push("hunt_analyzer_missing");
   if (recognizedMetricCount === 0) warnings.push("no_primary_metrics_recognized");
   if (textMetric(primary, ["Session"]) !== null && metrics.duration_seconds === null) warnings.push("invalid_duration_format");
+  if (textMetric(primary, ["Session"]) === null &&
+      textMetric(primary, ["Session data"]) !== null &&
+      metrics.duration_seconds === null) warnings.push("session_time_range_unrecognized");
   if (partyLines.length && partyPlayers.length === 0) warnings.push("party_block_present_but_no_players_recognized");
   if (inputLines.length && input.elements.length === 0 && input.sources.length === 0) warnings.push("input_block_present_but_no_damage_rows_recognized");
 
