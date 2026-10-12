@@ -24,8 +24,14 @@ for (const sample of fixture.vocations) {
   assert.equal(parsed.methodology.community_evidence_written, false);
   assert.equal(parsed.methodology.unknown_values_invented, false);
   for (const [field, expected] of Object.entries(sample.expected)) {
-    assert.equal(parsed.hunt_analyse[field], expected,
+    const isPartyAggregate = block === "party" && field !== "duration_seconds";
+    const parsedValue = isPartyAggregate ? parsed.party_hunt.totals[field] : parsed.hunt_analyse[field];
+    assert.equal(parsedValue, expected,
       sample.vocation + " source excerpt must not rewrite " + field);
+    if (isPartyAggregate) {
+      assert.equal(parsed.hunt_analyse[field], null,
+        "Party financial/combat total must not become personal " + field);
+    }
   }
   assert.equal(parsed.hunt_analyse.total_kills, null,
     sample.vocation + " missing Killed Monsters section must remain unknown");
