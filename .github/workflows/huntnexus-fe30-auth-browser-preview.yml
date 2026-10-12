@@ -1,0 +1,62 @@
+name: HuntNexus FE-30 Auth Scope Browser Preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "web/app/src/lib/account-session-guard.ts"
+      - "web/app/src/lib/client-id.ts"
+      - "web/app/src/routes/account.tsx"
+      - "web/app/src/components/shell/app-shell.tsx"
+      - "web/app/tests/fe30-auth-scope-preview-smoke.mjs"
+      - ".github/workflows/huntnexus-fe30-auth-browser-preview.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  auth-scope-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install app and pinned browser runner
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build locally for preview
+        run: npm run build
+      - name: Launch isolated preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/huntnexus-fe30-preview.log 2>&1 &
+          echo $! > /tmp/huntnexus-fe30-preview.pid
+          for i in $(seq 1 35); do
+            if curl --fail --silent http://127.0.0.1:4173/account > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/huntnexus-fe30-preview.log
+          exit 1
+      - name: Browser regression without account or Magic Link
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe30-auth-scope-preview-smoke.mjs
+      - name: Preserve browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huntnexus-fe30-auth-browser-preview
+          path: web/app/fe30-browser-qa/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Preview diagnostics on failure
+        if: failure()
+        run: cat /tmp/huntnexus-fe30-preview.log || true
