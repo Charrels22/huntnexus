@@ -114,14 +114,16 @@ function SessionImportPage() {
 
   useEffect(() => {
     const query = draft.location.trim();
-    if (query.length < 2 || draft.huntKey) {
+    if (draft.huntKey || !huntSearchOpen) {
       setHuntSuggestions([]);
       return;
     }
 
     let activeRequest = true;
     const timer = window.setTimeout(() => {
-      callHuntNexusApi<any>({ action: "search_hunts", query, limit: 8 })
+      // Show a selectable catalog on focus, including before typing.
+      // Free text remains available for RubinOT hunts absent from the catalog.
+      callHuntNexusApi<any>({ action: "search_hunts", query, limit: query ? 20 : 30 })
         .then((response) => {
           if (!activeRequest) return;
           const rows = Array.isArray(response?.data) ? response.data : [];
@@ -137,7 +139,7 @@ function SessionImportPage() {
       activeRequest = false;
       window.clearTimeout(timer);
     };
-  }, [draft.location, draft.huntKey]);
+  }, [draft.location, draft.huntKey, huntSearchOpen]);
 
   useEffect(() => {
     const clientId = getOrCreateClientId();
@@ -286,6 +288,21 @@ function SessionImportPage() {
     setSaving(true);
     setSubmitError("");
     setValidationWarnings([]);
+
+    const important = preview.validation.warnings.filter((warning) =>
+      ["invalid_duration_format", "session_time_range_unrecognized",
+       "input_block_present_but_no_damage_rows_recognized",
+       "party_block_present_but_no_players_recognized"].includes(warning)
+    );
+    if (important.length && !window.confirm(
+      "Alguns dados não foram reconhecidos: " +
+      important.map(sessionImportWarningLabel).join("; ") +
+      ". Salvar a sessão para revisão mesmo assim?"
+    )) {
+      setSaving(false);
+      setValidationWarnings(important);
+      return;
+    }
 
     try {
       const response = await callHuntNexusApi<any>({
@@ -521,14 +538,18 @@ function SessionImportPage() {
                   <input
                     className="hn-control"
                     value={draft.location}
-                    onFocus={() => huntSuggestions.length && setHuntSearchOpen(true)}
+                    onFocus={() => setHuntSearchOpen(true)}
                     onChange={(e) => {
                       patch("location", e.target.value);
                       patch("huntKey", "");
+                      setHuntSearchOpen(true);
                     }}
-                    placeholder="Digite para buscar uma hunt"
+                    placeholder="Selecione no catálogo ou digite o nome da hunt"
                     autoComplete="off"
                   />
+                  <div className="mt-1.5 text-[10px] text-slate-500">
+                    Clique para escolher uma hunt do catálogo. Nomes fora do catálogo são aceitos, mas não vinculam uma build automaticamente.
+                  </div>
                   {draft.huntKey && (
                     <div className="mt-1.5 text-[10px] text-emerald-300/80">
                       Vinculada ao catálogo HuntNexus
@@ -604,8 +625,22 @@ function SessionImportPage() {
         )}
       </section>
 
-      {draft.huntKey && draft.vocation && sessionLoadoutPreview && (
-        <section className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.025] p-4">
+      <section className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.025] p-4">
+        {!draft.huntKey || !draft.vocation ? (
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Setup usado na sessão</div>
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              Para registrar o snapshot do equipamento, selecione uma hunt do catálogo e a vocação do personagem.
+              O HuntNexus usa a build salva para aquela hunt ou seu Set Main. Um nome de local digitado livremente não seleciona a build.
+            </p>
+            <Link to="/profile" className="mt-2 inline-block text-xs font-semibold text-cyan-300 hover:underline">Configurar Set Main e BP no Profile →</Link>
+          </div>
+        ) : !sessionLoadoutPreview ? (
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Setup usado na sessão</div>
+            <p className="mt-2 text-xs text-slate-400">Verificando a build da hunt e o Set Main. O salvamento não inventará equipamento ausente.</p>
+          </div>
+        ) : (
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Setup que será registrado</div>
@@ -653,8 +688,8 @@ function SessionImportPage() {
           <div className="mt-3 text-[10px] leading-4 text-slate-600">
             O setup é salvo como snapshot histórico. Alterações futuras no Profile ou na BP não mudam esta sessão.
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <section className="flex flex-col gap-3 border-t border-white/8 pt-5 sm:flex-row sm:items-center">
         <button type="button" className="hn-secondary-button justify-center" onClick={saveDraft}>
