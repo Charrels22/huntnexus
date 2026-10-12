@@ -481,11 +481,18 @@ export const Route = createFileRoute("/api/huntnexus")({
             case "account_unbind": {
               const userId = await authUserId(b.access_token);
               if (!userId) return json({ error: "invalid_auth_token" }, 401);
-              return json({
-                data: await rpc("huntnexus_account_unbind", {
-                  p_auth_user_id: userId,
-                }),
+              const result = await rpc("huntnexus_account_unbind", {
+                p_auth_user_id: userId,
               });
+              // An account containing Profile, Main/BP, builds or sessions must
+              // not turn into an unprotected guest UUID after unlinking.
+              if (result?.error === "private_data_present_unbind_blocked") {
+                return json({
+                  error: "private_data_present_unbind_blocked",
+                  private_data_deleted: false,
+                }, 409);
+              }
+              return json({ data: result });
             }
             case "player_profile_get":
               return json({
