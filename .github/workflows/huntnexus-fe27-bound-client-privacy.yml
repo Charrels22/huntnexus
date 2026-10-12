@@ -7,12 +7,6 @@ on:
         description: UUID of an ephemeral synthetic client_id already bound in Supabase
         required: true
         type: string
-  push:
-    branches: [main]
-    paths:
-      - "tests/fe27-bound-client-privacy-smoke.mjs"
-      - ".github/workflows/huntnexus-fe27-bound-client-privacy.yml"
-
 permissions:
   contents: read
 
@@ -21,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
-      HUNTNEXUS_BOUND_CANARY_ID: ${{ inputs.bound_client_id || '01b1a96e-b20b-42fc-bb54-c85a4a277946' }}
+      HUNTNEXUS_BOUND_CANARY_ID: ${{ inputs.bound_client_id }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
