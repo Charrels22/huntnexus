@@ -21,6 +21,7 @@ function AccountPage() {
   const [syncInfo, setSyncInfo] = useState<any>(null);
   const [recoverableGuestId, setRecoverableGuestId] = useState<string | null>(null);
   const resolvingRef = useRef(false);
+  const pendingSessionRef = useRef<Session | null>(null);
   const accessTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -40,13 +41,27 @@ function AccountPage() {
       if (data.session) void resolveAccount(data.session);
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
       authStateEventSeen = true;
+      const wasAuthenticated = Boolean(accessTokenRef.current);
       accessTokenRef.current = nextSession?.access_token ?? null;
       setSession(nextSession);
-      if (nextSession) void resolveAccount(nextSession);
-      else setSyncInfo(null);
+      if (nextSession) {
+        void resolveAccount(nextSession);
+      } else {
+        pendingSessionRef.current = null;
+        setSyncInfo(null);
+        // SIGNED_OUT can arrive from another tab or an expired/revoked session,
+        // not only our local button. A canonical ID must never remain as an
+        // apparent guest identity after the Auth session disappears.
+        if (event === "SIGNED_OUT" && wasAuthenticated) {
+          window.localStorage.removeItem("huntnexus.session-import.draft.v1");
+          window.sessionStorage.removeItem("huntnexus.open-player-session");
+          setClientId(window.crypto.randomUUID());
+          setMessage("Sessão encerrada. Seus dados vinculados continuam protegidos; este navegador iniciou um novo perfil convidado.");
+        }
+      }
     });
 
     return () => {
@@ -81,7 +96,15 @@ function AccountPage() {
 
   async function resolveAccount(currentSession: Session) {
     const localClientId = getOrCreateClientId();
-    if (!localClientId || !currentSession.access_token || resolvingRef.current) return;
+    if (!localClientId || !currentSession.access_token) return;
+    if (resolvingRef.current) {
+      // A TOKEN_REFRESHED event may arrive while the previous token is still
+      // being resolved. Do not silently discard the newest valid session.
+      if (accessTokenRef.current === currentSession.access_token) {
+        pendingSessionRef.current = currentSession;
+      }
+      return;
+    }
     resolvingRef.current = true;
     setSyncing(true);
     setError("");
@@ -116,6 +139,12 @@ function AccountPage() {
     } finally {
       resolvingRef.current = false;
       setSyncing(false);
+      const pending = pendingSessionRef.current;
+      pendingSessionRef.current = null;
+      if (pending && pending.access_token !== currentSession.access_token &&
+          accessTokenRef.current === pending.access_token) {
+        void resolveAccount(pending);
+      }
     }
   }
 
@@ -148,6 +177,7 @@ function AccountPage() {
   async function signOut() {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
+    const beforeSignOut = getOrCreateClientId();
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
       setError("Não foi possível encerrar sua sessão. Tente novamente.");
@@ -157,11 +187,16 @@ function AccountPage() {
     // After sign-out, a new guest UUID prevents accidental 401s or access to
     // the previously bound profile without signing in again.
     accessTokenRef.current = null;
+    pendingSessionRef.current = null;
     // Raw analyzer drafts can contain player names and private combat data.
     // Do not leak a signed-in account's unsaved draft into guest mode.
     window.localStorage.removeItem("huntnexus.session-import.draft.v1");
     window.sessionStorage.removeItem("huntnexus.open-player-session");
-    setClientId(window.crypto.randomUUID());
+    // The Auth SIGNED_OUT event normally rotates the UUID already. Avoid a
+    // second rotation, while keeping a fallback if the event was not emitted.
+    if (getOrCreateClientId() === beforeSignOut) {
+      setClientId(window.crypto.randomUUID());
+    }
     setSession(null);
     setSyncInfo(null);
     setMessage("Sessão encerrada. Os dados salvos continuam na sua conta; rascunhos locais não salvos foram limpos e este navegador iniciou um novo perfil convidado.");
@@ -217,7 +252,7 @@ function AccountPage() {
             </div>
           )}
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <InfoCard title="Identidade canônica" text={syncInfo?.canonical_client_id || "Resolvendo..."} />
+            <InfoCard title="Perfil vinculado" text={syncInfo?.resolved ? "Acesso protegido pela sua conta" : "Resolvendo..."} />
             <InfoCard title="Comportamento" text={syncInfo?.client_id_changed ? "Este dispositivo foi ligado aos dados já existentes da conta." : "Os dados atuais deste navegador são a base desta conta."} />
           </div>
         </section>
