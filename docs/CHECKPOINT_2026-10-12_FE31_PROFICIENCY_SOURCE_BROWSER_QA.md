@@ -1,6 +1,6 @@
 # HuntNexus — FE-31: Proficiency Browser QA, fonte real e transparência da topologia
 
-**Data:** 2026-10-12 (BRT). **Status:** CI e API pública aprovados; Browser QA final de topologia ainda em execução quando este registro inicial foi criado.
+**Data:** 2026-10-12 (BRT). **Status:** **FE-31 CONCLUÍDA TECNICAMENTE**, com Web CI, API read-only e Browser QA do frontend publicado aprovados. Sem declaração de eliminação definitiva de flake ou homologação de jogador.
 
 ## Motivo e limites
 
@@ -20,8 +20,8 @@ Na FE-30, um run de Browser QA falhou uma vez em `page.waitForResponse` (30 s), 
 - [Web CI com verificação visual de topologia #38300193689 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38300193689).
 - [Live catalog QA #38299948284 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38299948284): dez respostas HTTP 200, mediana **653 ms**, máximo **1.179 ms** (amostra pontual de Github Runner, não SLO).
 - [Live catalog QA após alteração final #38300193639 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38300193639).
-- [Frontend Browser QA #38300193630](https://github.com/Charrels22/huntnexus/actions/runs/38300193630) — aguardando resultado final para o fechamento desta etapa.
-- [Frontend Browser QA instrumentado #38299883208](https://github.com/Charrels22/huntnexus/actions/runs/38299883208) — passou em primeira execução; rerun de estabilidade solicitado, resultado pendente neste momento.
+- **[Frontend Browser QA #38300193630 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38300193630):** cinco vocações com árvore source-backed, nenhum ícone externo falhou nas árvores testadas e UI de ordem não comprovada validada visualmente para EK e EM (`positions_not_invented=true`). Artifact `huntnexus-live-frontend-qa`, ID `11769669263`, 7.840.074 bytes com screenshots `weapon-proficiency-unverified-ek.png`, `weapon-proficiency-unverified-em.png` e os demais.
+- **[Frontend Browser QA instrumentado #38299883208 — SUCCESS em duas execuções](https://github.com/Charrels22/huntnexus/actions/runs/38299883208)**, incluindo repetição manual do job (attempt 2); catálogos e sprites das cinco vocações aprovados.
 
 ### Cobertura factual apurada — chamada pública read-only de 2026-10-12
 
