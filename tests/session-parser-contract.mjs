@@ -108,6 +108,26 @@ const overflowMinutes = parseSessionImport({ hunt: "Session: 1h 75m\nXP Gain: 12
 assert.equal(overflowMinutes.hunt_analyse.duration_seconds, null,
   "overlong minutes field must not roll into hours");
 
+const partyWithXp = [
+  "Session data: From 2026-10-11, 20:00:00 to 2026-10-11, 21:00:00",
+  "Session: 01:00h",
+  "Loot Type: Leader",
+  "XP Gain: 123,456",
+  "Private Fixture One (Leader)",
+  "Loot: 200,000",
+  "Supplies: 50,000",
+  "Balance: 150,000",
+  "Private Fixture Two",
+  "Loot: 100,000",
+  "Supplies: 20,000",
+].join("\n");
+assert.equal(detectAnalyzerType(partyWithXp), "party",
+  "Explicit Party Hunt markers must override a generic XP Gain key");
+const parsedPartyWithXp = parseSessionImport({party:partyWithXp});
+assert.equal(parsedPartyWithXp.party_hunt.party_size, 2);
+assert.equal(parsedPartyWithXp.party_hunt.totals.duration_seconds, 3600);
+assert.equal(parsedPartyWithXp.party_hunt.players.length, 2);
+
 console.log(JSON.stringify({
   status: "ok",
   stage: "session_parser_contract_v3",
