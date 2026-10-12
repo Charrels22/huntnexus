@@ -1,6 +1,6 @@
 # HuntNexus — FE-33: Seleção explícita do equipamento por sessão
 
-**Data:** 2026-10-12 (BRT). **Estado:** backend implantado, regressões HTTP vivas e snapshots de cinco vocações aprovados. O aceite visual completo é acompanhado em Actions e este documento será atualizado com seu resultado. **A validação do export privado de The Void (Zao) continua aberta no Issue #1.**
+**Data:** 2026-10-12 (BRT). **Estado:** **FE-33 concluída tecnicamente**, com migração Supabase, Web CI, testes de API publicados, snapshots privados das cinco vocações e Browser QA local + publicado aprovados. **A validação do export privado de The Void (Zao) continua aberta no Issue #1.**
 
 ## Problema e contrato
 
@@ -17,7 +17,8 @@ O usuário constatou que a caixa "Setup usado" no histórico aparecia sem equipa
 
 - [FE-33 Setup Mode HTTP Smoke — #38307753310 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38307753310): Main não cadastrado = HTTP 409 `session_setup_main_unavailable`; escolha de hunt sem `hunt_key` = HTTP 409 `session_setup_hunt_required`; `none` criou snapshot `not_recorded`; `auto` antigo manteve `not_available` sem hunt; sessão privada de convidado inacessível a outro `client_id`. **2 sessões totalmente sintéticas criadas e excluídas, 0 contas reais, 0 sessões de jogadores utilizadas**.
 - [Five-Vocation Private Snapshot Smoke — #38307734053 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38307734053): **EK/RP/ED/MS/EM** com Profile/Main/BP reais do catálogo, performance numérica e analisadores **sintéticos**; Set Main forçado sobre build da hunt salva seleciona Main corretamente; modo `hunt` seleciona BP; Main original nunca substituído, sessão histórica permanece imutável, cleanup privado aprovado. Total no resumo: 5 perfis criados/excluídos, 10 sessões persistidas nos dois checkpoints de performance e excluídas; as sessões de escolha adicional também foram excluídas imediatamente.
-- [FE-33 Browser QA local + publicado — execução mais recente](https://github.com/Charrels22/huntnexus/actions/runs/38307870729): acompanha UI de quatro modos e payload sem escrita de backend real. Resultado deve ser confirmado ao final do workflow, não inferido.
+- **[FE-33 Browser QA local + publicado — #38307870729 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38307870729):** com API `session_import_save` interceptada e recusada (sem gravações reais), verificou por Playwright a seleção de `hunt` (Amber Wand/BP), `main` (Soultainter/Set Main), `none` (sem itens), `auto` (opção da hunt) e o envio `metadata.setupMode=main` e `hunt_key=the-void`. O mesmo workflow testou duração, Missing Input/Misc e loot: 3/3 GIFs decodificados tanto na build local quanto no domínio Cloudflare, 2 execuções de browser com PASS. [Artefato de screenshots](https://github.com/Charrels22/huntnexus/actions/runs/38307870729): `huntnexus-fe32-session-visual-qa`, id `11773606159`, 1.735.062 bytes, com `fe33-session-hunt-build-selected.png` e `fe33-session-main-selected.png` por target.
+- **[Web CI final — #38307870749 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38307870749):** build e TypeScript, contrato Parser e regressões anteriores aprovadas.
 
 ## Pendências — não marcar Issue #1 resolvido
 
