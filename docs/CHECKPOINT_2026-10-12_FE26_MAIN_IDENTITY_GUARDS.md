@@ -47,3 +47,13 @@ A API valida o enum `option_type` por schema antes da função SQL: valor fora d
 - O catálogo de equipamentos tem proveniência, mas os testes não comprovam a equivalência visual ou mecânica com o RubinOT nem ganhos reais de XP/DPS.
 - Nenhum usuário externo foi convidado ao piloto. Não foram criadas sessões públicas ou dados de comunidade.
 - Prioridades posteriores: checks de client-bound auth real, validação do cliente RubinOT com cinco jogadores e análise de compatibilidade de novas armas/slots à medida que o jogo muda.
+
+
+## FE-26 final CI and database verification
+
+- **[HuntNexus FE-26 Build Choice Invariants, run #38265593210 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38265593210)** on commit `8bc3675a2858f757fafb0f553c636781904a9563`. All EK/RP/ED/MS/EM scenarios passed against the deployed API; the workflow output reports **10 rejection assertions per vocation**, genuine Main accepted, `owned_variant` accepted, existing choice retained after failed overwrites, cross-UUID ownership checks, and empty test inventory/choice after cleanup. Total: **50 negative boundary checks across 5 vocations**.
+- Compatibility/snapshot regression after migration remained **SUCCESS** on both historical pipelines: [FE-24 #38265043435](https://github.com/Charrels22/huntnexus/actions/runs/38265043435) and [FE-25 #38265043317](https://github.com/Charrels22/huntnexus/actions/runs/38265043317).
+- Production SQL post-CI: `remaining_saved_hunt_choices=0`, `old_synthetic_profiles=0`, `old_synthetic_sessions=0`, `community_sessions=100`. There were `20` rows in the **global** private inventory at audit time; these were **not** deleted or attributed to the test, and the FE-26 test verified its own five randomized client IDs had no remaining inventory. Do not confuse total private inventory rows with synthetic residue.
+- `huntnexus_player_hunt_build_choice_save` permission audit: `anon=false`, `authenticated=false`, `service_role=true`; `deployed_guard=true`.
+- The first new run [#38265460594](https://github.com/Charrels22/huntnexus/actions/runs/38265460594) failed because an HTTP input-schema 400 for invalid enum was initially asserted as a SQL-domain result. The test was corrected to assert `HTTP 400 invalid_input`. No service functionality was relaxed.
+- **FE-26 closed for automated choice identity and negative compatibility tests.** Human RubinOT sprite/perk and in-game Analyzer confirmation, as well as actual cross-device email Magic Link verification, remain separate release gates.
