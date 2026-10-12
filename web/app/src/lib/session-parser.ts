@@ -373,7 +373,7 @@ function parseInputAnalyzer(textLines: string[]) {
   let maxDps: number | null = null;
 
   for (const line of textLines) {
-    const totalMatch = line.match(/^Total\s*:\s*([\d,.]+)$/i);
+    const totalMatch = line.match(/^(?:Total|Received Damage Total)\s*:\s*([\d,.]+)$/i);
     if (totalMatch?.[1]) {
       totalDamage = parseIntegerLike(totalMatch[1]);
       continue;
@@ -408,7 +408,7 @@ function parseInputAnalyzer(textLines: string[]) {
     const normalized = label.toLowerCase();
     const knownElement = ["physical","fire","ice","earth","energy","death","holy","life drain","mana drain","drowning"].includes(normalized);
 
-    if (section === "elements" || knownElement) {
+    if (section === "elements" || (section === null && knownElement)) {
       elements.push({ element: normalized.replace(/\s+/g, "_"), damage: value, share_percent: share });
     } else if (section === "sources") {
       sources.push({ source_name_raw: label, damage: value, share_percent: share });
