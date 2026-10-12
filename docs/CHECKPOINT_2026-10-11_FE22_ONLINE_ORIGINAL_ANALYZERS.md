@@ -46,3 +46,13 @@ Sources (public Tibia ecosystem, Tier C **not RubinOT verified**):
 1. Verify final FE-22 browser/CI run logs, fix real failures, and update this checkpoint with exact URLs.
 2. For full raw Hunt Analyzer coverage of EK/RP/ED/MS, exercise published originals in memory in a browser where possible without mirroring third-party posts.
 3. Find authentic RubinOT client examples or request consented anonymized exports when no public original exists.
+
+
+## FE-22 implementation and CI addendum
+
+- Public-source excerpt parser + new Party-over-Hunt classifier and synthetic overlap case **PASS** in `HuntNexus Web CI` [#38192694707](https://github.com/Charrels22/huntnexus/actions/runs/38192694707).
+- Latest Web CI build and parser regression **PASS** [#38193012732](https://github.com/Charrels22/huntnexus/actions/runs/38193012732).
+- After fixing the fixture path and adding an explicit hydration wait, the published **Frontend Browser QA PASS** [#38193154789](https://github.com/Charrels22/huntnexus/actions/runs/38193154789), including RP short original-source excerpt shown in Session Analyzer and EM Party header entry. No session was saved.
+- Full public Party Hunt Analyzer on [Azzilon Castle x4](https://www.hunt-analyser.com/hunt_sessions/32789) is parsed in-memory by a public-site browser test, with four participants; EM is one participant. The second full input source is [ED Solo Summer Court](https://www.hunt-analyser.com/hunt_sessions/40884), with 1,242 killed monsters and 0 XP/h as published by the author. Its public webpage summary displays a separately calculated XP/h; the parser must not overwrite the author's original field.
+- Public third-party description fetching is now its **own** workflow `.github/workflows/huntnexus-original-source-qa.yml`; an outage of the external site must not prevent CI for the HuntNexus app. Early failures were from an incorrectly escaped solo section regex (corrected to anchor on real session date), not from numeric parsing. The final independent public-source run must be checked separately and never inferred green from Web CI.
+- Each original public-source excerpt is small and attributed; third-party full texts and player names are neither stored in Git nor the database.
