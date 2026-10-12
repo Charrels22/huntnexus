@@ -20,6 +20,9 @@ try {
   const context=await browser.newContext({viewport:{width:1200,height:850}});
   await context.addInitScript(({scopeKey,markerKey,draftKey,openKey,boundUuid})=>{
     try {
+      // Init scripts run again on redirect; seed once per isolated tab.
+      if (sessionStorage.getItem("fe30.qa-seeded") === "1") return;
+      sessionStorage.setItem("fe30.qa-seeded","1");
       localStorage.setItem(scopeKey,boundUuid);
       localStorage.setItem(markerKey,boundUuid);
       localStorage.setItem(draftKey,"FE30 SYNTHETIC private draft");
