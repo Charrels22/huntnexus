@@ -180,7 +180,7 @@ try {
   // No network scrape or private session write: only public, short authentic
   // excerpts pinned with provenance are pasted into the published Analyzer UI.
   const publicExcerpts = JSON.parse(readFileSync(
-    resolve("../../../tests/fixtures/fe22-online-original-analyzer-excerpts.json"), "utf8"
+    resolve("../../tests/fixtures/fe22-online-original-analyzer-excerpts.json"), "utf8"
   )).vocations;
   const rpPublic = publicExcerpts.find(x => x.vocation === "RP");
   const emPublic = publicExcerpts.find(x => x.vocation === "EM");
