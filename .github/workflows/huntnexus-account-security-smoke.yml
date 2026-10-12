@@ -6,6 +6,11 @@ on:
     branches: [main]
     paths:
       - "tests/account-security-smoke.mjs"
+      - "web/app/src/routes/account.tsx"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - "web/app/src/integrations/supabase/client.browser.ts"
+      - "web/app/src/lib/api/huntnexus.ts"
+      - "web/app/src/lib/client-id.ts"
       - ".github/workflows/huntnexus-account-security-smoke.yml"
 
 permissions:
