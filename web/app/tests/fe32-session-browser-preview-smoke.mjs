@@ -18,6 +18,7 @@ try{
   const runtimeErrors=[];
   const imageTraffic=[];
   let interceptedSyntheticSave=null;
+  let interceptedSyntheticReparse=null;
   page.on("pageerror",e=>runtimeErrors.push(e.message));
   page.on("response",response=>{
     if(response.url().toLowerCase().includes(".gif")) {
@@ -58,6 +59,31 @@ try{
       validation:{warnings:[]},parser:{version:"session_parser_v2",raw_blocks_preserved:true,community_evidence_written:false},
       loadout_snapshot:{},
     };
+    else if(action==="player_session_reparse_preview")data={
+      session_id:sessionId,
+      previous_parser_version:"session_parser_v1",
+      proposed_parser_version:"session_parser_v2",
+      snapshot_source:"not_available",
+      raw_blocks_preserved:true,loadout_snapshot_preserved:true,
+      expected_fingerprint:"1".repeat(32),
+      review:{
+        changed:true,safe_to_apply:true,no_raw_text_exposed:true,
+        changes:[{key:"hunt_analyse.duration_seconds",label:"Duração (segundos)",
+          before:null,after:7380,regression:false}],
+        unchanged_metric_count:25,warnings_before:[],warnings_after:[],
+        regression_reasons:[],
+      },
+    };
+    else if(action==="player_session_reparse_apply"){
+      interceptedSyntheticReparse=request;
+      data={
+        updated:true,session_id:sessionId,
+        new_parser_version:"session_parser_v2",
+        raw_blocks_preserved:true,loadout_snapshot_preserved:true,
+        original_raw_blocks_preserved:true,
+        original_loadout_snapshot_preserved:true,
+      };
+    }
     else if(action==="session_import_save"){
       interceptedSyntheticSave=request;
       return route.fulfill({status:405,contentType:"application/json",body:JSON.stringify({error:"synthetic_write_disabled"})});
@@ -104,6 +130,21 @@ try{
   nav=await page.goto(site+"/sessions",{waitUntil:"domcontentloaded",timeout:30000});
   assert.ok(nav?.ok());
   await page.getByText("Duração: 2h 03m").waitFor({timeout:15000});
+  await page.getByTestId("session-reparse-compare").click();
+  await page.getByTestId("session-reparse-diff").waitFor({timeout:15000});
+  await page.getByText("Duração (segundos)",{exact:true}).waitFor();
+  const apply=page.getByTestId("session-reparse-apply");
+  assert.equal(await apply.isDisabled(),true,"Apply must require explicit confirmation checkbox");
+  await page.getByTestId("session-reparse-confirm").check();
+  assert.equal(await apply.isEnabled(),true);
+  page.once("dialog",dialog=>dialog.accept());
+  await apply.click();
+  await page.getByText(/Sessão reinterpretada. Texto original, setup histórico/).waitFor({timeout:15000});
+  assert.equal(interceptedSyntheticReparse?.action,"player_session_reparse_apply");
+  assert.equal(interceptedSyntheticReparse?.session_id,sessionId);
+  assert.equal(interceptedSyntheticReparse?.expected_fingerprint,"1".repeat(32));
+  assert.equal(interceptedSyntheticReparse?.confirm,true);
+  await page.screenshot({path:resolve(folder,"fe34-session-reparse-applied-synthetic.png"),fullPage:true});
   await page.getByRole("button",{name:"Misc",exact:true}).click();
   await page.getByText("blue crystal shard",{exact:true}).waitFor();
   await page.getByText("02:03h",{exact:true}).waitFor();
@@ -119,6 +160,7 @@ try{
   assert.deepEqual(runtimeErrors,[],"Browser must not raise runtime exceptions");
   results.push({case:"saved_session_read_with_synthetic_fixture",result:"PASS",
     raw_misc_duration_visible:true,canonical_sprite_filenames_verified:true,
+    fe34_reparse_preview_confirmed_without_real_write:true,
     observed_image_loads:imageNames.filter(x=>x.loaded).length,
     image_files:imageNames.map(x=>({name:x.name,loaded:x.loaded})),
     image_traffic:imageTraffic.slice(-15)});
