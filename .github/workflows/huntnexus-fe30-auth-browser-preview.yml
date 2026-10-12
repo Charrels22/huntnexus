@@ -49,6 +49,8 @@ jobs:
           exit 1
       - name: Browser regression without account or Magic Link
         run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe30-auth-scope-preview-smoke.mjs
+      - name: Published frontend signed-out identity boundary (synthetic only)
+        run: HUNTNEXUS_BASE_URL=https://huntnexus.charr3ls22.workers.dev node tests/fe30-auth-scope-preview-smoke.mjs
       - name: Preserve browser evidence
         if: always()
         uses: actions/upload-artifact@v4
