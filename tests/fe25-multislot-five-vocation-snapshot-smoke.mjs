@@ -99,6 +99,17 @@ async function runCase(c){
     // not overwrite Main or create a Hunt choice. Validity is controlled by the
     // real SQL loadout rules, never bypassed for testing.
     if(c.vocation==="RP"){
+      // Prove loadout incompatibility, not merely the non-owned-item guard:
+      // temporarily make the wrong bolt and sorcerer robe available in BP.
+      const negativeItems=[];
+      for(const item_key of ["spectral-bolt","soulmantle"]){
+        const stored=await post({action:"player_inventory_put",client_id,
+          storage_kind:"backpack",item_key,quantity:1});
+        assert.equal(stored?.saved,true,
+          "RP negative-control item must be temporarily owned: "+item_key);
+        inventoryIds.push(stored.inventory_id);
+        negativeItems.push(stored.inventory_id);
+      }
       const invalidRP=[
         {reason:"required_quiver_missing",expected:"incomplete",
           selection:{...c.alternative,offhand:undefined}},
@@ -129,8 +140,17 @@ async function runCase(c){
         assert.equal(previous?.exists,false,
           "RP invalid loadout must not create or alter saved choice");
       }
+      // Returning the extra items avoids contaminating the real BP/alternate
+      // snapshot, and cleanup still catches every failure before this point.
+      for(const inventory_id of negativeItems){
+        const deleted=await post({action:"player_inventory_remove",client_id,inventory_id});
+        assert.equal(deleted?.deleted,true,"RP negative-control BP removal");
+        const pos=inventoryIds.indexOf(inventory_id);
+        if(pos>=0)inventoryIds.splice(pos,1);
+      }
       const untouched=await post({action:"player_inventory_get",client_id});
       assert.equal(untouched?.main_set?.weapon?.item_key,c.main.weapon);
+      assert.equal(untouched?.summary?.backpack_items,Object.keys(c.alternative).length);
     }
     choiceStarted=true;
     const choice=await post({action:"player_hunt_build_choice_save",client_id,
