@@ -63,6 +63,48 @@ try {
     real_email_sent: false, real_magic_link_tested: false,
     screenshot: "account-otp-mocked-rate-limit.png",
   });
+  // FE-29: negative network response and accepted OTP request are both mocked.
+  // This proves only UI resilience: no actual authentication or email delivery.
+  await account.unroute("**/auth/v1/otp*");
+  let failedNetworkOtp = 0;
+  await account.route("**/auth/v1/otp*", async (route) => {
+    failedNetworkOtp++;
+    await route.abort("failed");
+  });
+  await account.getByRole("button", { name: "Enviar link" }).click();
+  await account.getByText(/FE28 mocked rate limit/i).waitFor({ state: "hidden", timeout: 15000 });
+  await account.getByText(/Não foi possível (enviar|solicitar) o link/i).waitFor({ timeout: 15000 });
+  if (failedNetworkOtp !== 1) throw new Error("FE-29 network failure OTP mock not intercepted exactly once");
+  if (!(await account.getByRole("button", { name: "Enviar link" }).isEnabled())) {
+    throw new Error("OTP network failure left request button disabled");
+  }
+  await account.screenshot({ path: resolve(output, "account-otp-mocked-network-failure.png"), fullPage: true });
+  results.push({
+    route: "/account#otp-mocked-network-failure",
+    network_failure_recoverable: true,
+    real_email_sent: false, real_magic_link_tested: false,
+    screenshot: "account-otp-mocked-network-failure.png",
+  });
+
+  await account.unroute("**/auth/v1/otp*");
+  let acceptedOtp = 0;
+  await account.route("**/auth/v1/otp*", async (route) => {
+    acceptedOtp++;
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+  await account.getByRole("button", { name: "Enviar link" }).click();
+  await account.getByText(/Solicitação recebida\. Confira sua caixa de entrada/i).waitFor({ timeout: 15000 });
+  if (acceptedOtp !== 1) throw new Error("FE-29 accepted OTP mock not intercepted exactly once");
+  if (!(await account.getByRole("button", { name: "Enviar link" }).isEnabled())) {
+    throw new Error("Accepted OTP request left button disabled");
+  }
+  await account.screenshot({ path: resolve(output, "account-otp-mocked-request-accepted.png"), fullPage: true });
+  results.push({
+    route: "/account#otp-mocked-request-accepted",
+    api_request_accepted: true,
+    delivery_claimed: false, real_email_sent: false, real_magic_link_tested: false,
+    screenshot: "account-otp-mocked-request-accepted.png",
+  });
   await account.close();
 
   const profile = await audit("/profile", /Cadastre seu personagem uma vez/i, "profile-empty-desktop.png");
