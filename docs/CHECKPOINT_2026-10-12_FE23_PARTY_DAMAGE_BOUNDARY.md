@@ -51,3 +51,15 @@ Additional source for a published *Input Damage Summary* numeric sample: https:/
 - Real Magic Link login and canonical profile recovery across two devices using an authorized test account.
 - Closed external pilot per `docs/PILOT_ACCEPTANCE_EK_RP_ED_MS_EM_FE21.md`; no invitations sent.
 - Monitor optimizer quota/performance and final deploy SHA/canonical snapshot correctness.
+
+
+## FE-23 final verification — SUCCESS
+
+- **Web CI after personal/party UI separation and source-linked input checks: SUCCESS** [run 38245223397](https://github.com/Charrels22/huntnexus/actions/runs/38245223397). Includes TypeScript/Vite production build, numeric reconstructed Tier C 5-vocation fixtures, 5 genuine source excerpts, Party-only vs Hunt+Party, and incoming Damage Input source-linked numeric summary.
+- **Deployed frontend Chromium desktop/mobile Browser QA: SUCCESS** [run 38245223271](https://github.com/Charrels22/huntnexus/actions/runs/38245223271), confirms the new panel of total Party metrics, group-vs-individual warning, and explicitly missing personal Balance on a Party-only source, alongside Profile/Planner/Account/Weapon Proficiency checks. GitHub Actions artifact `huntnexus-live-frontend-qa` stores the screenshots.
+- **Original public four-player Party plus ED solo in-memory source parsing: SUCCESS** [run 38244769062](https://github.com/Charrels22/huntnexus/actions/runs/38244769062), with the new strict `hunt_analyse.loot_value`, `balance_value`, `supplies_value`, `total_damage` null assertions for party-only input.
+- **Player Session production HTTP smoke after core parser change: SUCCESS** [run 38244607833](https://github.com/Charrels22/huntnexus/actions/runs/38244607833). Existing single-vocation EK session, and MS inventory coverage, retain their cleanup semantics.
+- Initial Web CI attempts failed because an older FE-22 assertion incorrectly expected the EM Party team's Loot in `hunt_analyse.loot_value`. The asserted contract was corrected to check the separate `party_hunt.totals` and personal `null`; final green evidence above supersedes these failures.
+- Initial browser assertion failed because CSS `uppercase` transforms metric captions in `innerText`; the test now checks normalized lowercase and whitespace. No product cosmetic change was made for this test failure.
+
+The overall HuntNexus is still **not 100% player-homologated** and the source-backed Damage Input example is a published summary transcript, **not an original game clipboard export**.
