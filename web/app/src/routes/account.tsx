@@ -150,20 +150,27 @@ function AccountPage() {
 
   async function sendMagicLink() {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase || !email.trim() || sending) return;
+    const destination = email.trim();
+    if (!supabase || !destination || sending) return;
     setSending(true);
     setError("");
     setMessage("");
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: window.location.origin + "/account",
-        shouldCreateUser: true,
-      },
-    });
-    if (authError) setError(authError.message);
-    else setMessage("Enviamos um link de acesso para o seu e-mail.");
-    setSending(false);
+    try {
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email: destination,
+        options: {
+          emailRedirectTo: window.location.origin + "/account",
+          shouldCreateUser: true,
+        },
+      });
+      if (authError) setError("Não foi possível enviar o link: " + authError.message);
+      else setMessage("Solicitação recebida. Confira sua caixa de entrada e spam para acessar a conta.");
+    } catch {
+      setError("Não foi possível solicitar o link agora. Verifique sua conexão e tente novamente.");
+    } finally {
+      // An unexpected network exception must not leave the OTP form locked.
+      setSending(false);
+    }
   }
 
   function restorePreviousGuest() {
