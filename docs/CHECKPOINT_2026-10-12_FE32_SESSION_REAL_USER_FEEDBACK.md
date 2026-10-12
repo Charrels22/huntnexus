@@ -1,6 +1,7 @@
 # HuntNexus — FE-32: retorno de sessão real de MS, revisão de importação e backlog de homologação
 
 **Data:** 2026-10-12 (BRT).
+**Estado:** FE-32 **CONCLUÍDA TECNICAMENTE** com Web CI e Playwright no preview **e frontend publicado** aprovados. A homologação dos seis pontos da sessão original continua ABERTA no Issue #1.
 **Motivação:** o usuário cadastrou no frontend uma hunt real de MS em **The Void (Zao)** e encaminhou capturas indicando dados ausentes/incompletos em Sessions. Este registro **não** contém o texto original de nenhum analyzer, dados privados do usuário, nem token de autenticação.
 
 **Backlog canônico de aceite:** [GitHub Issue #1](https://github.com/Charrels22/huntnexus/issues/1) — permanecer aberto até comparação com a importação original autorizada e nova validação na UI publicada.
@@ -12,7 +13,7 @@
 | 1 | Setup usado ausente no cadastro | Exibir sempre informações sobre o snapshot; diferencia hunt do catálogo / nome livre, build salva por hunt / Set Main; CTA Profile. **Escolha manual explícita ainda pendente** | Pendente |
 | 2 | Duração do Hunt Analyzer não capturada | Parser aceita HH:MMh, HH:MM, HH:MM:SS, `1h 30m`; quando `Session` ausente, pode calcular diferença entre timestamps de `Session data` válidos. Não deriva duração de XP/h e não mascara duração explicitamente inválida; alerta visível em formato/intervalo não reconhecido | Pendente; sessão antiga permanece intacta |
 | 3 | Local deveria oferecer catálogo | Foco no Local inicia busca pública e mostra até 30 hunts sem digitar; pesquisa filtrada tem até 20. Nome livre continua aceito, mas sem criar vínculo `hunt_key` implícito | Pendente |
-| 4 | Imagens Looted Items falhando | Resolução de arquivo MediaWiki converte nomes lower-case de loot para títulos oficiais; Playwright em preview confirmou **3/3 carregados via HTTP 200** após aguardar a rede | **Preview PASS**, Cloudflare publicado e demais itens pendentes |
+| 4 | Imagens Looted Items falhando | Normalização dos títulos de arquivos e regressão Playwright validaram **3/3 GIFs carregados via HTTP 200** no preview **e domínio publicado** | **PASS nos 3 itens testados**, restante do loot real ainda pendente |
 | 5 | Damage Input sem valores por elemento/fonte | A UI expõe contagem de elementos/fontes **antes de salvar**; quando o bloco foi enviado mas não reconhecido, exige confirmação explícita para guardar uma sessão pendente de revisão; **não atribui dano causado como recebido** | Pendente de raw Damage Input original |
 | 6 | Combat Stats parciais/ausentes | A UI de importação identifica Miscellaneous ausente; no histórico, `numeric_value: null` preserva `raw_value` em vez de representar tudo como zero/traço | Pendente de raw Miscellaneous original |
 
@@ -33,7 +34,9 @@
 - [Frontend Browser QA legado #38302678493 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38302678493). Usa frontend publicado, portanto não demonstra que as mudanças FE-32 já foram implantadas.
 - [Five-Vocation Private Snapshot Smoke #38302447947 — SUCCESS após rerun](https://github.com/Charrels22/huntnexus/actions/runs/38302447947). Uma tentativa falhou em EM com `fetch failed` e cleanup temporariamente afetado; passou na repetição. Registrar a flutuação de rede.
 - **[FE-32 Session Browser Preview #38303071626 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38303071626):** interface de cadastro, duração 02:03h (123 min), busca de The Void no Local, contexto de Input/Misc ausentes e leitura de histórico/Misc com fixtures sintéticas. A primeira medição imediata das imagens marcou 0/3 ainda carregando, portanto adicionamos espera por rede antes de concluir.
-- **[FE-32 Session Browser Diagnostics #38303346664 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38303346664):** Playwright real contra frontend compilado confirmou **3/3 sprites efetivamente carregados** (naturalWidth > 0) após conclusão do fetch. Requisições passaram pelos redirects do TibiaWiki (302, 301) e receberam **HTTP 200** nos GIFs canônicos `Blue_Gem.gif`, `Blue_Crystal_Shard.gif` e `Collar_of_Green_Plasma.gif`. Este resultado demonstra que a normalização de nomes funciona **na build local instrumentada**; a versão Cloudflare publicada e os outros itens ainda exigem verificação após deploy. Artifact: `huntnexus-fe32-session-visual-qa`.
+- **[FE-32 Session Browser Diagnostics #38303346664 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38303346664):** primeira medição após aguardar rede comprovou 3/3 sprites realmente carregados (naturalWidth > 0) no preview.
+- **[FE-32 Browser QA final #38304043641 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38304043641):** Playwright confirmou preview de cadastro, duração, Local com catálogo, aviso de blocos Damage/Misc, leitura da sessão com fixtures e **3/3 GIFs carregados tanto na compilação local quanto no frontend Cloudflare publicado** (cada fonte com resultado PASS). Requisições dos GIFs canônicos tiveram redirects 302/301 e resposta final HTTP 200. Screenshot artifact `huntnexus-fe32-session-visual-qa`, id `11771129236`, 741.833 bytes; inclui diretórios `preview/` e `published/`.
+- **[Web CI #38304043511 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38304043511)** para o último commit testado, incluindo build TypeScript, regressões FE-28/30/32, parser e excerpts das cinco vocações.
 
 ## Condições para fechamento de homologação
 
