@@ -4,6 +4,7 @@ import { CheckCircle2, Cloud, Loader2, LogOut, Mail, RefreshCw, ShieldCheck } fr
 import type { Session } from "@supabase/supabase-js";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId, setClientId } from "@/lib/client-id";
+import { isolateClientAfterAuthLoss, markBoundClientId } from "@/lib/account-session-guard";
 import { getSupabaseBrowserClient } from "@/integrations/supabase/client.browser";
 
 export const Route = createFileRoute("/account")({ component: AccountPage });
@@ -55,10 +56,8 @@ function AccountPage() {
         // SIGNED_OUT can arrive from another tab or an expired/revoked session,
         // not only our local button. A canonical ID must never remain as an
         // apparent guest identity after the Auth session disappears.
-        if (event === "SIGNED_OUT" && wasAuthenticated) {
-          window.localStorage.removeItem("huntnexus.session-import.draft.v1");
-          window.sessionStorage.removeItem("huntnexus.open-player-session");
-          setClientId(window.crypto.randomUUID());
+        if ((event === "SIGNED_OUT" || event === "INITIAL_SESSION") &&
+            isolateClientAfterAuthLoss(event === "SIGNED_OUT" && wasAuthenticated)) {
           setMessage("Sessão encerrada. Seus dados vinculados continuam protegidos; este navegador iniciou um novo perfil convidado.");
         }
       }
@@ -118,16 +117,22 @@ function AccountPage() {
       if (accessTokenRef.current !== requestedAccessToken) return;
       if (!response?.data?.resolved) throw new Error(response?.data?.error || "account_not_resolved");
       const canonical = response.data.canonical_client_id;
+      if (typeof canonical !== "string" || !clientUuidPattern.test(canonical)) {
+        throw new Error("invalid_canonical_client_id");
+      }
       setSyncInfo(response.data);
       if (canonical && canonical !== localClientId) {
         const guestPreserved = await preserveUnmergedGuestIfPresent(localClientId, requestedAccessToken);
         if (accessTokenRef.current !== requestedAccessToken) return;
-        setClientId(canonical);
+        if (!setClientId(canonical) || !markBoundClientId(canonical)) {
+          throw new Error("canonical_scope_not_persisted");
+        }
         setMessage(guestPreserved
           ? "Conta recuperada. Seus dados convidados anteriores foram preservados separadamente e poderão ser retomados após sair da conta."
           : "Conta recuperada. Dados convidados de outro perfil não são mesclados automaticamente.");
         window.setTimeout(() => window.location.reload(), 350);
       } else {
+        if (!markBoundClientId(canonical)) throw new Error("canonical_scope_not_persisted");
         setMessage(response.data.created
           ? "Conta vinculada aos dados atuais deste navegador."
           : "Conta sincronizada.");
@@ -195,14 +200,10 @@ function AccountPage() {
     // the previously bound profile without signing in again.
     accessTokenRef.current = null;
     pendingSessionRef.current = null;
-    // Raw analyzer drafts can contain player names and private combat data.
-    // Do not leak a signed-in account's unsaved draft into guest mode.
-    window.localStorage.removeItem("huntnexus.session-import.draft.v1");
-    window.sessionStorage.removeItem("huntnexus.open-player-session");
-    // The Auth SIGNED_OUT event normally rotates the UUID already. Avoid a
-    // second rotation, while keeping a fallback if the event was not emitted.
+    // If SIGNED_OUT already isolated this scope, do not rotate it twice.
+    // Otherwise fall back to one protected cleanup after signOut succeeds.
     if (getOrCreateClientId() === beforeSignOut) {
-      setClientId(window.crypto.randomUUID());
+      isolateClientAfterAuthLoss(true);
     }
     setSession(null);
     setSyncInfo(null);
