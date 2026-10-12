@@ -225,11 +225,11 @@ try {
   await excerptPage.getByText("1/4 blocos preenchidos").first().waitFor({timeout:14000});
   const partyPanel = excerptPage.getByTestId("party-totals-preview");
   await partyPanel.waitFor({timeout:16000});
-  const partyContent = await partyPanel.innerText();
-  if (!partyContent.includes("Balance da party") ||
-      !partyContent.includes("Supplies da party") ||
+  const partyContent = (await partyPanel.innerText()).toLocaleLowerCase("pt-BR").replace(/\s+/g," ");
+  if (!partyContent.includes("balance da party") ||
+      !partyContent.includes("supplies da party") ||
       !partyContent.includes("não são ganhos individuais")) {
-    throw new Error("Party aggregate panel is absent or not clearly distinguished from personal metrics");
+    throw new Error("Party aggregate panel is absent or not clearly distinguished from personal metrics: "+partyContent.slice(0,220));
   }
   const personalBalance = excerptPage.getByText("Balance",{exact:true}).first().locator("..");
   if (!(await personalBalance.innerText()).includes("—")) {
