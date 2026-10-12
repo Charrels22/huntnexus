@@ -188,9 +188,16 @@ try {
   const excerptErrors = [];
   excerptPage.on("pageerror", e => excerptErrors.push(e.message));
   await excerptPage.goto(baseUrl + "/session", {waitUntil:"domcontentloaded",timeout:30000});
+  await excerptPage.getByRole("heading",{name:/Cadastrar uma hunt/i}).first().waitFor({timeout:14000});
+  // Wait for TanStack hydration and guest draft restoration before input.
+  await excerptPage.waitForTimeout(1100);
   const sourceInput = excerptPage.locator("textarea").first();
   await sourceInput.fill(rpPublic.excerpt);
-  await excerptPage.getByText("5 métricas reconhecidas").first().waitFor({timeout:15000});
+  await excerptPage.getByText(/métricas reconhecidas/).first().waitFor({timeout:15000});
+  const recognizedLabel = await excerptPage.getByText(/métricas reconhecidas/).first().innerText();
+  if (!recognizedLabel.includes("5 métricas reconhecidas")) {
+    throw new Error("Public RP paste was not parsed as 5 observed metrics: " + recognizedLabel);
+  }
   const xpPreview = excerptPage.getByText("XP/h", {exact:true}).first().locator("..");
   if (!(await xpPreview.innerText()).includes("0")) {
     throw new Error("Published RP XP/h: 0 was not preserved as explicitly observed zero");
