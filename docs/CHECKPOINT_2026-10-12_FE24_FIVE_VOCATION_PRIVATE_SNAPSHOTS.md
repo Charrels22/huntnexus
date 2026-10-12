@@ -67,3 +67,10 @@ A regressão foi corrigida para registrar munição e quiver no Main e incluí-l
 3. Login Magic Link real A/B com consentimento e recuperação entre dois dispositivos.
 4. Auditoria completa de sprites/perks versus cliente RubinOT (mapeamento de fontes canônicas já existe).
 5. Regressões adicionais de múltiplos slots, munição de RP e snapshot ao trocar várias peças de uma vez, com rastreabilidade de origem.
+
+
+## Confirmação final do gatilho automático
+
+- **Novo run #38253047725 — SUCCESS:** https://github.com/Charrels22/huntnexus/actions/runs/38253047725. Disparado automaticamente depois de atualizar o workflow para observar também alterações na API, parser e migrações. EK, RP, ED, MS e EM passaram novamente, em sequência.
+- A conferência pós-execução no Supabase voltou a apontar `leftover_profiles=0`, `leftover_sessions=0`, `leftover_synthetic_observations=0`, `published_community_sessions=100`. Nenhuma linha artificial de teste foi promovida para a comunidade.
+- A entrega FE-24 encerra o **escopo de testes de isolamento e snapshots da API**. Não substitui o login Magic Link real nem a aprovação visual e mecânica pelos jogadores do RubinOT.
