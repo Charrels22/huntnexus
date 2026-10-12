@@ -46,12 +46,23 @@ const lostInput=buildSessionReparseReview(
 );
 assert.equal(lostInput.safe_to_apply,false);
 assert.ok(lostInput.regression_reasons.some(x=>x.includes("Elementos recebidos")));
+const renamedItem=buildSessionReparseReview({
+  ...next,misc:{...next.misc,looted_items:[{item_name:"old observed value",amount:2}]},
+}, {
+  ...next,misc:{...next.misc,looted_items:[{item_name:"different unverified value",amount:2}]},
+}, "session_parser_v1");
+assert.equal(renamedItem.safe_to_apply,false);
+assert.ok(renamedItem.regression_reasons.some(x=>x.includes("Itens de loot")));
+assert.ok(!JSON.stringify(renamedItem).includes("old observed value"));
+assert.ok(!JSON.stringify(renamedItem).includes("different unverified value"));
+
 console.log(JSON.stringify({
  status:"ok",stage:"fe34_session_reparse_review",
  safe_duration_recovery:true,
  prevents_loss_of_observed_metrics:true,
  prevents_loss_of_source_row_counts:true,
  prevents_new_parser_warning:true,
+ prevents_silent_loot_row_rewrites:true,
  no_changes_blocks_apply:true,
  private_text_not_exposed:true,
  existing_user_sessions_accessed:false,
