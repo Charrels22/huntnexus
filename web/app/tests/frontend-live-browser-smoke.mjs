@@ -217,11 +217,30 @@ try {
     throw new Error("Public EM Party header was not stored in the Party Hunt editor");
   }
   await excerptPage.getByText("2/4 blocos preenchidos").first().waitFor({timeout:14000});
+  // Remove the solo RP block to validate a Party-only source: no per-player
+  // financial totals may be invented from the team's data.
+  await excerptPage.getByRole("button",{name:"Hunt Analyzer",exact:true}).click();
+  await excerptPage.locator("textarea").first().fill("");
+  await excerptPage.getByRole("button",{name:"Party Hunt",exact:true}).click();
+  await excerptPage.getByText("1/4 blocos preenchidos").first().waitFor({timeout:14000});
+  const partyPanel = excerptPage.getByTestId("party-totals-preview");
+  await partyPanel.waitFor({timeout:16000});
+  const partyContent = await partyPanel.innerText();
+  if (!partyContent.includes("Balance da party") ||
+      !partyContent.includes("Supplies da party") ||
+      !partyContent.includes("não são ganhos individuais")) {
+    throw new Error("Party aggregate panel is absent or not clearly distinguished from personal metrics");
+  }
+  const personalBalance = excerptPage.getByText("Balance",{exact:true}).first().locator("..");
+  if (!(await personalBalance.innerText()).includes("—")) {
+    throw new Error("Party-only source incorrectly populated individual Balance preview");
+  }
   await excerptPage.screenshot({path:resolve(output,"source-em-public-party-header-preview.png"),fullPage:true});
   if (excerptErrors.length) throw new Error("Source excerpt browser JS errors: " + excerptErrors.slice(0,3).join("; "));
   results.push({
     route:"/session#em-public-party-header", source_vocation:"EM",
     tested_as_party_aggregate:true, source_excerpt_not_full_party_export:true,
+    personal_balance_not_fabricated:true, party_aggregate_panel_visible:true,
     screenshot:"source-em-public-party-header-preview.png", real_gameplay_upload:false,
   });
   await excerptPage.close();
