@@ -203,6 +203,7 @@ const Body = z.discriminatedUnion("action", [
       level: z.string().max(10).default(""),
       location: z.string().max(200).default(""),
       hunt_key: z.string().max(200).default(""),
+      setupMode: z.enum(["auto", "main", "hunt", "none"]).default("auto"),
       observation: z.string().max(1000).default(""),
       tags: z.array(z.string().max(60)).max(20).default([]),
       type: z.enum(["normal", "bounty"]).default("normal"),
@@ -744,6 +745,11 @@ export const Route = createFileRoute("/api/huntnexus")({
                 },
                 p_metadata: b.metadata,
               });
+              // The DB rejects explicitly requested setups that are no longer
+              // owned/saved. Fail without inserting a misleading snapshot.
+              if (data && typeof data === "object" && "error" in data && data.error) {
+                return json({ error: String(data.error) }, 409);
+              }
               return json({ data, parsed: parsedImport });
             }
             case "player_session_build_performance":
