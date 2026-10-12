@@ -37,6 +37,32 @@ async function audit(route, expected, filename, width = 1440, height = 900) {
 try {
   const account = await audit("/account", /Sincronize seu personagem entre dispositivos/i, "account-desktop.png");
   await account.getByRole("button", { name: "Enviar link" }).waitFor();
+
+  // FE-28: simulate an OTP rate limit entirely inside Playwright. No real
+  // address, email, Supabase Auth user or Magic Link request is created.
+  let interceptedOtp = 0;
+  await account.route("**/auth/v1/otp*", async (route) => {
+    interceptedOtp++;
+    await route.fulfill({
+      status: 429,
+      contentType: "application/json",
+      body: JSON.stringify({ code: "over_email_send_rate_limit", msg: "FE28 mocked rate limit" }),
+    });
+  });
+  await account.getByPlaceholder("seu@email.com").fill("fe28-synthetic@example.invalid");
+  await account.getByRole("button", { name: "Enviar link" }).click();
+  await account.getByText(/Não foi possível enviar o link/i).waitFor({timeout:15000});
+  if(interceptedOtp !== 1) throw new Error("FE-28 OTP mock not intercepted exactly once");
+  if(!(await account.getByRole("button", { name: "Enviar link" }).isEnabled())) {
+    throw new Error("Rate-limited OTP form remained disabled after rejection");
+  }
+  await account.screenshot({ path: resolve(output, "account-otp-mocked-rate-limit.png"), fullPage: true });
+  results.push({
+    route: "/account#otp-mocked-rate-limit",
+    simulated_rate_limit_recoverable: true,
+    real_email_sent: false, real_magic_link_tested: false,
+    screenshot: "account-otp-mocked-rate-limit.png",
+  });
   await account.close();
 
   const profile = await audit("/profile", /Cadastre seu personagem uma vez/i, "profile-empty-desktop.png");
