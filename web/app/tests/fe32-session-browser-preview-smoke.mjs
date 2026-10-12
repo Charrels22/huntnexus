@@ -55,6 +55,8 @@ try{
   let nav=await page.goto(site+"/session",{waitUntil:"domcontentloaded",timeout:30000});
   assert.ok(nav?.ok());
   await page.getByRole("heading",{name:"Cadastrar uma hunt"}).waitFor();
+  // TanStack hydration restores local draft; do not paste before React owns input.
+  await page.waitForTimeout(1100);
   await page.locator("textarea").first().fill("Session: 02:03h\nXP Gain: 16,526,550\nXP/h: 8,031,558\nDamage: 3,510,000");
   await page.getByText("2h 03m",{exact:true}).waitFor({timeout:15000});
   await page.getByText(/Bloco não enviado. Elementos e fontes de dano recebido/).waitFor();
