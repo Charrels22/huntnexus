@@ -79,14 +79,28 @@ begin
     raise exception 'Account status mismatches canonical client';
   end if;
 
-  perform public.huntnexus_account_unbind(v_user_a);
+  -- FE-27: unbind must NOT release the UUID into anonymous scope while any
+  -- personal data remain. Logout already supports safe session rotation.
+  v_status := public.huntnexus_account_unbind(v_user_a);
+  if v_status->>'error' <> 'private_data_present_unbind_blocked'
+     or v_status->>'unbound' <> 'false' then
+    raise exception 'Unsafe unlink exposed private data: %',v_status;
+  end if;
+  v_lookup := public.huntnexus_account_binding_status(v_user_a);
+  if v_lookup->>'bound'<>'true' then
+    raise exception 'Bound private profile unexpectedly became anonymous';
+  end if;
   v_lookup := public.huntnexus_player_profile_get(v_device_a);
   if v_lookup #>> '{profile,character_name}' <> 'FE20 Isolated Fixture' then
-    raise exception 'Unbinding account incorrectly deleted private data';
+    raise exception 'Guarded unlink incorrectly deleted private data';
   end if;
 
   delete from public.player_character_inventory where client_id in (v_device_a,v_device_b);
   delete from public.player_character_profiles where client_id in (v_device_a,v_device_b);
+  v_status := public.huntnexus_account_unbind(v_user_a);
+  if v_status->>'unbound'<>'true' or v_status->>'private_data_deleted'<>'false' then
+    raise exception 'Unlink of now-empty canonical account failed: %',v_status;
+  end if;
   delete from public.player_account_bindings where auth_user_id in (v_user_a,v_user_b);
 end $$;
 
@@ -96,5 +110,7 @@ select jsonb_build_object(
  'account_collision_rejected',true,
  'guest_data_merge_applied',false,
  'private_data_deleted_on_unbind',false,
+ 'private_data_present_unbind_blocked',true,
+ 'empty_account_unbind_allowed',true,
  'real_magic_link_email_delivery_tested',false
 ) as result;
