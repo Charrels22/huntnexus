@@ -143,12 +143,39 @@ async function testVocation(c) {
     assert.equal(noMainMutation.main_set.weapon?.item_key,c.main,
       `${c.vocation}: saved BP choice mutated Main`);
 
+    // FE-33: explicitly force Main while a BP choice for this hunt exists.
+    // The Main snapshot must be selected from server-side owned inventory,
+    // without changing the saved per-hunt BP choice.
+    const forcedMain=await post({action:"session_import_save",client_id,
+      blocks:{hunt:synthesizedAnalyzer(c,"MAIN")},
+      metadata:{
+        character:"FE33 Main selector "+c.vocation,server:"RubinOT",
+        vocation:c.vocation,level:"700",location:"FE33 isolated Main fixture",
+        hunt_key:c.hunt,setupMode:"main",
+        observation:"SYNTHETIC FE33 explicit Main; not gameplay",
+        tags:["fe33","synthetic","private"],type:"normal",
+        favorite:false,publishHighscores:false,rareDrops:"",
+      },
+    });
+    if(forcedMain?.session_id)sessions.push(forcedMain.session_id);
+    assert.equal(forcedMain?.status,"parsed");
+    const forcedSnapshot=await post({action:"player_session_detail",
+      client_id,session_id:forcedMain.session_id});
+    assert.equal(forcedSnapshot?.loadout_snapshot?.source,"main_default");
+    assert.equal(forcedSnapshot?.loadout_snapshot?.setup_mode,"main");
+    assert.equal(forcedSnapshot?.loadout_snapshot?.selection?.weapon,c.main,
+      c.vocation+": explicitly forced Main must not use saved BP choice");
+    const removedForced=await post({action:"player_session_delete",
+      client_id,session_id:forcedMain.session_id});
+    assert.equal(removedForced?.deleted,true);
+    sessions.splice(sessions.indexOf(forcedMain.session_id),1);
+
     const first=await post({action:"session_import_save",client_id,
       blocks:{hunt:synthesizedAnalyzer(c,"BP")},
       metadata:{
         character:"FE24 Isolated "+c.vocation+" Fixture",
         server:"RubinOT",vocation:c.vocation,level:"700",
-        location:"FE24 synthetic session",hunt_key:c.hunt,
+        location:"FE24 synthetic session",hunt_key:c.hunt,setupMode:"hunt",
         observation:"SYNTHETIC FE24 snapshot QA; not a real playtest",
         tags:["fe24","synthetic","private"],type:"normal",
         favorite:false,publishHighscores:false,rareDrops:"",
@@ -163,6 +190,7 @@ async function testVocation(c) {
     assert.equal(s1?.parser?.loadout_snapshot_immutable,true);
     assert.equal(s1?.loadout_snapshot?.source,"saved_hunt_choice",
       `${c.vocation}: first snapshot must pin chosen BP set`);
+    assert.equal(s1?.loadout_snapshot?.setup_mode,"hunt");
     assert.equal(s1?.loadout_snapshot?.selection?.weapon,c.bp);
     if(c.vocation==="RP") {
       assert.equal(s1?.loadout_snapshot?.selection?.offhand,"quiver");
