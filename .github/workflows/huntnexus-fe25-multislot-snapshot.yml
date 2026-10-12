@@ -1,0 +1,31 @@
+name: HuntNexus Multi-Slot Five-Vocation Snapshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe25-multislot-five-vocation-snapshot-smoke.mjs"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - "web/app/src/lib/session-parser.ts"
+      - "db/migrations/**"
+      - ".github/workflows/huntnexus-fe25-multislot-snapshot.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huntnexus-fe25-multislot-private-snapshot
+  cancel-in-progress: false
+
+jobs:
+  five-class-multi-slot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate multi-slot Main/BP, RP quiver and ammo, historical snapshots, private cleanup
+        run: node tests/fe25-multislot-five-vocation-snapshot-smoke.mjs
