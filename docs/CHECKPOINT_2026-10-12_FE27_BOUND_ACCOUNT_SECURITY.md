@@ -56,7 +56,7 @@ Após atualizar Worker/migração, passadas:
 - [FE-26 invariantes de escolhas: #38277443884 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38277443884)
 - [Cross-Vocation: #38277443569 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38277443569)
 
-O teste `tests/account-security-smoke.mjs` foi ampliado para 9 tentativas falsas de `account_status`, `account_unbind` e `account_resolve`. **Confirmar run final do workflow de Account Security Smoke antes de marcar PASS.**
+O teste `tests/account-security-smoke.mjs` foi ampliado para **9 tentativas falsas** de `account_status`, `account_unbind` e `account_resolve`. **[HuntNexus Account Security Smoke run #38277798697 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38277798697)**, `fake_auth_attempts_denied=9`.
 
 ## 5. Auditoria Supabase Security Advisors
 
@@ -90,3 +90,12 @@ Escala editorial aproximada, **não** derivada de uma métrica formal de cobertu
 - Produção/contas/segurança ~66–69% (estimativa provisória após FE-27)
 
 A próxima etapa deve validar a autenticação real com sessão autorizada e completar checks de conta, depois revisar screenshots e funcionamento real no RubinOT antes do piloto externo.
+
+
+## Confirmação de deployment Cloudflare
+
+API Cloudflare `/accounts/{account_id}/workers/scripts/huntnexus/deployments`: última implantação `1ad1b74a-0b3f-433c-8038-4d3f4c0d3968`, criada `2026-10-12T16:27:32.501Z`, `source=wrangler`, versão `67eac236-524e-4232-8627-aa403e6d5f3b` servindo **100%** do tráfego. A API de deploy não associa diretamente essa versão a um commit GitHub, portanto não inferir SHA de origem apenas a partir do timestamp. O HTTP 409 da nova regra precisa de conta legítima de teste para execução ponta a ponta.
+
+### Quadro pós-etapa
+
+Estimativas visuais editoriais (não percentuais de cobertura instrumentada): Backend ~94%; Optimizer ~92%; Profile/Inventário ~96%; Session Analyzer ~87%; Hunt Planner ~86%; Conteúdo factual ~74%; Frontend visual ~74%; Produção/contas/segurança ~68%. O progresso de contas reflete correções de acesso não autenticado e unlink, **não** teste de JWT legítimo, piloto humano ou resolução dos alertas restantes do Supabase.
