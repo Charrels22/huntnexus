@@ -39,10 +39,42 @@ try {
     "Party text did not include per-character XP; null is required");
   assert.equal(parsed.methodology.community_evidence_written,false);
   assert.equal(parsed.validation.warnings.includes("party_block_present_but_no_players_recognized"),false);
+  // A complete, published SOLO Hunt Analyzer has materially different
+  // semantics from Party Hunt. Keep it in memory and preserve the author's
+  // reported XP/h: 0 even though the site's own derived summary shows nonzero.
+  const soloUrl = "https://www.hunt-analyser.com/hunt_sessions/40884";
+  const soloResponse = await page.goto(soloUrl,{waitUntil:"domcontentloaded",timeout:45000});
+  assert.ok(soloResponse?.ok(),"Public complete solo source page unavailable: "+soloResponse?.status());
+  await page.getByText("Description",{exact:true}).first().waitFor({timeout:12000});
+  const soloBody = await page.locator("body").innerText();
+  const soloMatch = soloBody.match(/(?:^|\\n)Description\\s*\\n([\\s\\S]*?)\\n\\s*(?:Party Members|Payment Distribution)\\b/i);
+  assert.ok(soloMatch?.[1],"Original solo Hunt description section not extractable");
+  const soloDescription = soloMatch[1].trim();
+  assert.equal(detectAnalyzerType(soloDescription),"hunt");
+  const soloParsed = parseSessionImport({hunt:soloDescription});
+  assert.equal(soloParsed.hunt_analyse.duration_seconds,5160);
+  assert.equal(soloParsed.hunt_analyse.raw_xp_gain,6274559);
+  assert.equal(soloParsed.hunt_analyse.xp_gain,9411838);
+  assert.equal(soloParsed.hunt_analyse.raw_xp_per_hour,0,
+    "Original 0 rate in public description must not be replaced by website derived summary");
+  assert.equal(soloParsed.hunt_analyse.xp_per_hour,0);
+  assert.equal(soloParsed.hunt_analyse.loot_value,1525896);
+  assert.equal(soloParsed.hunt_analyse.supplies_value,533304);
+  assert.equal(soloParsed.hunt_analyse.balance_value,992592);
+  assert.equal(soloParsed.hunt_analyse.total_kills,1242);
+  assert.equal(soloParsed.misc.creatures.length,6);
+  assert.ok(soloParsed.misc.looted_items.length >= 30);
+  assert.equal(soloParsed.methodology.community_evidence_written,false);
+  assert.equal(soloParsed.validation.warnings.filter(w=>w.startsWith("invalid_numeric_format:")).length,0);
   console.log(JSON.stringify({
     status:"ok",
     stage:"fe22_live_original_public_party_analyzer",
     source_url:url,
+    solo_source_url:soloUrl,
+    complete_public_original_hunt_analyzer_tested:true,
+    hunt_vocation:"ED",
+    solo_kills_recognized:soloParsed.hunt_analyse.total_kills,
+    solo_looted_item_rows:soloParsed.misc.looted_items.length,
     text_origin:"live third-party published complete party description",
     stored_raw_text:false,
     player_names_logged:false,
