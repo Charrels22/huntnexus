@@ -246,6 +246,26 @@ const Body = z.discriminatedUnion("action", [
     confirm: z.literal(true),
   }),
   z.object({
+    action: z.literal("player_session_revision_list"),
+    client_id: z.string().uuid(),
+    session_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("player_session_restore_preview"),
+    client_id: z.string().uuid(),
+    session_id: z.string().uuid(),
+    revision_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("player_session_restore_apply"),
+    client_id: z.string().uuid(),
+    session_id: z.string().uuid(),
+    revision_id: z.string().uuid(),
+    expected_fingerprint: z.string().regex(/^[a-f0-9]{32}$/),
+    confirm: z.literal(true),
+    accept_regressions: z.boolean().default(false),
+  }),
+  z.object({
     action: z.literal("session_list"),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     hunt_key: z.string().min(1).max(200).nullable().optional(),
@@ -793,6 +813,72 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_session_id: b.session_id,
                 }),
               });
+            case "player_session_revision_list": {
+              const result = await rpc("huntnexus_player_session_revision_list",{
+                p_client_id:b.client_id,p_session_id:b.session_id,
+              });
+              if (result?.error) return json({error:String(result.error)},404);
+              return json({data:result});
+            }
+            case "player_session_restore_preview":
+            case "player_session_restore_apply": {
+              const saved=await rpc("huntnexus_player_session_revision_restore_source",{
+                p_client_id:b.client_id,p_session_id:b.session_id,
+                p_revision_id:b.revision_id,
+              });
+              if (!saved || typeof saved!=="object" || saved.error) {
+                return json({error:"revision_not_found"},404);
+              }
+              const current=saved.current_parsed_data;
+              const previous=saved.target_parsed_data;
+              if (!current || typeof current!=="object" ||
+                  !previous || typeof previous!=="object") {
+                return json({error:"restore_revision_invalid"},422);
+              }
+              const {buildSessionReparseReview}=
+                await import("@/lib/session-reparse-review");
+              // Restore only from the DB's saved historical revision, never
+              // accept a parsed_data object provided by the browser.
+              const review=buildSessionReparseReview(
+                current,previous,String(saved.current_parser_version??""),
+              );
+              const preview={
+                session_id:b.session_id,
+                revision_id:b.revision_id,
+                current_parser_version:saved.current_parser_version,
+                target_parser_version:saved.target_parser_version,
+                revised_at:saved.revised_at,
+                snapshot_source:saved.snapshot_source??"not_available",
+                raw_blocks_preserved:true,
+                loadout_snapshot_preserved:true,
+                expected_fingerprint:saved.fingerprint,
+                review,
+                data_loss_warning:review.regression_reasons.length>0,
+              };
+              if (b.action==="player_session_restore_preview") {
+                return json({data:preview});
+              }
+              if (saved.fingerprint!==b.expected_fingerprint) {
+                return json({error:"restore_preview_stale"},409);
+              }
+              if (!review.changed) return json({error:"restore_no_changes"},409);
+              if (review.regression_reasons.length>0 && !b.accept_regressions) {
+                return json({error:"restore_accept_data_loss_required",
+                  reasons:review.regression_reasons},409);
+              }
+              const result=await rpc("huntnexus_player_session_revision_restore",{
+                p_client_id:b.client_id,p_session_id:b.session_id,
+                p_revision_id:b.revision_id,
+                p_expected_fingerprint:b.expected_fingerprint,
+                p_confirm:true,
+                p_accept_regressions:true,
+              });
+              if (result?.error) return json({error:String(result.error)},
+                result.error==="session_not_found"||result.error==="revision_not_found"?404:409);
+              return json({data:{...result,review:{
+                ...review,raw_blocks_preserved:true,loadout_snapshot_preserved:true,
+              }}});
+            }
             case "player_session_reparse_preview":
             case "player_session_reparse_apply": {
               const saved = await rpc("huntnexus_player_session_reparse_source", {
