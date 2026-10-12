@@ -43,6 +43,13 @@ function SessionHistoryPage() {
   const [reparseApplying, setReparseApplying] = useState(false);
   const [reparseConfirmed, setReparseConfirmed] = useState(false);
   const [reparseMessage, setReparseMessage] = useState("");
+  const [restoreRevisions, setRestoreRevisions] = useState<any[] | null>(null);
+  const [restorePreview, setRestorePreview] = useState<any>(null);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreApplying, setRestoreApplying] = useState(false);
+  const [restoreConfirmed, setRestoreConfirmed] = useState(false);
+  const [restoreAcceptLoss, setRestoreAcceptLoss] = useState(false);
+  const [restoreMessage, setRestoreMessage] = useState("");
   const [detailVersion, setDetailVersion] = useState(0);
   const detailRequestRef = useRef(0);
 
@@ -79,6 +86,11 @@ function SessionHistoryPage() {
     setReparsePreview(null);
     setReparseConfirmed(false);
     setReparseMessage("");
+    setRestoreRevisions(null);
+    setRestorePreview(null);
+    setRestoreConfirmed(false);
+    setRestoreAcceptLoss(false);
+    setRestoreMessage("");
   }, [selectedId]);
 
   useEffect(() => {
@@ -170,6 +182,95 @@ function SessionHistoryPage() {
     } finally {
       setReparseApplying(false);
     }
+  }
+
+  async function loadRevisions() {
+    const clientId=getOrCreateClientId();
+    if(!clientId || !selectedId || restoreLoading || restoreApplying) return;
+    setRestoreLoading(true);
+    setRestorePreview(null);
+    setRestoreConfirmed(false);
+    setRestoreAcceptLoss(false);
+    setError("");
+    try {
+      const response=await callHuntNexusApi<any>({
+        action:"player_session_revision_list",client_id:clientId,
+        session_id:selectedId,
+      });
+      if(response?.data?.session_id!==selectedId) throw new Error("A sessão consultada mudou.");
+      setRestoreRevisions(Array.isArray(response.data.revisions)?response.data.revisions:[]);
+    } catch(e) {
+      setError((e as Error).message || "Não foi possível listar as revisões desta sessão.");
+    } finally {setRestoreLoading(false);}
+  }
+
+  async function previewRestore(revisionId:string) {
+    const clientId=getOrCreateClientId();
+    if(!clientId || !selectedId || !revisionId ||
+       restoreApplying || restoreLoading) return;
+    setRestoreLoading(true);
+    setRestorePreview(null);
+    setRestoreConfirmed(false);
+    setRestoreAcceptLoss(false);
+    setRestoreMessage("");
+    setError("");
+    try {
+      const response=await callHuntNexusApi<any>({
+        action:"player_session_restore_preview",client_id:clientId,
+        session_id:selectedId,revision_id:revisionId,
+      });
+      if(response?.data?.session_id!==selectedId ||
+         response?.data?.revision_id!==revisionId) {
+        throw new Error("A versão consultada não corresponde à sessão selecionada.");
+      }
+      setRestorePreview(response.data);
+    }catch(e){
+      setError((e as Error).message || "Não foi possível comparar a versão anterior.");
+    } finally {setRestoreLoading(false);}
+  }
+
+  async function applyRestore() {
+    const clientId=getOrCreateClientId();
+    const preview=restorePreview;
+    if(!clientId || !selectedId || !preview ||
+      preview.session_id!==selectedId || !preview.review?.changed ||
+      !restoreConfirmed || restoreLoading || restoreApplying ||
+      (preview.data_loss_warning && !restoreAcceptLoss)) return;
+    if(!window.confirm(
+      "Restaurar a interpretação anterior? Algumas métricas atuais poderão voltar aos valores antigos. " +
+      "Os analyzers originais e o setup não serão modificados. Uma cópia da interpretação atual ficará registrada para desfazer."
+    ))return;
+    setRestoreApplying(true);
+    setError("");
+    try{
+      const response=await callHuntNexusApi<any>({
+        action:"player_session_restore_apply",client_id:clientId,
+        session_id:selectedId,revision_id:preview.revision_id,
+        expected_fingerprint:preview.expected_fingerprint,
+        confirm:true,accept_regressions:restoreAcceptLoss,
+      });
+      if(!response?.data?.restored) throw new Error("A restauração não foi confirmada.");
+      setRestorePreview(null);
+      setRestoreConfirmed(false);
+      setRestoreAcceptLoss(false);
+      setRestoreRevisions(null);
+      setRestoreMessage("Interpretação anterior restaurada. Os analyzers e o setup permanecem intactos. A versão substituída está preservada no histórico.");
+      setDetailVersion(value=>value+1);
+      window.dispatchEvent(new Event("huntnexus:player-sessions-changed"));
+      await loadSessions();
+    }catch(e){
+      const code=(e as Error).message || "";
+      const messages:Record<string,string>={
+        restore_preview_stale:"A sessão mudou desde a prévia. Compare a versão novamente antes de restaurar.",
+        restore_accept_data_loss_required:"A revisão pode substituir dados conhecidos. Confirme a perda de dados antes de aplicar.",
+        restore_no_changes:"A sessão já contém essa interpretação; nada a restaurar.",
+        revision_not_found:"A versão não está disponível ou não pertence a esta sessão.",
+      };
+      setError(messages[code] || code || "Não foi possível restaurar a versão anterior.");
+      setRestorePreview(null);
+      setRestoreConfirmed(false);
+      setRestoreAcceptLoss(false);
+    }finally{setRestoreApplying(false);}
   }
 
   async function deleteSelected() {
@@ -345,6 +446,112 @@ function SessionHistoryPage() {
                     {reparseApplying ? "Aplicando..." : "Aplicar revisão"}
                   </button>
                 </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {selectedId && detail && (
+        <section className="rounded-2xl border border-white/8 bg-slate-950/40 p-4" data-testid="session-restore-panel">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-100">Versões anteriores</h2>
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
+                Consulte as revisões registradas e compare antes de restaurar. Os dados interpretados podem voltar a
+                valores anteriores, mas o texto original e o setup histórico nunca são substituídos.
+              </p>
+            </div>
+            <button type="button" className="hn-secondary-button"
+              data-testid="session-restore-list"
+              disabled={restoreLoading || restoreApplying}
+              onClick={()=>void loadRevisions()}>
+              {restoreLoading ? "Carregando..." : "Ver revisões"}
+            </button>
+          </div>
+          {restoreMessage && <p className="mt-3 text-xs text-emerald-300">{restoreMessage}</p>}
+          {restoreRevisions && (
+            <div className="mt-3 space-y-2" data-testid="session-restore-revisions">
+              {restoreRevisions.length===0 && (
+                <p className="text-xs text-slate-500">Esta sessão ainda não possui revisões anteriores.</p>
+              )}
+              {restoreRevisions.map((revision:any,index:number)=>(
+                <div key={revision.revision_id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 p-3 text-xs text-slate-400">
+                  <div>
+                    <span className="font-semibold text-slate-200">Revisão {index+1}</span>
+                    <span className="ml-2">{new Date(revision.revised_at).toLocaleString("pt-BR")}</span>
+                    <div className="mt-1">
+                      {revision.previous_parser_version} → {revision.next_parser_version}
+                    </div>
+                  </div>
+                  <button type="button" className="hn-secondary-button"
+                    disabled={restoreLoading || restoreApplying}
+                    data-testid={`session-restore-preview-${index}`}
+                    onClick={()=>void previewRestore(revision.revision_id)}>
+                    Comparar versão
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {restorePreview?.session_id===selectedId && (
+            <div className="mt-4 space-y-3" data-testid="session-restore-diff">
+              <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                <span>Atual: {restorePreview.current_parser_version}</span>
+                <span>Restaurar: {restorePreview.target_parser_version}</span>
+                <span>{restorePreview.review?.changes?.length??0} diferenças de métricas ou contagens</span>
+                <span>Setup: {restorePreview.snapshot_source||"Não registrado"}</span>
+              </div>
+              {Array.isArray(restorePreview.review?.changes) && restorePreview.review.changes.length>0 && (
+                <div className="max-h-64 overflow-auto rounded-xl border border-white/8">
+                  <table className="w-full text-left text-xs">
+                    <thead className="sticky top-0 bg-slate-900 text-slate-400">
+                      <tr><th className="p-2">Métrica</th><th className="p-2">Atual</th><th className="p-2">Anterior</th></tr>
+                    </thead>
+                    <tbody>
+                      {restorePreview.review.changes.map((change:any)=>(
+                        <tr key={change.key} className={`border-t border-white/6 ${change.regression?"text-amber-300":"text-slate-300"}`}>
+                          <td className="p-2">{change.label}</td>
+                          <td className="p-2 tabular-nums">{change.before==null?"Não observado":String(change.before)}</td>
+                          <td className="p-2 tabular-nums">{change.after==null?"Não observado":String(change.after)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {restorePreview.review?.regression_reasons?.length>0 && (
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-xs text-amber-200">
+                  <p className="font-semibold">Atenção: esta restauração poderá reduzir ou modificar dados conhecidos.</p>
+                  <ul className="mt-2 list-inside list-disc">
+                    {restorePreview.review.regression_reasons.map((reason:string)=><li key={reason}>{reason}</li>)}
+                  </ul>
+                  <label className="mt-3 flex items-start gap-2 text-xs">
+                    <input type="checkbox" checked={restoreAcceptLoss}
+                      data-testid="session-restore-accept-loss"
+                      onChange={e=>setRestoreAcceptLoss(e.target.checked)}/>
+                    Concordo em restaurar a interpretação anterior mesmo com estas perdas identificadas.
+                  </label>
+                </div>
+              )}
+              {restorePreview.review?.changed ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs text-slate-300">
+                    <input type="checkbox" checked={restoreConfirmed}
+                      data-testid="session-restore-confirm"
+                      onChange={e=>setRestoreConfirmed(e.target.checked)}/>
+                    Revisei as diferenças desta versão.
+                  </label>
+                  <button type="button" className="hn-primary-button"
+                    data-testid="session-restore-apply"
+                    disabled={!restoreConfirmed || restoreApplying ||
+                      (restorePreview.data_loss_warning && !restoreAcceptLoss)}
+                    onClick={()=>void applyRestore()}>
+                    {restoreApplying?"Restaurando...":"Restaurar versão"}
+                  </button>
+                </div>
+              ):(
+                <p className="text-xs text-slate-500">A interpretação atual já é idêntica a esta revisão.</p>
               )}
             </div>
           )}
