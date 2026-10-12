@@ -1,6 +1,6 @@
 # HuntNexus — FE-30: escopo canônico isolado após perda de Auth fora da página Account
 
-**Data:** 2026-10-12 (BRT). **Estado:** implementação, Web CI e browser preview aprovados; validação adicional do endpoint publicado ainda em processamento quando o checkpoint foi aberto.
+**Data:** 2026-10-12 (BRT). **Estado:** FE-30 **CONCLUÍDA TECNICAMENTE**, com Web CI, Account Security Smoke e Playwright em preview **e frontend publicado** aprovados. A homologação Auth real continua pendente.
 
 ## Problema encontrado
 
@@ -17,11 +17,11 @@ FE-28 tratava `SIGNED_OUT` em `/account`, mas um jogador com Profile/Inventory/S
 ## CI e evidências
 
 - [Web CI — #38289410492 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38289410492): build, TypeScript e regressão nova `FE-30 account-bound scope isolation regression`, mais parser/source regressions.
-- [Web CI atualizado — #38290109094 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38290109094).
+- [Web CI atualizado — #38290184871 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38290184871), incluindo a regressão FE-30.
 - [Account Security Smoke — #38289445573 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38289445573) (ações negativas com tokens fabricados).
 - [FE-30 Browser Preview — #38290109129 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38290109129) após semear fixture uma vez por aba.
 - [Frontend Browser QA geral — #38289236746 SUCCESS no rerun](https://github.com/Charrels22/huntnexus/actions/runs/38289236746). A primeira tentativa falhou por timeout em `waitForResponse` do catálogo Proficiency; retry passou. Este resultado testa o frontend publicado, mas **não prova** que o último código FE-30 foi implantado.
-- [FE-30 Browser Preview + Published — #38290202390](https://github.com/Charrels22/huntnexus/actions/runs/38290202390): cenário novo do domínio de produção, verificar resultado final no workflow.
+- **[FE-30 Browser Preview + Published — #38290202390 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38290202390):** Playwright confirmou duas situações tanto na build local quanto em `https://huntnexus.charr3ls22.workers.dev`: `stale_bound_scope_without_session=PASS` (rejeita identidade antiga, limpa draft/sessionStorage e redireciona para Account) e `pure_guest_startup=PASS` (mantém ID/draft convidado). **Nenhuma requisição Auth real**, não prova Magic Link nem revogação efetiva de JWT. [Artifact `huntnexus-fe30-auth-browser-preview`](https://github.com/Charrels22/huntnexus/actions/runs/38290202390), ID `11766320036`, 1.260.090 bytes com capturas de preview e publicado.
 - [Security scope helper](https://github.com/Charrels22/huntnexus/commit/343238621718d07607af17954930bbb87df51d35), [Account binding](https://github.com/Charrels22/huntnexus/commit/6f6dbfb83997d6c7fd0b8cfc6da469ef2321f7b3), [AppShell watcher](https://github.com/Charrels22/huntnexus/commit/647bf702cb439498d11d210faf6e3853f6a9c3a4), [unit regression](https://github.com/Charrels22/huntnexus/commit/43d5eb0d299cf01524e884164abe8a83ac5bcbf7).
 - Último Cloudflare Worker deployment observado durante esta etapa: `1a2897cb-caba-4bc5-beff-8963142d1d87`, criado `2026-10-12T18:13:35.854717Z`, versão `46a9692d-5f32-45da-a84b-1d9b07c479c9` com 100% de tráfego, source `wrangler`. Não há prova de SHA GitHub correspondente.
 
