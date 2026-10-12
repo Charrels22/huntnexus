@@ -94,6 +94,44 @@ async function runCase(c){
     assert.equal(unrelated?.summary?.backpack_items,0);
 
     currentStep="selection";
+    // Negative controls. The same RP bow must NOT be accepted if its quiver,
+    // arrow family or vocation-compatible body is wrong. Rejected options must
+    // not overwrite Main or create a Hunt choice. Validity is controlled by the
+    // real SQL loadout rules, never bypassed for testing.
+    if(c.vocation==="RP"){
+      const invalidRP=[
+        {reason:"required_quiver_missing",expected:"incomplete",
+          selection:{...c.alternative,offhand:undefined}},
+        {reason:"required_ammunition_missing",expected:"incomplete",
+          selection:{...c.alternative,ammunition:undefined}},
+        {reason:"ammunition_family_mismatch",expected:"blocked",
+          selection:{...c.alternative,ammunition:"spectral-bolt"}},
+        {reason:"wrong_vocation_body",expected:"blocked",
+          selection:{...c.alternative,body:"soulmantle"}},
+      ];
+      for(const invalid of invalidRP){
+        const rejected=await post({action:"player_hunt_build_choice_save",client_id,
+          hunt_key:c.hunt,vocation:c.vocation,level:700,
+          option_type:"owned_variant",selection:invalid.selection,
+          replacements:[],
+        });
+        assert.equal(rejected?.saved,false,
+          "RP must reject "+invalid.reason+": "+JSON.stringify(rejected).slice(0,500));
+        assert.equal(rejected?.error,"invalid_loadout");
+        assert.equal(rejected?.validation?.status,invalid.expected);
+        if(invalid.reason!=="wrong_vocation_body"){
+          assert.ok((rejected?.validation?.combination_issues??[])
+            .some(x=>x.issue===invalid.reason),
+            "RP should explain blocked dependency: "+invalid.reason);
+        }
+        const previous=await post({action:"player_hunt_build_choice_get",client_id,
+          hunt_key:c.hunt,vocation:c.vocation});
+        assert.equal(previous?.exists,false,
+          "RP invalid loadout must not create or alter saved choice");
+      }
+      const untouched=await post({action:"player_inventory_get",client_id});
+      assert.equal(untouched?.main_set?.weapon?.item_key,c.main.weapon);
+    }
     choiceStarted=true;
     const choice=await post({action:"player_hunt_build_choice_save",client_id,
       hunt_key:c.hunt,vocation:c.vocation,level:700,
@@ -204,6 +242,7 @@ async function runCase(c){
       main_slots:Object.keys(c.main).length,
       bp_alternative_slots:Object.keys(c.alternative).length,
       rp_quiver_ammunition_verified:c.vocation==="RP",
+      rp_invalid_dependency_cases_rejected:c.vocation==="RP"?4:null,
       first_snapshot:"owned_bp_multislot",
       second_snapshot:"main_multislot",
       distinct_historical_builds:2,
