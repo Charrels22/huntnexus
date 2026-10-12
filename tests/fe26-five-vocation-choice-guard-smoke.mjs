@@ -135,7 +135,7 @@ async function testOne(c){
       vocation:c.vocation,
       main_slots:Object.keys(c.main).length,
       owned_bp_slots:Object.keys(c.alternative).length,
-      rejected_cases:8,
+      rejected_cases:10,
       actual_main_accepted:true,
       exact_main_label_enforced:true,
       blocked_other_vocation:c.wrongVocation,
@@ -180,7 +180,7 @@ const results=[];
 for(const c of cases){
   const row=await testOne(c);
   results.push(row);
-  console.log(`[FE-26] ${c.vocation} main identity/8 rejected choices/isolation/cleanup OK`);
+  console.log(`[FE-26] ${c.vocation} main identity/10 rejected choices/isolation/cleanup OK`);
 }
 assert.equal(results.length,5);
 console.log(JSON.stringify({
