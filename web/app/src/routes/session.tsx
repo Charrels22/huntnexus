@@ -42,6 +42,7 @@ type Draft = {
   level: string;
   location: string;
   huntKey: string;
+  setupMode: "auto" | "main" | "hunt" | "none";
   observation: string;
   tags: string[];
   type: "normal" | "bounty";
@@ -61,6 +62,7 @@ const emptyDraft: Draft = {
   level: "",
   location: "",
   huntKey: "",
+  setupMode: "auto",
   observation: "",
   tags: [],
   type: "normal",
@@ -143,7 +145,7 @@ function SessionImportPage() {
 
   useEffect(() => {
     const clientId = getOrCreateClientId();
-    if (!clientId || !draft.huntKey || !draft.vocation) {
+    if (!clientId || !draft.vocation) {
       setSessionLoadoutPreview(null);
       return;
     }
@@ -151,12 +153,14 @@ function SessionImportPage() {
     let activeRequest = true;
 
     Promise.all([
-      callHuntNexusApi<any>({
-        action: "player_hunt_build_choice_get",
-        client_id: clientId,
-        hunt_key: draft.huntKey,
-        vocation: draft.vocation,
-      }),
+      draft.huntKey
+        ? callHuntNexusApi<any>({
+            action: "player_hunt_build_choice_get",
+            client_id: clientId,
+            hunt_key: draft.huntKey,
+            vocation: draft.vocation,
+          })
+        : Promise.resolve({ data: { exists: false } }),
       callHuntNexusApi<any>({
         action: "player_inventory_get",
         client_id: clientId,
@@ -172,12 +176,23 @@ function SessionImportPage() {
           : {};
         const backpack = Array.isArray(inventory?.backpack) ? inventory.backpack : [];
 
-        if (choice?.selection && typeof choice.selection === "object") {
-          const owned = [
-            ...Object.values(mainSet),
-            ...backpack,
-          ] as any[];
+        const mainItems = Object.values(mainSet) as any[];
+        const main = mainItems.length > 0
+          ? {
+              source: "main_default",
+              option_type: "main",
+              items: mainItems.map((item:any) => ({
+                selection_key: item.selection_key,
+                item_key: item.item_key,
+                item_name: item.item_name,
+                storage_kind: "main",
+              })),
+            }
+          : null;
 
+        let hunt: any = null;
+        if (choice?.selection && typeof choice.selection === "object") {
+          const owned = [...mainItems, ...backpack] as any[];
           const items = Object.entries(choice.selection).map(([selectionKey, itemKey]) => {
             const match = owned.find(
               (item:any) => item?.selection_key === selectionKey && item?.item_key === itemKey,
@@ -191,35 +206,15 @@ function SessionImportPage() {
               ),
             };
           });
-
-          setSessionLoadoutPreview({
+          if (items.length > 0) hunt = {
             source: "saved_hunt_choice",
             option_type: choice.option_type,
             items,
-          });
-          return;
+          };
         }
-
-        const mainItems = Object.values(mainSet) as any[];
-        if (mainItems.length) {
-          setSessionLoadoutPreview({
-            source: "main_default",
-            option_type: "main",
-            items: mainItems.map((item:any) => ({
-              selection_key: item.selection_key,
-              item_key: item.item_key,
-              item_name: item.item_name,
-              storage_kind: "main",
-            })),
-          });
-          return;
-        }
-
-        setSessionLoadoutPreview({
-          source: "not_available",
-          option_type: null,
-          items: [],
-        });
+        // Keep both owned candidates. The server chooses and verifies the
+        // selected source again at save time, independent of this preview.
+        setSessionLoadoutPreview({ main, hunt });
       })
       .catch(() => {
         if (activeRequest) setSessionLoadoutPreview(null);
@@ -229,6 +224,21 @@ function SessionImportPage() {
       activeRequest = false;
     };
   }, [draft.huntKey, draft.vocation]);
+
+  const activeSetup = useMemo(() => {
+    const unavailable = { source: "not_available", option_type: null, items: [] as any[] };
+    if (draft.setupMode === "none") {
+      return { source: "not_recorded", option_type: null, items: [] as any[] };
+    }
+    if (draft.setupMode === "main") return sessionLoadoutPreview?.main ?? unavailable;
+    if (draft.setupMode === "hunt") return sessionLoadoutPreview?.hunt ?? unavailable;
+    if (!draft.huntKey) return unavailable; // legacy automatic semantics
+    return sessionLoadoutPreview?.hunt ?? sessionLoadoutPreview?.main ?? unavailable;
+  }, [draft.setupMode, draft.huntKey, sessionLoadoutPreview]);
+  const selectedSetupAvailable =
+    draft.setupMode === "none" || draft.setupMode === "auto" ||
+    (draft.setupMode === "main" && Boolean(sessionLoadoutPreview?.main)) ||
+    (draft.setupMode === "hunt" && Boolean(sessionLoadoutPreview?.hunt));
 
   const active = analyzerTabs.find((tab) => tab.key === activeTab)!;
   const analyzerCount = useMemo(
@@ -289,6 +299,12 @@ function SessionImportPage() {
     setSubmitError("");
     setValidationWarnings([]);
 
+    if (!selectedSetupAvailable) {
+      setSaving(false);
+      setSubmitError("O setup escolhido não está disponível. Revise o Set Main ou a build da hunt antes de salvar.");
+      return;
+    }
+
     const important = preview.validation.warnings.filter((warning) =>
       ["invalid_duration_format", "session_time_range_unrecognized",
        "input_block_present_but_no_damage_rows_recognized",
@@ -321,6 +337,7 @@ function SessionImportPage() {
           level: draft.level,
           location: draft.location,
           hunt_key: draft.huntKey,
+          setupMode: draft.setupMode,
           observation: draft.observation,
           tags: draft.tags,
           type: draft.type,
@@ -646,70 +663,80 @@ function SessionImportPage() {
       </section>
 
       <section className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.025] p-4">
-        {!draft.huntKey || !draft.vocation ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Setup usado na sessão</div>
-            <p className="mt-2 text-xs leading-5 text-slate-400">
-              Para registrar o snapshot do equipamento, selecione uma hunt do catálogo e a vocação do personagem.
-              O HuntNexus usa a build salva para aquela hunt ou seu Set Main. Um nome de local digitado livremente não seleciona a build.
+            <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-400">
+              Escolha o equipamento realmente utilizado. O snapshot será imutável e independente de futuras alterações no Main ou na BP.
+              Apenas peças registradas no seu Profile podem ser vinculadas.
             </p>
-            <Link to="/profile" className="mt-2 inline-block text-xs font-semibold text-cyan-300 hover:underline">Configurar Set Main e BP no Profile →</Link>
           </div>
-        ) : !sessionLoadoutPreview ? (
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Setup usado na sessão</div>
-            <p className="mt-2 text-xs text-slate-400">Verificando a build da hunt e o Set Main. O salvamento não inventará equipamento ausente.</p>
+          <Link to="/profile" className="text-xs font-semibold text-cyan-300 hover:underline">
+            Configurar Main/BP →
+          </Link>
+        </div>
+        <label className="mt-4 block max-w-lg text-xs font-medium text-slate-300">
+          Escolher setup desta hunt
+          <select
+            className="hn-control mt-2"
+            value={draft.setupMode}
+            onChange={(event) => patch("setupMode", event.target.value as Draft["setupMode"])}
+            data-testid="session-setup-mode"
+          >
+            <option value="auto">Automático: build da hunt; senão Set Main</option>
+            <option value="main">Set Main (forçar equipamento principal)</option>
+            <option value="hunt">Build salva desta hunt (Main + BP)</option>
+            <option value="none">Não registrar equipamento nesta sessão</option>
+          </select>
+        </label>
+        <div className="mt-3 text-xs leading-5 text-slate-400" data-testid="session-setup-status">
+          {draft.setupMode === "none"
+            ? "Você escolheu não registrar setup. O HuntNexus não atribuirá equipamento a esta sessão."
+            : !draft.vocation
+              ? "Informe a vocação para verificar os itens registrados."
+              : !sessionLoadoutPreview
+                ? "Carregando o inventário e a build da hunt..."
+                : draft.setupMode === "auto" && !draft.huntKey
+                  ? "Sem hunt vinculada: o modo automático não associa equipamento. Você pode escolher Set Main explicitamente."
+                  : !selectedSetupAvailable
+                    ? "A opção solicitada não está disponível neste perfil. Configure o Set Main ou salve uma build específica para esta hunt."
+                    : activeSetup.source === "not_available"
+                      ? "Nenhum setup disponível; a sessão será registrada sem equipamento."
+                      : activeSetup.source === "saved_hunt_choice"
+                        ? "Origem: build salva para esta hunt."
+                        : "Origem: equipamento Set Main cadastrado no Profile."}
+        </div>
+        {sessionLoadoutPreview && (
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-slate-500">
+            <span>{sessionLoadoutPreview.main ? "Set Main disponível" : "Set Main ausente"}</span>
+            <span>·</span>
+            <span>{sessionLoadoutPreview.hunt ? "Build da hunt disponível" : "Build da hunt ausente"}</span>
           </div>
-        ) : (
-          <>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Setup que será registrado</div>
-              <div className="mt-1 text-sm font-semibold text-slate-200">
-                {sessionLoadoutPreview.source === "saved_hunt_choice"
-                  ? "Build escolhida para esta hunt"
-                  : sessionLoadoutPreview.source === "main_default"
-                    ? "Set Main"
-                    : "Nenhum setup disponível"}
-              </div>
-            </div>
-
-            {sessionLoadoutPreview.option_type === "owned_variant" && (
-              <span className="rounded-full border border-cyan-400/15 bg-cyan-400/[0.05] px-2.5 py-1 text-[10px] font-semibold text-cyan-200">
-                Main + BP
-              </span>
-            )}
-          </div>
-
-          {Array.isArray(sessionLoadoutPreview.items) && sessionLoadoutPreview.items.length ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {sessionLoadoutPreview.items.map((item:any) => (
-                <div
-                  key={`${item.selection_key}-${item.item_key}`}
-                  title={item.item_name || item.item_key}
-                  className={`rounded-xl border p-2 text-center ${
-                    item.storage_kind === "backpack"
-                      ? "border-cyan-300/25 bg-cyan-400/[0.06]"
-                      : "border-white/7 bg-black/20"
-                  }`}
-                >
-                  <CanonicalSprite kind="item" name={item.item_name || slugToNameSession(item.item_key)} size="sm" />
-                  <div className="mt-1 max-w-[72px] truncate text-[9px] uppercase tracking-wide text-slate-600">
-                    {sessionSlotLabelPreview(item.selection_key)}
-                  </div>
+        )}
+        {activeSetup.option_type === "owned_variant" && (
+          <span className="mt-3 inline-flex rounded-full border border-cyan-400/15 bg-cyan-400/8 px-3 py-1 text-[10px] font-semibold text-cyan-200">
+            Main + BP
+          </span>
+        )}
+        {Array.isArray(activeSetup.items) && activeSetup.items.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2" data-testid="session-setup-items">
+            {activeSetup.items.map((item:any) => (
+              <div
+                key={`${item.selection_key}-${item.item_key}`}
+                title={item.item_name || item.item_key}
+                className={`rounded-xl border p-2 text-center ${
+                  item.storage_kind === "backpack"
+                    ? "border-cyan-300/25 bg-cyan-400/[0.06]"
+                    : "border-white/7 bg-black/20"
+                }`}
+              >
+                <CanonicalSprite kind="item" name={item.item_name || slugToNameSession(item.item_key)} size="sm" />
+                <div className="mt-1 max-w-[72px] truncate text-[9px] uppercase tracking-wide text-slate-600">
+                  {sessionSlotLabelPreview(item.selection_key)}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-3 text-xs text-slate-600">
-              Cadastre um Set Main no Profile para que o HuntNexus registre o equipamento usado junto com a sessão.
-            </div>
-          )}
-
-          <div className="mt-3 text-[10px] leading-4 text-slate-600">
-            O setup é salvo como snapshot histórico. Alterações futuras no Profile ou na BP não mudam esta sessão.
+              </div>
+            ))}
           </div>
-          </>
         )}
       </section>
 
