@@ -6,6 +6,8 @@ on:
     paths:
       - "web/app/**"
       - "tests/session-parser-contract.mjs"
+      - "tests/fe22-online-original-analyzer-excerpts.mjs"
+      - "tests/fixtures/fe22-online-original-analyzer-excerpts.json"
       - "tests/five-vocation-real-source-reconstruction.mjs"
       - "tests/fixtures/reconstructed-source-sessions-2026-10-11.json"
       - ".github/workflows/huntnexus-web-ci.yml"
@@ -41,3 +43,6 @@ jobs:
 
       - name: Tier C sourced five-vocation numeric reconstruction (not raw gameplay exports)
         run: node --experimental-strip-types ../../tests/five-vocation-real-source-reconstruction.mjs
+
+      - name: Public original Hunt/Party Analyzer short excerpts (EK RP ED MS EM)
+        run: node --experimental-strip-types ../../tests/fe22-online-original-analyzer-excerpts.mjs
