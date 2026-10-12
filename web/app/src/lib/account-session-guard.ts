@@ -1,4 +1,4 @@
-import { getStoredClientId, setClientId } from "./client-id";
+import { getStoredClientId, setClientId } from "./client-id.ts";
 
 const boundScopeKey = "huntnexus.bound-client-id.v1";
 const analyzerDraftKey = "huntnexus.session-import.draft.v1";
