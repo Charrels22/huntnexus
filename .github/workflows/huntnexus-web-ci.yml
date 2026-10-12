@@ -6,6 +6,7 @@ on:
     paths:
       - "web/app/**"
       - "tests/session-parser-contract.mjs"
+      - "tests/fe32-session-import-regressions.mjs"
       - "tests/fe28-client-id-regression.mjs"
       - "tests/fe30-auth-isolation-regression.mjs"
       - "tests/fe22-online-original-analyzer-excerpts.mjs"
@@ -48,6 +49,9 @@ jobs:
 
       - name: Session Parser synthetic regression
         run: node --experimental-strip-types ../../tests/session-parser-contract.mjs
+
+      - name: FE-32 duration and canonical loot sprite regression
+        run: node --experimental-strip-types ../../tests/fe32-session-import-regressions.mjs
 
       - name: Tier C sourced five-vocation numeric reconstruction (not raw gameplay exports)
         run: node --experimental-strip-types ../../tests/five-vocation-real-source-reconstruction.mjs
