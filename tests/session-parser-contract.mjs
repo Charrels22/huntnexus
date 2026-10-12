@@ -128,6 +128,55 @@ assert.equal(parsedPartyWithXp.party_hunt.party_size, 2);
 assert.equal(parsedPartyWithXp.party_hunt.totals.duration_seconds, 3600);
 assert.equal(parsedPartyWithXp.party_hunt.players.length, 2);
 
+// FE-23 real-world failure mode: Party totals cannot become a character's
+// observed personal balance or damage simply because no Hunt block was pasted.
+const partyOnlyBlock = [
+  "Session data: From 2026-10-11, 20:00:00 to 2026-10-11, 21:00:00",
+  "Session: 01:00h",
+  "Loot Type: Leader",
+  "Loot: 4,500,000",
+  "Supplies: 2,200,000",
+  "Balance: 2,300,000",
+  "Damage: 9,000,000",
+  "Healing: 3,200,000",
+  "Fixture Tank (Leader)",
+  "Loot: 2,500,000",
+  "Supplies: 1,500,000",
+  "Balance: 1,000,000",
+  "Damage: 6,000,000",
+  "Fixture Healer",
+  "Loot: 2,000,000",
+  "Supplies: 700,000",
+  "Balance: 1,300,000",
+  "Damage: 3,000,000",
+].join("\n");
+const isolatedParty = parseSessionImport({party: partyOnlyBlock});
+assert.equal(isolatedParty.party_hunt.party_size, 2);
+assert.equal(isolatedParty.party_hunt.totals.loot_value, 4500000);
+assert.equal(isolatedParty.party_hunt.totals.supplies_value, 2200000);
+assert.equal(isolatedParty.party_hunt.totals.balance_value, 2300000);
+assert.equal(isolatedParty.party_hunt.totals.total_damage, 9000000);
+assert.equal(isolatedParty.party_hunt.totals.total_healing, 3200000);
+assert.equal(isolatedParty.party_hunt.totals.duration_seconds, 3600);
+assert.equal(isolatedParty.hunt_analyse.duration_seconds, 3600,
+  "session duration may be shared, but financial/combat totals must not be");
+for (const key of ["loot_value","supplies_value","balance_value","total_damage","total_healing"]) {
+  assert.equal(isolatedParty.hunt_analyse[key], null,
+    "Team aggregate cannot be attributed to individual: " + key);
+}
+assert.equal(isolatedParty.damage.total_damage, null);
+assert.equal(isolatedParty.availability.hunt_analyse, false);
+assert.equal(isolatedParty.availability.party_hunt, true);
+assert.ok(isolatedParty.validation.warnings.includes("hunt_analyzer_missing"));
+
+const separateInputs = parseSessionImport({hunt,party:partyOnlyBlock});
+assert.equal(separateInputs.hunt_analyse.loot_value,1500000);
+assert.equal(separateInputs.hunt_analyse.balance_value,1000000);
+assert.equal(separateInputs.hunt_analyse.total_damage,6000000);
+assert.equal(separateInputs.party_hunt.totals.loot_value,4500000);
+assert.equal(separateInputs.party_hunt.totals.balance_value,2300000);
+assert.equal(separateInputs.party_hunt.totals.total_damage,9000000);
+
 console.log(JSON.stringify({
   status: "ok",
   stage: "session_parser_contract_v3",
