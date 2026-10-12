@@ -95,6 +95,36 @@ export function buildSessionReparseReview(
     compare(key + ".count",label,before,after,
       before !== null && (after === null || after < before));
   }
+  // Reparsed names and per-source rows can contain private or detailed facts.
+  // Compare them only server-side and block any rewriting that is not purely
+  // additive. Do NOT emit row contents, names or text in the API diff.
+  const observedRowPaths = [
+    ...counts,
+    ["damage.charm_damage", "Charm damage observado"],
+  ] as const;
+  for (const [key,label] of observedRowPaths) {
+    const before = at(previous,key);
+    const after = at(next,key);
+    if (!Array.isArray(before) || before.length === 0) continue;
+    if (!Array.isArray(after) ||
+        !before.every((row) => after.some((candidate) =>
+          JSON.stringify(candidate) === JSON.stringify(row)))) {
+      regressionReasons.push("Conteúdo anteriormente registrado não foi preservado em " + label);
+    }
+  }
+  const privateTextPaths = [
+    ["hunt_analyse.session_data_raw", "intervalo original da hunt"],
+    ["hunt_analyse.session_from_raw", "início original da hunt"],
+    ["hunt_analyse.session_to_raw", "fim original da hunt"],
+    ["party_hunt.totals.loot_type_raw", "tipo de loot da party"],
+  ] as const;
+  for (const [key,label] of privateTextPaths) {
+    const before = primitive(at(previous,key));
+    const after = primitive(at(next,key));
+    if (before !== null && before !== after) {
+      regressionReasons.push("Texto registrado mudou em " + label);
+    }
+  }
   for (const [key,label] of availabilities) {
     const before = primitive(at(previous,key));
     const after = primitive(at(next,key));
