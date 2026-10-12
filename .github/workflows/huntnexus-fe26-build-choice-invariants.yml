@@ -1,0 +1,30 @@
+name: HuntNexus FE-26 Build Choice Invariants
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe26-five-vocation-choice-guard-smoke.mjs"
+      - "db/migrations/0156_hunt_main_choice_identity_guard.sql"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - ".github/workflows/huntnexus-fe26-build-choice-invariants.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huntnexus-fe26-choice-invariants
+  cancel-in-progress: false
+
+jobs:
+  live-choice-invariants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate real published build choice security and Main truth across five vocations
+        run: node tests/fe26-five-vocation-choice-guard-smoke.mjs
