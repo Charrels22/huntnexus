@@ -33,8 +33,16 @@ try{
     try{request=route.request().postDataJSON()}catch{}
     const action=request.action;
     let data={};
-    if(action==="player_profile_get")data={exists:false,profile:null};
-    else if(action==="player_inventory_get")data={main_set:{},backpack:[],summary:{main_slots:0,backpack_items:0}};
+    if(action==="player_profile_get")data={exists:true,profile:{vocation:"MS",level:700}};
+    else if(action==="player_inventory_get")data={
+      main_set:{weapon:{selection_key:"weapon",item_key:"soultainter",item_name:"Soultainter",storage_kind:"main"}},
+      backpack:[{selection_key:"weapon",item_key:"amber-wand",item_name:"Amber Wand",storage_kind:"backpack"}],
+      summary:{main_slots:1,backpack_items:1},
+    };
+    else if(action==="player_hunt_build_choice_get")data={
+      exists:request.hunt_key==="the-void",
+      choice:{option_type:"owned_variant",selection:{weapon:"amber-wand"}},
+    };
     else if(action==="search_hunts")data=[{hunt_key:"the-void",name:"The Void (Zao)",city:"Zao",vocation:"All",observed_sessions:0}];
     else if(action==="player_session_list")data={sessions:[{session_id:sessionId,hunt_name:"The Void (Zao)",vocation:"MS",status:"parsed",duration_seconds:7380,xp_per_hour:8031558}]};
     else if(action==="player_session_detail")data={
@@ -64,7 +72,20 @@ try{
   await page.getByText("Setup usado na sessão").waitFor();
   const location=page.getByPlaceholder("Selecione no catálogo ou digite o nome da hunt");
   await location.focus();
-  await page.getByRole("button",{name:/The Void \(Zao\)/}).waitFor({timeout:15000});
+  await page.getByRole("button",{name:/The Void \\(Zao\\)/}).waitFor({timeout:15000});
+  await page.getByRole("button",{name:/The Void \\(Zao\\)/}).click();
+  const setup=page.getByTestId("session-setup-mode");
+  await setup.waitFor({timeout:15000});
+  await page.getByText("Build da hunt disponível").waitFor({timeout:15000});
+  await setup.selectOption("hunt");
+  await page.getByTestId("session-setup-items").getByTitle("Amber Wand").waitFor();
+  await setup.selectOption("main");
+  await page.getByTestId("session-setup-items").getByTitle("Soultainter").waitFor();
+  await setup.selectOption("none");
+  await page.getByText(/Você escolheu não registrar setup/).waitFor();
+  assert.equal(await page.getByTestId("session-setup-items").count(),0);
+  await setup.selectOption("auto");
+  await page.getByTestId("session-setup-items").getByTitle("Amber Wand").waitFor();
   await page.screenshot({path:resolve(folder,"fe32-session-import-preview.png"),fullPage:true});
   results.push({case:"session_import_preview",result:"PASS",duration:"02:03h",missing_damage_and_misc_explicit:true,hunt_catalog_on_focus:true});
   nav=await page.goto(site+"/sessions",{waitUntil:"domcontentloaded",timeout:30000});
