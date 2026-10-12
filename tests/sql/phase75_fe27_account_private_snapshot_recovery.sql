@@ -132,11 +132,29 @@ begin
     raise exception 'FE27 old snapshot changed after removing BP';
   end if;
 
+  -- FE-27: do not allow unbind to turn existing private data into an
+  -- anonymously retrievable guest UUID. Auth binding must survive.
+  v_saved:=public.huntnexus_account_unbind(v_auth_a);
+  if v_saved->>'error'<>'private_data_present_unbind_blocked'
+     or v_saved->>'unbound'<>'false' then
+    raise exception 'FE27 unbind exposed private session or Profile: %',v_saved;
+  end if;
+  v_read:=public.huntnexus_account_binding_status(v_auth_a);
+  if v_read->>'bound'<>'true' then
+    raise exception 'FE27 protected canonical binding disappeared';
+  end if;
+
   -- Explicit cleanup, never touch IDs outside this DO fixture.
   delete from public.player_hunt_sessions where client_id in (v_device_a,v_device_b);
   delete from public.player_hunt_build_choices where client_id in (v_device_a,v_device_b);
   delete from public.player_character_inventory where client_id in (v_device_a,v_device_b);
   delete from public.player_character_profiles where client_id in (v_device_a,v_device_b);
+
+  -- Only now is the account empty enough to unlink safely.
+  v_saved:=public.huntnexus_account_unbind(v_auth_a);
+  if v_saved->>'unbound'<>'true' then
+    raise exception 'FE27 empty-account unbind unexpectedly blocked: %',v_saved;
+  end if;
   delete from public.player_account_bindings where auth_user_id in (v_auth_a,v_auth_b);
 end $$;
 
@@ -149,6 +167,8 @@ select jsonb_build_object(
  'second_guest_isolated',true,
  'collision_rejected',true,
  'guest_merge_applied',false,
+ 'private_data_unbind_blocked',true,
+ 'empty_account_unbind_succeeds',true,
  'real_magic_link_verified',false,
  'fixture_residue_expected',0
 ) result;
