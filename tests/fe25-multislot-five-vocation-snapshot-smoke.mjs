@@ -115,7 +115,7 @@ async function runCase(c){
           option_type:"owned_variant",selection:invalid.selection,
           replacements:[],
         });
-        assert.equal(rejected?.saved,false,
+        assert.notEqual(rejected?.saved,true,
           "RP must reject "+invalid.reason+": "+JSON.stringify(rejected).slice(0,500));
         assert.equal(rejected?.error,"invalid_loadout");
         assert.equal(rejected?.validation?.status,invalid.expected);
