@@ -17,6 +17,7 @@ try{
   const page=await ctx.newPage();
   const runtimeErrors=[];
   const imageTraffic=[];
+  let interceptedSyntheticSave=null;
   page.on("pageerror",e=>runtimeErrors.push(e.message));
   page.on("response",response=>{
     if(response.url().toLowerCase().includes(".gif")) {
@@ -57,7 +58,10 @@ try{
       validation:{warnings:[]},parser:{version:"session_parser_v2",raw_blocks_preserved:true,community_evidence_written:false},
       loadout_snapshot:{},
     };
-    else if(action==="session_import_save")return route.fulfill({status:405,contentType:"application/json",body:JSON.stringify({error:"synthetic_write_disabled"})});
+    else if(action==="session_import_save"){
+      interceptedSyntheticSave=request;
+      return route.fulfill({status:405,contentType:"application/json",body:JSON.stringify({error:"synthetic_write_disabled"})});
+    }
     await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({data})});
   });
   let nav=await page.goto(site+"/session",{waitUntil:"domcontentloaded",timeout:30000});
@@ -86,6 +90,15 @@ try{
   assert.equal(await page.getByTestId("session-setup-items").count(),0);
   await setup.selectOption("auto");
   await page.getByTestId("session-setup-items").getByTitle("Amber Wand").waitFor();
+  await page.screenshot({path:resolve(folder,"fe33-session-hunt-build-selected.png"),fullPage:true});
+  await setup.selectOption("main");
+  await page.getByTestId("session-setup-items").getByTitle("Soultainter").waitFor();
+  await page.screenshot({path:resolve(folder,"fe33-session-main-selected.png"),fullPage:true});
+  // Confirm metadata, without writing to any real user/session backend.
+  await page.getByRole("button",{name:"Salvar hunt",exact:true}).click();
+  await page.getByText("synthetic_write_disabled").waitFor({timeout:15000});
+  assert.equal(interceptedSyntheticSave?.metadata?.setupMode,"main");
+  assert.equal(interceptedSyntheticSave?.metadata?.hunt_key,"the-void");
   await page.screenshot({path:resolve(folder,"fe32-session-import-preview.png"),fullPage:true});
   results.push({case:"session_import_preview",result:"PASS",duration:"02:03h",missing_damage_and_misc_explicit:true,hunt_catalog_on_focus:true});
   nav=await page.goto(site+"/sessions",{waitUntil:"domcontentloaded",timeout:30000});
