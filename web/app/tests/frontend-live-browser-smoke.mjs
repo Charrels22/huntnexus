@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
 import { mkdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const baseUrl = process.env.HUNTNEXUS_BASE_URL ??
@@ -175,6 +176,45 @@ try {
     });
     await profilePage.close();
   }
+
+  // No network scrape or private session write: only public, short authentic
+  // excerpts pinned with provenance are pasted into the published Analyzer UI.
+  const publicExcerpts = JSON.parse(readFileSync(
+    resolve("../../../tests/fixtures/fe22-online-original-analyzer-excerpts.json"), "utf8"
+  )).vocations;
+  const rpPublic = publicExcerpts.find(x => x.vocation === "RP");
+  const emPublic = publicExcerpts.find(x => x.vocation === "EM");
+  const excerptPage = await browser.newPage({viewport:{width:1440,height:900}});
+  const excerptErrors = [];
+  excerptPage.on("pageerror", e => excerptErrors.push(e.message));
+  await excerptPage.goto(baseUrl + "/session", {waitUntil:"domcontentloaded",timeout:30000});
+  const sourceInput = excerptPage.locator("textarea").first();
+  await sourceInput.fill(rpPublic.excerpt);
+  await excerptPage.getByText("5 métricas reconhecidas").first().waitFor({timeout:15000});
+  const xpPreview = excerptPage.getByText("XP/h", {exact:true}).first().locator("..");
+  if (!(await xpPreview.innerText()).includes("0")) {
+    throw new Error("Published RP XP/h: 0 was not preserved as explicitly observed zero");
+  }
+  await excerptPage.getByText("Kills", {exact:true}).first().locator("..")
+    .getByText("Não informado").waitFor();
+  await excerptPage.screenshot({path:resolve(output,"source-rp-original-excerpt-preview.png"),fullPage:true});
+  results.push({
+    route:"/session#rp-public-excerpt", source_vocation:"RP",
+    observed_zero_kept:true, unknown_kills_not_zero:true,
+    screenshot:"source-rp-original-excerpt-preview.png", real_gameplay_upload:false,
+  });
+
+  await excerptPage.getByRole("button",{name:"Party Hunt",exact:true}).click();
+  await excerptPage.locator("textarea").first().fill(emPublic.excerpt);
+  await excerptPage.getByText("Loot Type: Leader").first().waitFor({timeout:14000});
+  await excerptPage.screenshot({path:resolve(output,"source-em-public-party-header-preview.png"),fullPage:true});
+  if (excerptErrors.length) throw new Error("Source excerpt browser JS errors: " + excerptErrors.slice(0,3).join("; "));
+  results.push({
+    route:"/session#em-public-party-header", source_vocation:"EM",
+    tested_as_party_aggregate:true, source_excerpt_not_full_party_export:true,
+    screenshot:"source-em-public-party-header-preview.png", real_gameplay_upload:false,
+  });
+  await excerptPage.close();
 
   const mobileAccount = await audit("/account", /Sincronize seu personagem entre dispositivos/i, "account-mobile.png", 390, 844);
   await mobileAccount.close();
