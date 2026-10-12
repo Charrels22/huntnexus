@@ -6,7 +6,8 @@ import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const site=process.env.HUNTNEXUS_BASE_URL ?? "http://127.0.0.1:4173";
-const folder=resolve("fe32-session-qa");
+const target=site.includes("workers.dev") ? "published" : "preview";
+const folder=resolve("fe32-session-qa",target);
 await mkdir(folder,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const results=[];
