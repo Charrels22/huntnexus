@@ -511,19 +511,22 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
   const miscStats = parseMisc(miscLines);
   const observedCharm = parseObservedCharmDamage(miscStats);
 
+  // Hunt metrics belong to the individual Hunt Analyzer only. Party Hunt
+  // aggregate Loot/Supplies/Balance/Damage/Healing are never attributed to a
+  // particular character when only the party block was supplied.
   const metrics: HuntAnalyzerMetrics = {
     duration_seconds: parseDurationSeconds(primary),
     raw_xp_gain: metric(huntLines, ["Raw XP Gain"]),
     xp_gain: metric(huntLines, ["XP Gain"]),
     xp_per_hour: metric(huntLines, ["XP/h"]),
     raw_xp_per_hour: metric(huntLines, ["Raw XP/h", "Raw XP/hour"]),
-    loot_value: metric(primary, ["Loot"]),
-    supplies_value: metric(primary, ["Supplies"]),
-    balance_value: metric(primary, ["Balance"]),
-    total_damage: metric(primary, ["Damage"]),
-    damage_per_hour: metric(primary, ["Damage/h", "Damage/hour"]),
-    total_healing: metric(primary, ["Healing"]),
-    healing_per_hour: metric(primary, ["Healing/h", "Healing/hour"]),
+    loot_value: metric(huntLines, ["Loot"]),
+    supplies_value: metric(huntLines, ["Supplies"]),
+    balance_value: metric(huntLines, ["Balance"]),
+    total_damage: metric(huntLines, ["Damage"]),
+    damage_per_hour: metric(huntLines, ["Damage/h", "Damage/hour"]),
+    total_healing: metric(huntLines, ["Healing"]),
+    healing_per_hour: metric(huntLines, ["Healing/h", "Healing/hour"]),
   };
 
   const partyTotals = {
@@ -550,13 +553,13 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
     ["XP Gain", huntLines, ["XP Gain"]],
     ["XP/h", huntLines, ["XP/h"]],
     ["Raw XP/h", huntLines, ["Raw XP/h", "Raw XP/hour"]],
-    ["Loot", primary, ["Loot"]],
-    ["Supplies", primary, ["Supplies"]],
-    ["Balance", primary, ["Balance"]],
-    ["Damage", primary, ["Damage"]],
-    ["Damage/h", primary, ["Damage/h", "Damage/hour"]],
-    ["Healing", primary, ["Healing"]],
-    ["Healing/h", primary, ["Healing/h", "Healing/hour"]],
+    ["Loot", huntLines, ["Loot"]],
+    ["Supplies", huntLines, ["Supplies"]],
+    ["Balance", huntLines, ["Balance"]],
+    ["Damage", huntLines, ["Damage"]],
+    ["Damage/h", huntLines, ["Damage/h", "Damage/hour"]],
+    ["Healing", huntLines, ["Healing"]],
+    ["Healing/h", huntLines, ["Healing/h", "Healing/hour"]],
   ] as Array<[string, string[], string[]]>) {
     if (textMetric(source, aliases) !== null && metric(source, aliases) === null) {
       warnings.push(`invalid_numeric_format:${label}`);
@@ -599,7 +602,7 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
       players: partyPlayers,
     },
     availability: {
-      hunt_analyse: recognizedMetricCount > 0,
+      hunt_analyse: huntLines.length > 0 && recognizedMetricCount > 0,
       misc: miscStats.length > 0 || creatures.length > 0 || lootedItems.length > 0,
       damage: metrics.total_damage != null || input.elements.length > 0 || input.sources.length > 0,
       party_hunt: partyPlayers.length > 1,
