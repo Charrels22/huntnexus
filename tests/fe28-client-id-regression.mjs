@@ -8,7 +8,6 @@ const storage=new Map();
 const events=[];
 const generated=[
   "d7f0755e-a53c-4bbf-8c2d-dc34f25885ad",
-  "7178ea3b-ae35-4e87-b960-29dbd684e43d",
   "bc29aa88-f5a3-43a9-b3a4-6efafbb41c12",
 ];
 globalThis.CustomEvent=class {
