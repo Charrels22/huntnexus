@@ -1,0 +1,30 @@
+name: HuntNexus Five-Vocation Private Snapshot Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe24-five-vocation-private-snapshots-smoke.mjs"
+      - ".github/workflows/huntnexus-fe24-five-vocation-private-snapshot.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huntnexus-fe24-private-snapshot
+  cancel-in-progress: false
+
+jobs:
+  five-vocation-private-snapshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate Profile, Main/BP, immutable session snapshots and private cleanup (EK RP ED MS EM)
+        run: node tests/fe24-five-vocation-private-snapshots-smoke.mjs
