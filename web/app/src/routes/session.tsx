@@ -641,6 +641,7 @@ function SessionImportPage() {
             <p className="mt-2 text-xs text-slate-400">Verificando a build da hunt e o Set Main. O salvamento não inventará equipamento ausente.</p>
           </div>
         ) : (
+          <>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-400">Setup que será registrado</div>
@@ -688,6 +689,7 @@ function SessionImportPage() {
           <div className="mt-3 text-[10px] leading-4 text-slate-600">
             O setup é salvo como snapshot histórico. Alterações futuras no Profile ou na BP não mudam esta sessão.
           </div>
+          </>
         )}
       </section>
 
