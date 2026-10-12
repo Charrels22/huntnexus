@@ -1,0 +1,78 @@
+{
+  "purpose": "Public-source partial original Analyzer excerpts for parser regression. These are short, verbatim fields from their source posts, not complete exports. Do not publish as user-submitted RubinOT gameplay.",
+  "created_on": "2026-10-11",
+  "provenance_tier": "C",
+  "run_location": "Tibia official/community; not confirmed RubinOT",
+  "source_rights": "Short excerpts for critical software testing only. Original full text remains at linked source; no mirroring.",
+  "contains_private_sessions": false,
+  "complete_raw_analyzers": 0,
+  "vocations": [
+    {
+      "vocation": "EK",
+      "source_url": "https://www.reddit.com/r/TibiaMMO/comments/1o3l7bc/",
+      "source_category": "player-published Reddit hunt analyzer",
+      "block": "hunt",
+      "excerpt": "Session: 00:36h\nRaw XP Gain: 145,380\nXP Gain: 327,072\nRaw XP/h: 529,968",
+      "expected": {
+        "duration_seconds": 2160,
+        "raw_xp_gain": 145380,
+        "xp_gain": 327072,
+        "raw_xp_per_hour": 529968
+      }
+    },
+    {
+      "vocation": "RP",
+      "source_url": "https://www.reddit.com/r/TibiaMMO/comments/1e59z3t/",
+      "source_category": "player-published Reddit hunt analyzer",
+      "block": "hunt",
+      "excerpt": "Session: 01:00 h\nRaw XP Gain: 2,189,060\nXP Gain: 4,086,832\nRaw XP/h: 0\nXP/h: 0",
+      "expected": {
+        "duration_seconds": 3600,
+        "raw_xp_gain": 2189060,
+        "xp_gain": 4086832,
+        "raw_xp_per_hour": 0,
+        "xp_per_hour": 0
+      }
+    },
+    {
+      "vocation": "ED",
+      "source_url": "https://www.reddit.com/r/TibiaMMO/comments/1bct1k8/",
+      "source_category": "player-published Reddit hunt analyzer",
+      "block": "hunt",
+      "excerpt": "Session: 00:40h\nXP Gain: 6,120,000\nXP/h: 10,014,067\nLoot: 0",
+      "expected": {
+        "duration_seconds": 2400,
+        "xp_gain": 6120000,
+        "xp_per_hour": 10014067,
+        "loot_value": 0
+      }
+    },
+    {
+      "vocation": "MS",
+      "source_url": "https://www.reddit.com/r/TibiaMMO/comments/u5whop/",
+      "source_category": "player-published Reddit hunt analyzer",
+      "block": "hunt",
+      "excerpt": "Session: 00:41h\nXP Gain: 816,713\nXP/h: 1,366,516\nLoot: 177,340",
+      "expected": {
+        "duration_seconds": 2460,
+        "xp_gain": 816713,
+        "xp_per_hour": 1366516,
+        "loot_value": 177340
+      }
+    },
+    {
+      "vocation": "EM",
+      "source_url": "https://www.hunt-analyser.com/hunt_sessions/32789",
+      "source_category": "player-published party hunt analyzer description with EM participating",
+      "block": "party",
+      "excerpt": "Session data: From 2025-07-14, 22:53:35 to 2025-07-15, 00:30:27\nSession: 01:36h\nLoot Type: Leader\nLoot: 4,471,286\nSupplies: 2,262,694\nBalance: 2,208,592",
+      "expected": {
+        "duration_seconds": 5760,
+        "loot_value": 4471286,
+        "supplies_value": 2262694,
+        "balance_value": 2208592
+      },
+      "scope_notice": "Party aggregate; numbers are not personal EM performance."
+    }
+  ]
+}
