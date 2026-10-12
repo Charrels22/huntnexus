@@ -1,15 +1,8 @@
 import { useMemo, useState } from "react";
 import { ImageOff } from "lucide-react";
+import { canonicalSpriteRedirect } from "@/lib/canonical-sprite-url";
 
 export type CanonicalSpriteKind = "creature" | "item";
-
-function fileNameFromDisplayName(name: string) {
-  return `${name.trim().replaceAll(" ", "_")}.gif`;
-}
-
-function tibiaWikiFileRedirect(fileName: string) {
-  return `https://www.tibiawiki.com.br/wiki/Especial:Redirect/file/${encodeURIComponent(fileName)}`;
-}
 
 export function CanonicalSprite({
   kind,
@@ -24,15 +17,15 @@ export function CanonicalSprite({
   className?: string;
   size?: "sm" | "md" | "lg";
 }) {
-  const [failed, setFailed] = useState(false);
+  const [failedName, setFailedName] = useState<string | null>(null);
   const url = useMemo(() => {
     if (!name) return null;
-    return tibiaWikiFileRedirect(fileNameFromDisplayName(name));
+    return canonicalSpriteRedirect(name);
   }, [name]);
 
   const dimensions = size === "sm" ? "size-12" : size === "lg" ? "size-24" : "size-16";
 
-  if (!url || failed) {
+  if (!url || failedName === name) {
     return (
       <div
         className={`${dimensions} ${className} grid shrink-0 place-items-center rounded-xl border border-white/8 bg-slate-950/70`}
@@ -54,7 +47,7 @@ export function CanonicalSprite({
         loading="lazy"
         decoding="async"
         className="max-h-[90%] max-w-[90%] object-contain [image-rendering:pixelated]"
-        onError={() => setFailed(true)}
+        onError={() => setFailedName(name ?? null)}
       />
     </div>
   );
