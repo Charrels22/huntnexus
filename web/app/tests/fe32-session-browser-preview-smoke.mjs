@@ -75,6 +75,9 @@ try{
     imgs.map(img=>({name:img.alt,src:img.getAttribute("src"),complete:img.complete,loaded:img.naturalWidth>0})));
   assert.ok(imageNames.some(x=>x.name==="blue crystal shard"&&x.src?.includes("Blue_Crystal_Shard.gif")),
     "Loot must use source-backed Blue_Crystal_Shard.gif title");
+  assert.equal(imageNames.filter(x=>x.loaded).length,3,
+    "The three TibiaWiki test item GIFs must actually decode in a browser; a valid filename alone is insufficient. Traffic=" +
+    JSON.stringify(imageTraffic.slice(-15)));
   await page.screenshot({path:resolve(folder,"fe32-session-misc-loot.png"),fullPage:true});
   assert.deepEqual(runtimeErrors,[],"Browser must not raise runtime exceptions");
   results.push({case:"saved_session_read_with_synthetic_fixture",result:"PASS",
