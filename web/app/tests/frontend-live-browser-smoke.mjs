@@ -298,6 +298,34 @@ try {
       failed_external_icons: iconCoverage.filter((x) => !x.loaded).map((x) => x.filename),
       screenshot: filename, actual_human_profile_used: false,
     });
+    // FE-31: some source-tier-B perks have an observed sequence but no
+    // independently verified topology. The frontend must not invent positions.
+    const flattened = (catalog?.data?.trees ?? []).find((tree) =>
+      tree.eligible && tree.topology_status === "flattened_source_order" &&
+      tree.perk_count > 0
+    );
+    if (flattened) {
+      const flattenedButton = profilePage.locator("article > button")
+        .filter({ hasText: flattened.item_name }).first();
+      await flattenedButton.click();
+      await profilePage.getByText(
+        /Topologia ainda não comprovada; exibindo somente a ordem observada/i,
+      ).first().waitFor({ timeout: 12000 });
+      const fallbackScreenshot = "weapon-proficiency-unverified-" +
+        vocation.toLowerCase() + ".png";
+      await profilePage.screenshot({
+        path: resolve(output, fallbackScreenshot),
+        fullPage: true,
+      });
+      results.push({
+        route: "/profile#proficiency-unverified-" + vocation.toLowerCase(),
+        vocation, tree: flattened.item_key,
+        topology_status: flattened.topology_status,
+        positions_not_invented: true,
+        screenshot: fallbackScreenshot,
+        real_player_profile_used: false,
+      });
+    }
     await profilePage.close();
   }
 
