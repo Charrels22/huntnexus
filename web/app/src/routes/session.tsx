@@ -459,7 +459,27 @@ function SessionImportPage() {
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.incoming_element_rows} elementos recebidos</span>
             <span className="rounded-lg border border-white/6 bg-slate-950/40 px-2.5 py-1.5">{preview.validation.incoming_source_rows} fontes de dano</span>
           </div>
-          {preview.validation.warnings.length > 0 && (
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+             <div className="rounded-xl border border-white/7 bg-slate-950/45 p-3">
+               <div className="text-xs font-semibold text-slate-200">Damage Input — dano recebido</div>
+               <p className="mt-1 text-xs leading-5 text-slate-500">
+                 {!draft.input.trim()
+                   ? "Bloco não enviado. Elementos e fontes de dano recebido não serão registrados; Damage do Hunt Analyzer é dano causado."
+                   : preview.validation.incoming_element_rows + preview.validation.incoming_source_rows === 0
+                     ? "Bloco enviado sem elementos ou fontes reconhecidos. Revise o texto antes de salvar."
+                     : `${preview.validation.incoming_element_rows} elementos e ${preview.validation.incoming_source_rows} fontes reconhecidos.`}
+               </p>
+             </div>
+             <div className="rounded-xl border border-white/7 bg-slate-950/45 p-3">
+               <div className="text-xs font-semibold text-slate-200">Miscellaneous — Combat Stats</div>
+               <p className="mt-1 text-xs leading-5 text-slate-500">
+                 {!draft.misc.trim()
+                   ? "Bloco não enviado. Combat Stats permanecerá sem dados nesta sessão."
+                   : `${preview.validation.misc_stat_rows} campos preservados. Valores não numéricos serão exibidos como texto original.`}
+               </p>
+             </div>
+           </div>
+           {preview.validation.warnings.length > 0 && (
             <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-400/[0.035] p-3 text-xs leading-5 text-amber-100/85">
               <div className="font-semibold">Pontos para revisar antes de salvar</div>
               <ul className="mt-1 list-inside list-disc">
