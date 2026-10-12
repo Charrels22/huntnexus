@@ -26,17 +26,22 @@ export function detectAnalyzerType(text: string): AnalyzerType | null {
   const normalized = text.replace(/\r\n?/g, "\n").trim();
   if (!normalized) return null;
 
+  // A Party Hunt Analyzer can also contain XP fields. Detect strong party
+  // evidence first, otherwise the generic XP Gain rule mislabels it as Hunt.
+  const partyHeader = /(?:^|\n)\s*Loot Type\s*:/i.test(normalized);
+  const hasSessionContext = /(?:^|\n)\s*(?:Session data\s*:\s*From|Session\s*:)/i.test(normalized);
+  if (partyHeader && hasSessionContext) return "party";
+  if (/Session data\s*:\s*From/i.test(normalized)) {
+    const playerSignals = (normalized.match(/(?:^|\n)[^:\n]+(?:\s+\(Leader\))?\s*\n\s*Loot\s*:/gi) ?? []).length;
+    if (playerSignals > 0) return "party";
+  }
+
   if (/Killed Monsters:?/i.test(normalized) || /XP Gain\s*:/i.test(normalized) || /Looted Items:?/i.test(normalized)) {
     return "hunt";
   }
 
   if (/Damage Types:?/i.test(normalized) || /Damage Sources:?/i.test(normalized)) {
     return "input";
-  }
-
-  if (/Session data\s*:\s*From/i.test(normalized)) {
-    const playerSignals = (normalized.match(/(?:^|\n)[^:\n]+(?:\s+\(Leader\))?\s*\n\s*Loot\s*:/gi) ?? []).length;
-    if (playerSignals > 0 || /Loot Type\s*:/i.test(normalized)) return "party";
   }
 
   if (/^(?:[A-Za-z][^:\n]{1,60})\s*:\s*.+$/m.test(normalized)) {
