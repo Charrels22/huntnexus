@@ -1,0 +1,61 @@
+name: HuntNexus FE-32 Session Browser Preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "web/app/src/lib/session-parser.ts"
+      - "web/app/src/lib/canonical-sprite-url.ts"
+      - "web/app/src/components/shared/canonical-sprite.tsx"
+      - "web/app/src/routes/session.tsx"
+      - "web/app/src/routes/sessions.tsx"
+      - "web/app/tests/fe32-session-browser-preview-smoke.mjs"
+      - ".github/workflows/huntnexus-fe32-session-browser-preview.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  session-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies and browser
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build app
+        run: npm run build
+      - name: Launch local preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/huntnexus-fe32.log 2>&1 &
+          for i in $(seq 1 35); do
+            if curl --fail --silent http://127.0.0.1:4173/session > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/huntnexus-fe32.log
+          exit 1
+      - name: Verify import and saved-session visual experience
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe32-session-browser-preview-smoke.mjs
+      - name: Preserve browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huntnexus-fe32-session-visual-qa
+          path: web/app/fe32-session-qa/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Preview logs on failure
+        if: failure()
+        run: cat /tmp/huntnexus-fe32.log || true
