@@ -38,6 +38,12 @@ function SessionHistoryPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [reparsePreview, setReparsePreview] = useState<any>(null);
+  const [reparseLoading, setReparseLoading] = useState(false);
+  const [reparseApplying, setReparseApplying] = useState(false);
+  const [reparseConfirmed, setReparseConfirmed] = useState(false);
+  const [reparseMessage, setReparseMessage] = useState("");
+  const [detailVersion, setDetailVersion] = useState(0);
   const detailRequestRef = useRef(0);
 
   async function loadSessions() {
@@ -70,6 +76,12 @@ function SessionHistoryPage() {
 
   useEffect(() => { void loadSessions(); }, []);
   useEffect(() => {
+    setReparsePreview(null);
+    setReparseConfirmed(false);
+    setReparseMessage("");
+  }, [selectedId]);
+
+  useEffect(() => {
     const requestId = ++detailRequestRef.current;
     if (!selectedId) {
       setDetail(null);
@@ -94,7 +106,71 @@ function SessionHistoryPage() {
         if (detailRequestRef.current === requestId) setLoadingDetail(false);
       });
     return () => { detailRequestRef.current++; };
-  }, [selectedId]);
+  }, [selectedId, detailVersion]);
+
+  async function compareReparse() {
+    const clientId = getOrCreateClientId();
+    if (!clientId || !selectedId || reparseLoading || reparseApplying) return;
+    setReparseLoading(true);
+    setReparsePreview(null);
+    setReparseConfirmed(false);
+    setReparseMessage("");
+    setError("");
+    try {
+      const response = await callHuntNexusApi<any>({
+        action:"player_session_reparse_preview",
+        client_id:clientId,session_id:selectedId,
+      });
+      if (response?.data?.session_id !== selectedId) throw new Error("A sessão consultada mudou.");
+      setReparsePreview(response.data);
+    } catch (e) {
+      setError((e as Error).message || "Não foi possível comparar esta sessão.");
+    } finally {
+      setReparseLoading(false);
+    }
+  }
+
+  async function applyReparse() {
+    const clientId=getOrCreateClientId();
+    const preview=reparsePreview;
+    if (!clientId || !selectedId || !preview ||
+        preview.session_id !== selectedId ||
+        !preview.review?.safe_to_apply || !reparseConfirmed ||
+        reparseApplying || reparseLoading) return;
+    if (!window.confirm(
+      "Aplicar somente as métricas reinterpretadas desta sessão? " +
+      "O texto original e o setup histórico serão preservados. Uma cópia " +
+      "da interpretação antiga ficará guardada para auditoria."
+    )) return;
+    setReparseApplying(true);
+    setError("");
+    try {
+      const response=await callHuntNexusApi<any>({
+        action:"player_session_reparse_apply",
+        client_id:clientId,session_id:selectedId,
+        expected_fingerprint:preview.expected_fingerprint,
+        confirm:true,
+      });
+      if (!response?.data?.updated) throw new Error("O reprocessamento não foi confirmado.");
+      setReparsePreview(null);
+      setReparseConfirmed(false);
+      setReparseMessage("Sessão reinterpretada. Texto original, setup histórico e revisão anterior preservados.");
+      setDetailVersion((value)=>value+1);
+      window.dispatchEvent(new Event("huntnexus:player-sessions-changed"));
+      await loadSessions();
+    } catch (e) {
+      const message=(e as Error).message || "";
+      setError(message==="reparse_preview_stale"
+        ? "A sessão foi alterada depois da comparação. Compare novamente antes de aplicar."
+        : message==="reparse_regression_blocked"
+          ? "O novo parser perderia dados observados; aplicação bloqueada."
+          : message || "Não foi possível aplicar a revisão.");
+      setReparsePreview(null);
+      setReparseConfirmed(false);
+    } finally {
+      setReparseApplying(false);
+    }
+  }
 
   async function deleteSelected() {
     const clientId = getOrCreateClientId();
@@ -113,6 +189,8 @@ function SessionHistoryPage() {
 
       setSelectedId("");
       setDetail(null);
+      setReparsePreview(null);
+      setReparseConfirmed(false);
       window.dispatchEvent(new Event("huntnexus:player-sessions-changed"));
       await loadSessions();
     } catch (e) {
@@ -190,6 +268,87 @@ function SessionHistoryPage() {
         <div className="rounded-2xl border border-red-400/20 bg-red-400/8 p-4 text-sm text-red-200">
           {error}
         </div>
+      )}
+
+      {selectedId && detail && (
+        <section className="rounded-2xl border border-white/8 bg-slate-950/40 p-4" data-testid="session-reparse-review">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-100">Revisar importação antiga</h2>
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
+                Compare novamente os blocos originais usando o parser atual. A comparação não grava dados e
+                não revela os textos privados. A aplicação exige confirmação, mantém o setup histórico e
+                registra a versão anterior para auditoria.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="hn-secondary-button"
+              onClick={() => void compareReparse()}
+              disabled={reparseLoading || reparseApplying}
+              data-testid="session-reparse-compare"
+            >
+              {reparseLoading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+              Comparar parser
+            </button>
+          </div>
+          {reparseMessage && <p className="mt-3 text-xs text-emerald-300">{reparseMessage}</p>}
+          {reparsePreview?.session_id === selectedId && (
+            <div className="mt-4 space-y-3" data-testid="session-reparse-diff">
+              <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+                <span>Atual: {reparsePreview.previous_parser_version}</span>
+                <span>Proposto: {reparsePreview.proposed_parser_version}</span>
+                <span>Setup: {reparsePreview.snapshot_source || "Não registrado"}</span>
+                <span>{reparsePreview.review?.changes?.length ?? 0} diferenças observadas</span>
+              </div>
+              {Array.isArray(reparsePreview.review?.changes) && reparsePreview.review.changes.length > 0 && (
+                <div className="max-h-64 overflow-auto rounded-xl border border-white/8">
+                  <table className="w-full text-left text-xs">
+                    <thead className="sticky top-0 bg-slate-900 text-slate-400">
+                      <tr><th className="p-2">Métrica</th><th className="p-2">Antes</th><th className="p-2">Depois</th></tr>
+                    </thead>
+                    <tbody>
+                      {reparsePreview.review.changes.map((change:any) => (
+                        <tr key={change.key} className={`border-t border-white/6 ${change.regression ? "text-amber-300" : "text-slate-300"}`}>
+                          <td className="p-2">{change.label}</td>
+                          <td className="p-2 tabular-nums">{change.before == null ? "Não observado" : String(change.before)}</td>
+                          <td className="p-2 tabular-nums">{change.after == null ? "Não observado" : String(change.after)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {!reparsePreview.review?.changed && (
+                <p className="text-xs text-slate-400">Nenhuma diferença de métricas, alertas ou versão do parser. Não há atualização para aplicar.</p>
+              )}
+              {reparsePreview.review?.regression_reasons?.length > 0 && (
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-xs text-amber-200">
+                  Atualização bloqueada porque pode perder dados observados:
+                  <ul className="mt-1 list-inside list-disc">
+                    {reparsePreview.review.regression_reasons.map((reason:string) => <li key={reason}>{reason}</li>)}
+                  </ul>
+                </div>
+              )}
+              {reparsePreview.review?.safe_to_apply && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs text-slate-300">
+                    <input type="checkbox" checked={reparseConfirmed}
+                      onChange={(e)=>setReparseConfirmed(e.target.checked)}
+                      data-testid="session-reparse-confirm"/>
+                    Confirmo que revisei as diferenças desta sessão.
+                  </label>
+                  <button type="button" className="hn-primary-button"
+                    data-testid="session-reparse-apply"
+                    disabled={!reparseConfirmed || reparseApplying}
+                    onClick={() => void applyReparse()}>
+                    {reparseApplying ? "Aplicando..." : "Aplicar revisão"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
       )}
 
       <div className="grid gap-3 md:grid-cols-4">
