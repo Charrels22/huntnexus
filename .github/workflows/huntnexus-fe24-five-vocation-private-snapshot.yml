@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - "tests/fe24-five-vocation-private-snapshots-smoke.mjs"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - "web/app/src/lib/session-parser.ts"
+      - "db/migrations/**"
       - ".github/workflows/huntnexus-fe24-five-vocation-private-snapshot.yml"
 
 permissions:
