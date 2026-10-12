@@ -206,7 +206,10 @@ try {
 
   await excerptPage.getByRole("button",{name:"Party Hunt",exact:true}).click();
   await excerptPage.locator("textarea").first().fill(emPublic.excerpt);
-  await excerptPage.getByText("Loot Type: Leader").first().waitFor({timeout:14000});
+  if (!(await excerptPage.locator("textarea").first().inputValue()).includes("Loot Type: Leader")) {
+    throw new Error("Public EM Party header was not stored in the Party Hunt editor");
+  }
+  await excerptPage.getByText("2/4 blocos preenchidos").first().waitFor({timeout:14000});
   await excerptPage.screenshot({path:resolve(output,"source-em-public-party-header-preview.png"),fullPage:true});
   if (excerptErrors.length) throw new Error("Source excerpt browser JS errors: " + excerptErrors.slice(0,3).join("; "));
   results.push({
