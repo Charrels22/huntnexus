@@ -96,8 +96,21 @@ async function testOne(c){
       "main_choice_must_match_main_set");
     await assertRejected({option_type:"owned_variant",selection:c.alternative,level:1},
       "invalid_loadout","blocked");
-    await assertRejected({option_type:"invalid",selection:c.alternative},
-      "invalid_option_type");
+    // Zod rejects invalid option_type *before* calling SQL (HTTP 400).
+    // Keep this as a strict transport-schema assertion, not a SQL result.
+    const invalidTypeResponse=await fetch(endpoint,{
+      method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({
+        action:"player_hunt_build_choice_save",client_id:id,
+        hunt_key:c.hunt,vocation:c.vocation,level:700,
+        selection:c.alternative,option_type:"invalid",replacements:[],
+      }),signal:AbortSignal.timeout(30000),
+    });
+    const invalidTypeJson=await invalidTypeResponse.json();
+    assert.equal(invalidTypeResponse.status,400,
+      "invalid option type should fail request schema");
+    assert.equal(invalidTypeJson?.error,"invalid_input");
+    assert.match(invalidTypeJson?.detail??"",/option_type/);
     await assertRejected({selection:{...c.alternative,head:c.alternative.weapon}},
       "selection_contains_non_owned_item");
     await assertRejected({selection:{...c.alternative,weapon:"unowned-fe26-item"}},
