@@ -56,3 +56,13 @@ Adicionadas validações via API para resposta `saved=false`/`invalid_loadout`, 
 - Testes com duas identidades UUID convidadas não substituem um login autorizado com Magic Link em dois dispositivos.
 - Homologação de sprites de perks e efeitos próprios do RubinOT depende de capturas no cliente do jogo e sessões originais consentidas.
 - Piloto externo exige convite e autorização explícitos; não houve inscrição, convite ou publicação de dados de jogador.
+
+
+## Fechamento FE-25 — validações positivas e negativas aprovadas
+
+- **Run [#38262204965](https://github.com/Charrels22/huntnexus/actions/runs/38262204965) — SUCCESS**, após atualização do teste no commit `48c82fd5139722c2703f42c733afaf00d463d4b8`. A execução passou para EK, RP, ED, MS e EM com todas as mudanças simultâneas de 3 ou 5 slots, dois snapshots, isolamento e limpeza.
+- O resultado por RP inclui **4 casos negativos explicitamente rejeitados**: quiver ausente, arrow ausente, bolt incompatível com bow e body de sorcerer. Nenhum caso criou uma escolha de hunt inválida ou modificou o Main.
+- **Duas camadas de proteção verificadas**: `selection_contains_non_owned_item` ao tentar escolher um item que não está no Main/BP; e `invalid_loadout` com `validation.status=incomplete|blocked` quando um item temporariamente cadastrado é incompatível. Para observar os erros específicos, o teste adicionou `spectral-bolt` e `soulmantle` temporariamente à BP do RP, conferiu a rejeição e os excluiu. Nenhum controle foi ignorado ou relaxado.
+- As tentativas iniciais [#38261766915](https://github.com/Charrels22/huntnexus/actions/runs/38261766915) e [#38261988684](https://github.com/Charrels22/huntnexus/actions/runs/38261988684) falharam por hipóteses de *assertiva* do teste (campo `saved` ausente em erros, e ownership bloqueando casos de itens ainda não possuídos). O código produtivo de compatibilidade não precisou ser alterado.
+- Auditoria SQL após a execução final: `residual_profiles=0`, `residual_sessions=0`, `residual_observations=0` e `community_sessions=100`. Todos os dados de fixture foram removidos; nenhum relatório sintético foi publicado.
+- **Observação:** O workflow valida contratos reais da API com números de Hunt Analyzer *sintéticos*, não resultados de hunts realizadas nem equivalência de itens/perks do cliente RubinOT.
