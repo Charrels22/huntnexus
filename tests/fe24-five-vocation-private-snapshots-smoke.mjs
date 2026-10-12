@@ -97,22 +97,40 @@ async function testVocation(c) {
     assert.equal(main?.saved,true,`${c.vocation}: save Main failed`);
     assert.equal(main?.selection_key,"weapon",`${c.vocation}: wrong Main slot`);
     inventoryIds.push(main.inventory_id);
+    // RP two-handed bows require BOTH quiver + arrow dependency according to
+    // the live universal loadout validator. Do not bypass the validator.
+    if(c.vocation==="RP") {
+      for(const dependency of ["quiver","diamond-arrow"]) {
+        const equipped=await post({action:"player_inventory_put",client_id,
+          storage_kind:"main",item_key:dependency,quantity:1});
+        assert.equal(equipped?.saved,true,`RP: missing required ${dependency}`);
+        inventoryIds.push(equipped.inventory_id);
+      }
+    }
     const backpack=await post({action:"player_inventory_put",client_id,
       storage_kind:"backpack",item_key:c.bp,quantity:1});
     assert.equal(backpack?.saved,true,`${c.vocation}: save BP failed`);
     inventoryIds.push(backpack.inventory_id);
     const owned=await post({action:"player_inventory_get",client_id});
     assert.equal(owned.main_set.weapon?.item_key,c.main);
-    assert.equal(owned.summary.main_slots,1);
+    assert.equal(owned.summary.main_slots,c.vocation==="RP"?3:1);
+    if(c.vocation==="RP") {
+      assert.equal(owned.main_set.offhand?.item_key,"quiver");
+      assert.equal(owned.main_set.ammunition?.item_key,"diamond-arrow");
+    }
     assert.equal(owned.summary.backpack_items,1);
     assert.equal(owned.methodology.main_set_is_baseline,true);
     assert.equal(owned.methodology.automatic_main_replacement,false);
     assert.ok(owned.backpack.some(x=>x.item_key===c.bp));
+    const otherInventory=await post({action:"player_inventory_get",client_id:another_client_id});
+    assert.equal(otherInventory.summary.main_slots,0,`${c.vocation}: leaked Main to unrelated client`);
+    assert.equal(otherInventory.summary.backpack_items,0,`${c.vocation}: leaked BP to unrelated client`);
 
     choiceAttempted=true;
     const choice=await post({action:"player_hunt_build_choice_save",client_id,
       hunt_key:c.hunt,vocation:c.vocation,level:700,
-      option_type:"owned_variant",selection:{weapon:c.bp},
+      option_type:"owned_variant",
+      selection:{weapon:c.bp,...(c.vocation==="RP"?{offhand:"quiver",ammunition:"diamond-arrow"}:{})},
       replacements:[{selection_key:"weapon",item_key:c.bp,item_name:c.bp}],
     });
     assert.equal(choice?.saved,true,`${c.vocation}: BP choice failed: ${JSON.stringify(choice).slice(0,650)}`);
@@ -146,6 +164,10 @@ async function testVocation(c) {
     assert.equal(s1?.loadout_snapshot?.source,"saved_hunt_choice",
       `${c.vocation}: first snapshot must pin chosen BP set`);
     assert.equal(s1?.loadout_snapshot?.selection?.weapon,c.bp);
+    if(c.vocation==="RP") {
+      assert.equal(s1?.loadout_snapshot?.selection?.offhand,"quiver");
+      assert.equal(s1?.loadout_snapshot?.selection?.ammunition,"diamond-arrow");
+    }
     assert.equal(s1?.hunt_analyse?.xp_gain,11500000);
     assert.equal(s1?.session?.hunt_key,c.hunt);
     const snapshot1=JSON.stringify(s1.loadout_snapshot);
