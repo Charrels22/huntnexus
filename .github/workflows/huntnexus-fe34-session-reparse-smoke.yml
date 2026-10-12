@@ -1,0 +1,30 @@
+name: HuntNexus FE-34 Session Reparse Safety
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe34-session-reparse-live-smoke.mjs"
+      - "tests/fe34-reparse-review-regressions.mjs"
+      - "web/app/src/lib/session-reparse-review.ts"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - "db/migrations/0159_fe34_session_reparse_review.sql"
+      - ".github/workflows/huntnexus-fe34-session-reparse-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  guest-private-reparse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test private reparse preview, stale/no-op denial and fixture cleanup
+        run: node tests/fe34-session-reparse-live-smoke.mjs
