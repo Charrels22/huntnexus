@@ -7,6 +7,7 @@ on:
       - "web/app/**"
       - "tests/session-parser-contract.mjs"
       - "tests/fe28-client-id-regression.mjs"
+      - "tests/fe30-auth-isolation-regression.mjs"
       - "tests/fe22-online-original-analyzer-excerpts.mjs"
       - "tests/fixtures/fe22-online-original-analyzer-excerpts.json"
       - "tests/five-vocation-real-source-reconstruction.mjs"
@@ -41,6 +42,9 @@ jobs:
 
       - name: FE-28 browser guest UUID authorization scope regression
         run: node --experimental-strip-types ../../tests/fe28-client-id-regression.mjs
+
+      - name: FE-30 account-bound scope isolation regression
+        run: node --experimental-strip-types ../../tests/fe30-auth-isolation-regression.mjs
 
       - name: Session Parser synthetic regression
         run: node --experimental-strip-types ../../tests/session-parser-contract.mjs
