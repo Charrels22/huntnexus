@@ -177,6 +177,45 @@ assert.equal(separateInputs.party_hunt.totals.loot_value,4500000);
 assert.equal(separateInputs.party_hunt.totals.balance_value,2300000);
 assert.equal(separateInputs.party_hunt.totals.total_damage,9000000);
 
+// FE-23: numeric transcription from a PUBLIC third-party *Input Damage
+// Summary*, NOT the original client clipboard format. Source:
+// https://www.hunt-analyser.com/hunt_sessions/2007
+// The Tibia client lists Total, Max-DPS, Damage Types and up to five sources.
+// Preserve those reported values without inventing the player's raw input.
+const sourceLinkedInputSummary = [
+  "Received Damage Total: 1,164,196",
+  "Max-DPS: 2,276",
+  "Damage Types:",
+  "Fire: 344,853 (29.6%)",
+  "Physical: 323,887 (27.8%)",
+  "Life Drain: 278,477 (23.9%)",
+  "Holy: 114,403 (9.8%)",
+  "Energy: 102,576 (8.8%)",
+  "Damage Sources:",
+  "gazer spectre: 846,907 (72.7%)",
+  "thanatursus: 316,431 (27.2%)",
+  "(other): 858 (0.1%)",
+].join("\n");
+assert.equal(detectAnalyzerType(sourceLinkedInputSummary), "input");
+const inputFromPublishedSummary = parseSessionImport({input:sourceLinkedInputSummary});
+assert.equal(inputFromPublishedSummary.damage.incoming_total_damage,1164196);
+assert.equal(inputFromPublishedSummary.damage.incoming_max_dps,2276);
+assert.equal(inputFromPublishedSummary.damage.incoming_by_element.length,5);
+assert.equal(inputFromPublishedSummary.damage.incoming_by_source.length,3);
+assert.equal(inputFromPublishedSummary.damage.incoming_by_element[0].element,"fire");
+assert.equal(inputFromPublishedSummary.damage.incoming_by_element[0].damage,344853);
+assert.equal(inputFromPublishedSummary.damage.incoming_by_element[0].share_percent,29.6);
+assert.equal(inputFromPublishedSummary.damage.incoming_by_source[0].source_name_raw,"gazer spectre");
+assert.equal(inputFromPublishedSummary.damage.incoming_by_source[0].damage,846907);
+assert.equal(inputFromPublishedSummary.damage.incoming_by_source[2].damage,858);
+assert.equal(inputFromPublishedSummary.hunt_analyse.total_damage,null,
+  "incoming damage must NEVER be mistaken for the player's outgoing damage");
+assert.equal(inputFromPublishedSummary.availability.hunt_analyse,false);
+assert.equal(inputFromPublishedSummary.availability.damage,true);
+assert.equal(inputFromPublishedSummary.methodology.community_evidence_written,false);
+assert.equal(inputFromPublishedSummary.damage.incoming_by_element.reduce((s,row)=>s+row.damage,0),1164196);
+assert.equal(inputFromPublishedSummary.damage.incoming_by_source.reduce((s,row)=>s+row.damage,0),1164196);
+
 console.log(JSON.stringify({
   status: "ok",
   stage: "session_parser_contract_v3",
