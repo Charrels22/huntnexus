@@ -6,7 +6,8 @@ import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const baseUrl=process.env.HUNTNEXUS_BASE_URL || "http://127.0.0.1:4173";
-const screenshotDir=resolve("fe30-browser-qa");
+const target=baseUrl.includes("workers.dev") ? "published" : "preview";
+const screenshotDir=resolve("fe30-browser-qa",target);
 await mkdir(screenshotDir,{recursive:true});
 const boundUuid="b3bc130e-f1a6-4991-8b87-2e86bb0b1d50";
 const guestUuid="af237382-d852-4623-b1d9-3a94d55b9322";
