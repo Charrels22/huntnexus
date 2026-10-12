@@ -234,6 +234,18 @@ const Body = z.discriminatedUnion("action", [
     session_id: z.string().uuid(),
   }),
   z.object({
+    action: z.literal("player_session_reparse_preview"),
+    client_id: z.string().uuid(),
+    session_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("player_session_reparse_apply"),
+    client_id: z.string().uuid(),
+    session_id: z.string().uuid(),
+    expected_fingerprint: z.string().regex(/^[a-f0-9]{32}$/),
+    confirm: z.literal(true),
+  }),
+  z.object({
     action: z.literal("session_list"),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     hunt_key: z.string().min(1).max(200).nullable().optional(),
@@ -781,6 +793,80 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_session_id: b.session_id,
                 }),
               });
+            case "player_session_reparse_preview":
+            case "player_session_reparse_apply": {
+              const saved = await rpc("huntnexus_player_session_reparse_source", {
+                p_client_id: b.client_id,
+                p_session_id: b.session_id,
+              });
+              if (!saved || typeof saved !== "object" || saved.error) {
+                return json({ error: "session_not_found" }, 404);
+              }
+              const raw = saved.raw_blocks;
+              if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+                return json({ error: "session_raw_blocks_missing" }, 422);
+              }
+              for (const key of ["hunt","party","input","misc"]) {
+                if (raw[key] !== undefined && typeof raw[key] !== "string") {
+                  return json({ error: "session_raw_blocks_invalid" }, 422);
+                }
+              }
+              const { parseSessionImport } = await import("@/lib/session-parser");
+              const { buildSessionReparseReview } =
+                await import("@/lib/session-reparse-review");
+              const reparsed = parseSessionImport({
+                hunt: raw.hunt || "", party: raw.party || "",
+                input: raw.input || "", misc: raw.misc || "",
+              });
+              const prior = saved.parsed_data && typeof saved.parsed_data === "object"
+                && !Array.isArray(saved.parsed_data) ? saved.parsed_data : {};
+              const candidate = { ...prior, ...reparsed };
+              const review = buildSessionReparseReview(
+                prior, reparsed, String(saved.parser_version ?? ""),
+              );
+              // Recheck parser metrics at both layers: never overwrite old
+              // numeric observations with a less complete parse.
+              const preview = {
+                session_id: b.session_id,
+                previous_parser_version: saved.parser_version,
+                proposed_parser_version: reparsed.methodology.stage,
+                snapshot_source: saved.snapshot_source ?? "not_available",
+                raw_blocks_preserved: true,
+                loadout_snapshot_preserved: true,
+                review,
+                expected_fingerprint: saved.fingerprint,
+              };
+              if (b.action === "player_session_reparse_preview") {
+                return json({ data: preview });
+              }
+              if (saved.fingerprint !== b.expected_fingerprint) {
+                return json({ error: "reparse_preview_stale" }, 409);
+              }
+              if (!review.changed) return json({ error: "reparse_no_changes" }, 409);
+              if (!review.safe_to_apply) {
+                return json({
+                  error: "reparse_regression_blocked",
+                  reasons: review.regression_reasons,
+                }, 409);
+              }
+              const applied = await rpc("huntnexus_player_session_reparse_apply", {
+                p_client_id: b.client_id,
+                p_session_id: b.session_id,
+                p_expected_fingerprint: b.expected_fingerprint,
+                p_parsed_data: candidate,
+                p_confirm: true,
+              });
+              if (applied?.error) {
+                return json({ error: String(applied.error) },
+                  applied.error === "session_not_found" ? 404 : 409);
+              }
+              return json({ data: {
+                ...applied,
+                review,
+                original_raw_blocks_preserved: true,
+                original_loadout_snapshot_preserved: true,
+              } });
+            }
             case "session_list":
               return json({
                 data: await rpc("huntnexus_session_analyzer_list", {
