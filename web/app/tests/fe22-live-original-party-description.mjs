@@ -26,6 +26,16 @@ try {
   assert.equal(parsed.party_hunt.totals.loot_value,4471286);
   assert.equal(parsed.party_hunt.totals.supplies_value,2262694);
   assert.equal(parsed.party_hunt.totals.balance_value,2208592);
+  assert.equal(parsed.hunt_analyse.loot_value,null,
+    "Published party total Loot cannot become participant Loot");
+  assert.equal(parsed.hunt_analyse.supplies_value,null,
+    "Published party Supplies cannot become participant Supplies");
+  assert.equal(parsed.hunt_analyse.balance_value,null,
+    "Published party Balance cannot become participant Balance");
+  assert.equal(parsed.hunt_analyse.total_damage,null,
+    "Published party Damage cannot become participant Damage");
+  assert.equal(parsed.availability.hunt_analyse,false,
+    "Party-only source cannot claim a personal Hunt Analyzer was provided");
   assert.equal(parsed.party_hunt.players.length,4,
     "Parser must recover all four members from the full original party input");
   assert.equal(parsed.party_hunt.party_size,4);
