@@ -47,9 +47,15 @@ try {
   assert.ok(soloResponse?.ok(),"Public complete solo source page unavailable: "+soloResponse?.status());
   await page.getByText("Description",{exact:true}).first().waitFor({timeout:12000});
   const soloBody = await page.locator("body").innerText();
-  const soloMatch = soloBody.match(/(?:^|\\n)Description\\s*\\n([\\s\\S]*?)\\n\\s*(?:Party Members|Payment Distribution)\\b/i);
-  assert.ok(soloMatch?.[1],"Original solo Hunt description section not extractable");
-  const soloDescription = soloMatch[1].trim();
+  const soloStart = soloBody.indexOf("Session data: From 2025-12-07");
+  assert.ok(soloStart >= 0,"Original solo Hunt Analyzer time marker was not found");
+  const boundaries = ["Party Members","Members Details","Input Damage Summary","Monster Killed","Best of the Week"]
+    .map(label => soloBody.indexOf(label,soloStart+25))
+    .filter(index => index>soloStart);
+  const soloEnd = boundaries.length ? Math.min(...boundaries) : soloStart+16000;
+  const soloDescription = soloBody.slice(soloStart,soloEnd).trim();
+  assert.ok(soloDescription.includes("Looted Items:"),
+    "Original solo Hunt description did not retain the loot section");
   assert.equal(detectAnalyzerType(soloDescription),"hunt");
   const soloParsed = parseSessionImport({hunt:soloDescription});
   assert.equal(soloParsed.hunt_analyse.duration_seconds,5160);
