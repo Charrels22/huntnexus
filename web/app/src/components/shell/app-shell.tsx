@@ -20,6 +20,8 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { isolateClientAfterAuthLoss } from "@/lib/account-session-guard";
+import { getSupabaseBrowserClient } from "@/integrations/supabase/client.browser";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -78,6 +80,26 @@ export function AppShell({ children }: { children: ReactNode }) {
       window.removeEventListener("huntnexus:player-sessions-changed", loadRecent);
     };
   }, []);
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    let hadAuthenticatedSession = false;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const previouslyAuthenticated = hadAuthenticatedSession;
+      hadAuthenticatedSession = Boolean(session);
+      // Account already owns its signed-out messaging and cleanup.
+      if (window.location.pathname === "/account" || session) return;
+      if (event !== "SIGNED_OUT" && event !== "INITIAL_SESSION") return;
+      if (isolateClientAfterAuthLoss(event === "SIGNED_OUT" && previouslyAuthenticated)) {
+        // Unmount any private Profile, Inventory, Planner and Session state.
+        // A new page load also discards in-flight responses from the old scope.
+        setRecentSessions([]);
+        window.location.replace("/account");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [pathname]);
 
   return (
     <div className="hn-app min-h-screen bg-background text-foreground">
