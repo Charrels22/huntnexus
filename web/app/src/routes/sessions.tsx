@@ -243,7 +243,7 @@ function Analyse({ data }: { data: any }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <PanelHeader eyebrow="Hunt Analyse" title={decodeHtml(session.hunt_name_raw || session.hunt_key || "Sessão")} subtitle={formatDuration(a.duration_seconds)} />
+        <PanelHeader eyebrow="Hunt Analyse" title={decodeHtml(session.hunt_name_raw || session.hunt_key || "Sessão")} subtitle={a.duration_seconds == null ? "Duração não identificada no analyzer original" : "Duração: " + formatDuration(a.duration_seconds)} />
         {session.hunt_key && (
           <Link
             to="/hunts/$huntKey"
@@ -638,7 +638,12 @@ function rate(value: unknown, seconds: unknown) {
   return Number.isFinite(v) && Number.isFinite(s) && s > 0 ? v * 3600 / s : null;
 }
 function formatStat(stat:any) {
-  if (stat?.numeric_value == null) return "—";
+  // Misc contains both numeric counters and textual Session/status values.
+  // Preserve the imported text instead of turning a valid duration into "—".
+  if (stat?.numeric_value == null) {
+    return typeof stat?.raw_value === "string" && stat.raw_value.trim()
+      ? stat.raw_value.trim() : "Não informado";
+  }
   return `${formatNumber(Number(stat.numeric_value),2)}${stat.unit === "percent" ? "%" : ""}`;
 }
 function slugToName(value:unknown) {
