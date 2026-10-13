@@ -1,11 +1,14 @@
 # HuntNexus — status e ponto exato da transferência
 
-**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **FE-40 concluída tecnicamente: build/QA local e CI PASS; PR aberto, merge/publicação não executados.** Próximo bloco: **FE-41**. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
+**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **FE-40: build/QA local e CI PASS; PR #3 aberto. FE-41–44/46: incrementos e auditoria em continuação; FE-48: preparação documental.** Merge/publicação não executados. Próximos passos: revisão/CI da continuação e portões reais de homologação. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
 
 ## FE-40 — execução no Codex
 FE-41: implementada na branch de continuação, build e QA SYNTHETIC desktop/mobile das cinco vocações PASS. Preserva contexto entre Planner/detail e busca do catálogo, adiciona abas acessíveis e retry. [Checkpoint FE-41](docs/CHECKPOINT_2026-10-13_FE41_NAVIGATION_ACCESSIBILITY.md). CI de continuação será registrado ao concluir os blocos.
 FE-42: auditoria Supabase read-only PASS; fotografia e query reproduzível no [checkpoint FE-42](docs/CHECKPOINT_2026-10-13_FE42_FACTUAL_OVERLAY_AUDIT.md). 454 hunts elegíveis/core completo; zero overrides RubinOT aplicados; 14 candidatos oficiais v13.4–v13.9 pendentes/sem valor exato. Auditar armazenamento não equivale a validar patch live. Próximo bloco: FE-43.
 FE-43: incremento Main/BP/imbuements local PASS, com testes SYNTHETIC separados por vocação e pacotes de mão públicos validados read-only. Ausência não vira potência 0%; denominadores e fonte ausente explícitos. Constraints completas, proficiências sem fonte e piloto privado não são homologados por essa UX. [Checkpoint FE-43](docs/CHECKPOINT_2026-10-13_FE43_BUILD_IMBUEMENT_UX.md).
+FE-44: factual preservado em falhas auxiliares, cancelamento/timeout de busca; QA local PASS. Carga/cache/latência em produção pendentes. [Checkpoint FE-44](docs/CHECKPOINT_2026-10-13_FE44_DETAIL_RESILIENCE.md).
+FE-46: incremento de teclado/menu mobile PASS; auditoria de acessibilidade completa pendente. [Checkpoint FE-46](docs/CHECKPOINT_2026-10-13_FE46_SHELL_ACCESSIBILITY.md).
+FE-48: checklist operacional/rollback e health público read-only; preparação, sem release. [Checkpoint FE-48](docs/CHECKPOINT_2026-10-13_FE48_RELEASE_PREPARATION.md). FE-45/47 permanecem pendentes de contas/pilotos e dados consentidos; não houve escrita privada.
 
 Catálogo `/hunts` acessível de Home/shell, busca com debounce e proteção contra respostas antigas, estados explícitos, links para Hunt Detail e Planner. Hunts sem sessões permanecem navegáveis, com fonte B separada de Tier C. Build/TypeScript, dez regressões canônicas, QA SYNTHETIC desktop/mobile, FE-38/39 browser e frontend local com API publicada real read-only passaram. Sem migration/deploy ou alteração de sessões privadas. Evidências e limitações: [checkpoint FE-40](docs/CHECKPOINT_2026-10-13_FE40_CATALOG_DISCOVERY.md).
 

@@ -1,0 +1,24 @@
+{
+  "response": {
+    "data": {
+      "counts": {
+        "hunts": 459,
+        "items": 6470,
+        "bosses": 548,
+        "spells": 60,
+        "creatures": 2193,
+        "community_sessions": 100
+      },
+      "status": "ok",
+      "product": "HuntNexus",
+      "versions": {
+        "latest_rubinot_client": "v4.064",
+        "latest_rubinot_server": "v13.9"
+      },
+      "recommendation_stage": "preview_v7",
+      "final_recommendation_ready": false
+    }
+  },
+  "captured_at_utc": "2026-10-13T06:30:42.3004960Z",
+  "scope": "Published public API read-only; not new branch deployment"
+}
