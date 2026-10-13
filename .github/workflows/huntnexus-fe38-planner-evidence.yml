@@ -1,0 +1,60 @@
+name: HuntNexus FE-38 Planner Evidence QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "web/app/src/routes/planner.tsx"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - "web/app/tests/fe38-planner-evidence-browser.mjs"
+      - ".github/workflows/huntnexus-fe38-planner-evidence.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  planner-sample-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies and browser
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build app
+        run: npm run build
+      - name: Launch local preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/huntnexus-fe38.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:4173/planner > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/huntnexus-fe38.log
+          exit 1
+      - name: Verify planner sample disclosure in compiled frontend
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe38-planner-evidence-browser.mjs
+      - name: Verify planner sample disclosure on published frontend
+        run: HUNTNEXUS_BASE_URL=https://huntnexus.charr3ls22.workers.dev node tests/fe38-planner-evidence-browser.mjs
+      - name: Preserve screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huntnexus-fe38-planner-evidence-qa
+          path: web/app/fe38-planner-qa/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Preview logs if failed
+        if: failure()
+        run: cat /tmp/huntnexus-fe38.log || true
