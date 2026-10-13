@@ -229,6 +229,11 @@ const Body = z.discriminatedUnion("action", [
     session_id: z.string().uuid(),
   }),
   z.object({
+    action: z.literal("player_session_integrity_review"),
+    client_id: z.string().uuid(),
+    session_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("player_session_delete"),
     client_id: z.string().uuid(),
     session_id: z.string().uuid(),
@@ -806,6 +811,40 @@ export const Route = createFileRoute("/api/huntnexus")({
                   p_session_id: b.session_id,
                 }),
               });
+            case "player_session_integrity_review": {
+              const [saved, detail] = await Promise.all([
+                rpc("huntnexus_player_session_reparse_source",{
+                  p_client_id:b.client_id,p_session_id:b.session_id,
+                }),
+                rpc("huntnexus_player_session_detail",{
+                  p_client_id:b.client_id,p_session_id:b.session_id,
+                }),
+              ]);
+              if (!saved || saved.error || !detail || detail.error) {
+                return json({error:"session_not_found"},404);
+              }
+              const raw=saved.raw_blocks;
+              if (!raw || typeof raw!=="object" || Array.isArray(raw)) {
+                return json({error:"session_raw_blocks_missing"},422);
+              }
+              for (const key of ["hunt","party","input","misc"]) {
+                if (raw[key]!==undefined && typeof raw[key]!=="string") {
+                  return json({error:"session_raw_blocks_invalid"},422);
+                }
+              }
+              const {buildSessionIntegrityReport}=await import("@/lib/session-integrity");
+              const report=buildSessionIntegrityReport({
+                rawBlocks:{
+                  hunt:raw.hunt||"",input:raw.input||"",
+                  misc:raw.misc||"",party:raw.party||"",
+                },
+                storedParsedData:saved.parsed_data && typeof saved.parsed_data==="object"
+                  ? saved.parsed_data:{},
+                sessionDetail:detail,
+                parserVersion:String(saved.parser_version??""),
+              });
+              return json({data:{session_id:b.session_id,...report}});
+            }
             case "player_session_delete":
               return json({
                 data: await rpc("huntnexus_player_session_delete", {
