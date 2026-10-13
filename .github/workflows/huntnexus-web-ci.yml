@@ -6,6 +6,7 @@ on:
     paths:
       - "web/app/**"
       - "tests/session-parser-contract.mjs"
+      - "tests/fe36-damage-misc-contract.mjs"
       - "tests/fe32-session-import-regressions.mjs"
       - "tests/fe34-reparse-review-regressions.mjs"
       - "tests/fe28-client-id-regression.mjs"
@@ -50,6 +51,9 @@ jobs:
 
       - name: Session Parser synthetic regression
         run: node --experimental-strip-types ../../tests/session-parser-contract.mjs
+
+      - name: FE-36 Damage Input and Misc observed-vs-unobserved regression
+        run: node --experimental-strip-types ../../tests/fe36-damage-misc-contract.mjs
 
       - name: FE-32 duration and canonical loot sprite regression
         run: node --experimental-strip-types ../../tests/fe32-session-import-regressions.mjs
