@@ -125,7 +125,7 @@ try {
     await hunt.getByTestId(`hunt-coverage-${dim}`).getByText("11/11",{exact:true}).waitFor();
   }
   const sourceDate=await hunt.getByTestId("hunt-evidence-update-date").innerText();
-  if (!/Atualização registrada: \\d{2}\\/\\d{2}\\/\\d{4}/.test(sourceDate)) {
+  if (!/Atualização registrada: [0-9]{2}[/][0-9]{2}[/][0-9]{4}/.test(sourceDate)) {
     throw new Error("FE-39 factual provenance update date must be explicit, not assumed live");
   }
   await hunt.getByTestId("hunt-community-evidence-separation").waitFor();
