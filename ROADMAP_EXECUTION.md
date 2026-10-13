@@ -14,6 +14,8 @@
 
 ## FE-40 (primeiro trabalho a executar) — navegação e descoberta do catálogo
 
+**GitHub issue de implementação:** [#2 — FE-40 para Codex](https://github.com/Charrels22/huntnexus/issues/2).
+
 **Problema:** Home mostra hunts com amostras observadas, Planner ranqueia subset e Hunt Detail funciona por slug. O usuário ainda precisa descobrir as demais hunts **factuais** facilmente, inclusive aquelas sem dados de performance.
 
 **Investigar antes de codificar:**
