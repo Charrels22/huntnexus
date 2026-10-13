@@ -1,0 +1,29 @@
+name: HuntNexus FE-37 Session Integrity and Completeness
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe37-session-integrity-live-smoke.mjs"
+      - "tests/fe37-session-integrity-contract.mjs"
+      - "web/app/src/lib/session-integrity.ts"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - ".github/workflows/huntnexus-fe37-session-integrity.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  private-readonly-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate each analyzer block against stored data and history
+        run: node tests/fe37-session-integrity-live-smoke.mjs
