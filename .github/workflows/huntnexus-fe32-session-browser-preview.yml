@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - "web/app/src/lib/session-parser.ts"
+      - "web/app/src/lib/session-integrity.ts"
+      - "web/app/src/routes/api/huntnexus.ts"
       - "web/app/src/lib/canonical-sprite-url.ts"
       - "web/app/src/components/shared/canonical-sprite.tsx"
       - "web/app/src/routes/session.tsx"
