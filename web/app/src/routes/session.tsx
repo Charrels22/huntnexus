@@ -308,6 +308,9 @@ function SessionImportPage() {
     const important = preview.validation.warnings.filter((warning) =>
       ["invalid_duration_format", "session_time_range_unrecognized",
        "input_block_present_but_no_damage_rows_recognized",
+       "input_element_labels_unrecognized", "input_numeric_rows_unrecognized",
+       "input_percentage_invalid",
+       "misc_block_present_but_no_combat_stats_recognized",
        "party_block_present_but_no_players_recognized"].includes(warning)
     );
     if (important.length && !window.confirm(
@@ -491,7 +494,9 @@ function SessionImportPage() {
                  {!draft.input.trim()
                    ? "Bloco não enviado. Elementos e fontes de dano recebido não serão registrados; Damage do Hunt Analyzer é dano causado."
                    : preview.validation.incoming_element_rows + preview.validation.incoming_source_rows === 0
-                     ? "Bloco enviado sem elementos ou fontes reconhecidos. Revise o texto antes de salvar."
+                     ? preview.damage.incoming_total_damage != null || preview.damage.incoming_max_dps != null
+                        ? "Total ou Max-DPS reconhecido. Tipos/fontes não aparecem no bloco (podem estar ocultos no cliente); não serão inventados."
+                        : "Bloco enviado sem totais, elementos ou fontes reconhecidos. Revise o texto antes de salvar."
                      : `${preview.validation.incoming_element_rows} elementos e ${preview.validation.incoming_source_rows} fontes reconhecidos.`}
                </p>
              </div>
@@ -500,10 +505,59 @@ function SessionImportPage() {
                <p className="mt-1 text-xs leading-5 text-slate-500">
                  {!draft.misc.trim()
                    ? "Bloco não enviado. Combat Stats permanecerá sem dados nesta sessão."
-                   : `${preview.validation.misc_stat_rows} campos preservados. Valores não numéricos serão exibidos como texto original.`}
+                   : preview.validation.misc_stat_rows === 0
+                      ? "Nenhum campo Combat Stats foi reconhecido. Revise o bloco copiado."
+                      : `${preview.validation.misc_stat_rows} campos preservados. Valores não numéricos serão exibidos como texto original.`}
                </p>
              </div>
            </div>
+           {draft.input.trim() && (
+             <div className="mt-4 rounded-xl border border-cyan-400/10 bg-slate-950/45 p-3"
+                  data-testid="session-input-recognized-preview">
+               <div className="text-xs font-semibold text-slate-200">Dano recebido — dados observados no Input</div>
+               <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-300">
+                 <span>Total recebido: {preview.damage.incoming_total_damage == null
+                   ? "Não informado" : formatCompactPreview(preview.damage.incoming_total_damage)}</span>
+                 <span>Max-DPS: {preview.damage.incoming_max_dps == null
+                   ? "Não informado" : formatCompactPreview(preview.damage.incoming_max_dps)}</span>
+               </div>
+               {preview.damage.incoming_by_element.length > 0 && (
+                 <div className="mt-3 grid gap-1 sm:grid-cols-2">
+                   {preview.damage.incoming_by_element.map((item:any,i:number)=>(
+                     <div key={`element-${i}`} className="flex justify-between gap-3 text-xs text-slate-400">
+                       <span>{String(item.element).replaceAll("_"," ")}</span>
+                       <span className="tabular-nums text-slate-200">{formatCompactPreview(item.damage)}</span>
+                     </div>
+                   ))}
+                 </div>
+               )}
+               {preview.damage.incoming_by_source.length > 0 && (
+                 <div className="mt-3 border-t border-white/8 pt-2">
+                   <div className="text-[11px] text-slate-500">Fontes observadas</div>
+                   {preview.damage.incoming_by_source.map((item:any,i:number)=>(
+                     <div key={`source-${i}`} className="mt-1 flex justify-between gap-3 text-xs text-slate-400">
+                       <span>{item.source_name_raw}</span>
+                       <span className="tabular-nums text-slate-200">{formatCompactPreview(item.damage)}</span>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+           )}
+           {draft.misc.trim() && preview.misc.combat_stats.length > 0 && (
+             <div className="mt-3 rounded-xl border border-cyan-400/10 bg-slate-950/45 p-3"
+                  data-testid="session-misc-recognized-preview">
+               <div className="text-xs font-semibold text-slate-200">Combat Stats — valores importados do Misc</div>
+               <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                 {preview.misc.combat_stats.map((stat:any,i:number)=>(
+                   <div key={`misc-${i}`} className="flex justify-between gap-3 text-xs text-slate-400">
+                     <span>{stat.stat_name_raw}</span>
+                     <span className="tabular-nums text-slate-200">{stat.raw_value}</span>
+                   </div>
+                 ))}
+               </div>
+             </div>
+           )}
            {preview.validation.warnings.length > 0 && (
             <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-400/[0.035] p-3 text-xs leading-5 text-amber-100/85">
               <div className="font-semibold">Pontos para revisar antes de salvar</div>
