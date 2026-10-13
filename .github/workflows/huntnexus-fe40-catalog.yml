@@ -56,6 +56,8 @@ jobs:
         run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe43-build-imbuement-preview.mjs
       - name: FE-44 partial public data degradation
         run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe44-resilience-preview.mjs
+      - name: FE-46 shell keyboard and mobile navigation
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe46-shell-accessibility-preview.mjs
       - name: Preserve visual evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,6 +69,7 @@ jobs:
             web/app/fe38-planner-qa/
             web/app/fe41-navigation-qa/
             web/app/fe43-build-qa/
+            web/app/fe46-shell-qa/
           retention-days: 14
       - name: Preview logs on failure
         if: failure()
