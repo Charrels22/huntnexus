@@ -71,7 +71,7 @@ try{
   await page.getByRole("button",{name:"Encontrar hunts"}).click();
   await page.getByTestId("planner-observed-results").waitFor({timeout:20000});
   await page.getByRole("heading",{name:"Hunts com desempenho observado"}).waitFor();
-  await page.getByTestId("planner-observational-disclosure").getByText(/não é uma probabilidade estatística/).waitFor();
+  assert.match(await page.getByTestId("planner-observational-disclosure").innerText(), /não é uma probabilidade estatística/);
   await page.getByTestId("planner-evidence-status").getByText("Amostra limitada — comparar com cautela").waitFor();
   await page.getByText("Sessões",{exact:true}).waitFor();
   assert.equal(await page.getByText("Conf.",{exact:true}).count(),0,
