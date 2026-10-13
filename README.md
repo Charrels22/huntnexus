@@ -14,6 +14,12 @@ GitHub
                               └─ HuntNexus Brain + Analytics
 ```
 
+## Continuidade no Codex
+
+O projeto foi preparado para execução a partir da **FE-40** sem recomeçar o desenvolvimento. Use [**CODEX_START_HERE.md**](CODEX_START_HERE.md) para conectar o repositório ao Codex e copiar o prompt inicial. O agente deve seguir [AGENTS.md](AGENTS.md) e consultar [contexto](PROJECT_CONTEXT.md), [status](CURRENT_STATUS.md), [roadmap](ROADMAP_EXECUTION.md) e [testes](TESTING_GUIDELINES.md).
+
+A criação desses arquivos **não inicia uma tarefa remota no Codex** nem concede acesso automático a Supabase/Cloudflare; conecte as permissões necessárias no ambiente do executor.
+
 ## Camadas
 
 - **HuntNexus**: produto/plataforma.
