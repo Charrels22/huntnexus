@@ -611,6 +611,7 @@ function MapPanel({ hunt, media }: { hunt:any; media:any }) {
 }
 
 function Damage({ defensive }: { defensive:any }) {
+  if (defensive == null) return <Muted>Dados de dano recebido indisponíveis. Tente novamente mais tarde.</Muted>;
   const elements = Array.isArray(defensive?.elements) ? defensive.elements : [];
   const max = Math.max(0, ...elements.map((e:any) => e.damage_share == null ? 0 : Number(e.damage_share) || 0));
   return (

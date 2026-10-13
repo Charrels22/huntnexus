@@ -22,6 +22,8 @@ try {
     await page.getByRole("tab", { name: "Community", exact: true }).click();
     assert.equal(await page.getByText("Amostra insuficiente", { exact: true }).count(), 0);
     assert.equal(await page.getByText(/Existem 0 sessões/).count(), 0);
+    await page.getByRole("tab", { name: "Damage", exact: true }).click();
+    await page.getByText("Dados de dano recebido indisponíveis. Tente novamente mais tarde.", { exact: true }).waitFor();
     await page.getByRole("tab", { name: "Imbuements", exact: true }).click();
     await page.getByText("Dados de imbuements indisponíveis. Tente novamente mais tarde.", { exact: true }).waitFor();
     assert.equal(calls.filter(action => action === "hunt_detail").length, 1);

@@ -173,7 +173,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ref={navigation}
           inert={isMobile && !mobileOpen}
           aria-hidden={isMobile && !mobileOpen}
-          className={`fixed inset-y-16 left-0 z-30 w-64 border-r border-white/7 bg-slate-950/96 p-3 backdrop-blur-xl transition-transform lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`fixed inset-y-16 left-0 z-30 w-64 overflow-y-auto border-r border-white/7 bg-slate-950/96 p-3 backdrop-blur-xl transition-transform lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <nav aria-label="Navegação principal" className="space-y-1">
             {nav.map((item) => {
@@ -216,7 +216,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <div className="absolute bottom-4 left-3 right-3">
+          <div className="mt-6">
             <div className="rounded-xl border border-amber-400/10 bg-amber-400/[0.035] p-3 text-[11px] leading-relaxed text-slate-500">
               Conteúdo canônico de Tibia/RubinOT mantém assets oficiais. O HuntNexus estiliza a interface, não o jogo.
             </div>

@@ -8,7 +8,7 @@ const output = resolve("fe46-shell-qa"); await mkdir(output, { recursive: true }
 const browser = await chromium.launch({ headless: true });
 try {
   for (const width of [1440, 390]) {
-    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    const page = await browser.newPage({ viewport: { width, height: width < 1024 ? 600 : 900 } });
     const errors = []; page.on("pageerror", error => errors.push(String(error)));
     await page.route("**/api/huntnexus", route => route.fulfill({ json: { data: [] } }));
     await page.goto(`${site}/hunts`, { waitUntil: "networkidle" });
@@ -28,6 +28,10 @@ try {
       assert.equal(await page.getByRole("button", { name: "Fechar menu de navegação" }).getAttribute("aria-expanded"), "true");
       assert.ok(await nav.getByRole("link", { name: "Dashboard", exact: true }).evaluate(element => document.activeElement === element));
       await page.screenshot({ path: resolve(output, `${width}-navigation-open.png`), fullPage: true });
+      await nav.getByRole("link", { name: "Conta", exact: true }).scrollIntoViewIfNeeded();
+      assert.ok(await nav.getByRole("link", { name: "Conta", exact: true }).evaluate(element => {
+        const rect = element.getBoundingClientRect(); return rect.top >= 64 && rect.bottom <= innerHeight;
+      }), "Short viewport can scroll to last navigation item");
       await page.keyboard.press("Escape");
       assert.ok(await menu.evaluate(element => document.activeElement === element));
       await menu.click(); await page.getByRole("button", { name: "Fechar navegação", exact: true }).click({ position: { x: 330, y: 100 } });
