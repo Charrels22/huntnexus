@@ -51,4 +51,4 @@ Não incrementar automaticamente por ter criado documentação, fixtures ou test
 
 ## Próxima ação sem intervenção manual obrigatória
 
-**Executar FE-40 segundo [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**: inspecionar fluxo existente de `search_hunts`, home, shell, Planner e Hunt Detail; implementar avanço tangível de navegação e descoberta do catálogo; testar CI e browser; documentar. A homologação manual das sessões fica para a fase final.
+**Executar [FE-40 — Issue #2](https://github.com/Charrels22/huntnexus/issues/2), segundo [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**: inspecionar fluxo existente de `search_hunts`, home, shell, Planner e Hunt Detail; implementar avanço tangível de navegação e descoberta do catálogo; testar CI e browser; documentar. A homologação manual das sessões fica para a fase final.
