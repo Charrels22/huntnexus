@@ -16,13 +16,15 @@ import { CanonicalTibiaMap, parseMapperCoords } from "@/components/shared/tibia-
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
 import { describeHuntEvidence } from "@/lib/hunt-evidence";
+import { parsePlannerContext, type PlannerContext } from "@/lib/planner-context";
 
 export const Route = createFileRoute("/hunts/$huntKey")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    vocation: typeof search.vocation === "string" ? search.vocation : "EK",
-    level: Number.isFinite(Number(search.level)) ? Number(search.level) : 700,
-    setObjective: typeof search.setObjective === "string" ? search.setObjective : "balanced",
-  }),
+  validateSearch: (search: Record<string, unknown>): PlannerContext & { vocation: string; level: number; setObjective: string; catalogQuery?: string } => {
+    const context = parsePlannerContext(search);
+    return { ...context, vocation: context.vocation ?? "EK", level: context.level ?? 700,
+      setObjective: context.setObjective ?? "balanced",
+      ...(typeof search.catalogQuery === "string" ? { catalogQuery: search.catalogQuery.slice(0, 100) } : {}) };
+  },
   component: HuntDetailPage,
 });
 
@@ -46,6 +48,7 @@ function HuntDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [detailRetry, setDetailRetry] = useState(0);
   const [personalReview, setPersonalReview] = useState<any>(null);
   const [ownedBuildOptions, setOwnedBuildOptions] = useState<any>(null);
   const [personalBuildPerformance, setPersonalBuildPerformance] = useState<any>(null);
@@ -79,7 +82,7 @@ function HuntDetailPage() {
       .catch((e) => { if (active) setError((e as Error).message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [huntKey, search.vocation, search.level, search.setObjective]);
+  }, [huntKey, search.vocation, search.level, search.setObjective, detailRetry]);
 
   useEffect(() => {
     if (tab !== "setup" || setupRequestedKey !== setupKey || (setupLoad?.key === setupKey && !setupError)) return;
@@ -266,11 +269,11 @@ function HuntDetailPage() {
   }
 
   if (loading) {
-    return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="size-7 animate-spin text-cyan-300" /></div>;
+    return <div role="status" aria-label="Carregando hunt" className="grid min-h-[70vh] place-items-center"><Loader2 aria-hidden="true" className="size-7 animate-spin text-cyan-300" /><span className="sr-only">Carregando hunt...</span></div>;
   }
 
   if (error || !data) {
-    return <div className="mx-auto max-w-3xl rounded-3xl border border-red-400/20 bg-red-400/8 p-6 text-red-200"><p>{error || "Hunt não encontrada."}</p><Link to="/hunts" search={{ q: "" }} className="hn-secondary-button mt-4">Voltar ao catálogo</Link></div>;
+    return <div role="alert" className="mx-auto max-w-3xl rounded-3xl border border-red-400/20 bg-red-400/8 p-6 text-red-200"><p>Não foi possível carregar esta hunt.</p><div className="mt-4 flex flex-wrap gap-3"><button className="hn-secondary-button" onClick={() => setDetailRetry((value) => value + 1)}>Tentar novamente</button><Link to="/hunts" search={{ q: search.catalogQuery ?? "" }} className="hn-secondary-button">Voltar ao catálogo</Link></div></div>;
   }
 
   const hunt = data.factual?.hunt ?? {};
@@ -293,8 +296,8 @@ function HuntDetailPage() {
   return (
     <div className="mx-auto max-w-[1450px] space-y-5">
       <nav aria-label="Navegação da hunt" className="flex flex-wrap gap-4 text-sm text-cyan-300">
-        <Link to="/hunts" search={{ q: "" }}>Voltar ao catálogo</Link>
-        <Link to="/planner">Abrir Hunt Planner</Link>
+        <Link to="/hunts" search={{ q: search.catalogQuery ?? "" }}>Voltar ao catálogo</Link>
+        <Link to="/planner" search={parsePlannerContext(search)}>Abrir Hunt Planner</Link>
       </nav>
       <section className="hn-hero overflow-hidden rounded-3xl border border-white/8">
         <div className="grid xl:grid-cols-[1.15fr_.85fr]">
@@ -376,11 +379,28 @@ function HuntDetailPage() {
         </div>
       </section>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div role="tablist" aria-label="Informações da hunt" className="flex gap-2 overflow-x-auto pb-1">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
+            id={`hunt-tab-${key}`}
+            role="tab"
+            aria-selected={tab === key}
+            aria-controls={`hunt-panel-${key}`}
+            tabIndex={tab === key ? 0 : -1}
             onClick={() => setTab(key)}
+            onKeyDown={(event) => {
+              const index = tabs.findIndex((item) => item.key === key);
+              const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
+                : event.key === "ArrowLeft" ? (index - 1 + tabs.length) % tabs.length
+                : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1;
+              if (next < 0) return;
+              const nextTab = tabs[next];
+              if (!nextTab) return;
+              event.preventDefault();
+              setTab(nextTab.key);
+              document.getElementById(`hunt-tab-${nextTab.key}`)?.focus();
+            }}
             className={`flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${tab === key ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-100" : "border-white/7 bg-white/[0.02] text-slate-500 hover:text-slate-200"}`}
           >
             <Icon className="size-3.5" /> {label}
@@ -388,7 +408,7 @@ function HuntDetailPage() {
         ))}
       </div>
 
-      <section className="rounded-3xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
+      <section role="tabpanel" id={`hunt-panel-${tab}`} aria-labelledby={`hunt-tab-${tab}`} tabIndex={0} className="rounded-3xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
         {tab === "overview" && <Overview data={data} />}
         {tab === "creatures" && <Creatures monsters={monsters} observed={data.observed} />}
         {tab === "map" && <MapPanel hunt={hunt} media={media} />}

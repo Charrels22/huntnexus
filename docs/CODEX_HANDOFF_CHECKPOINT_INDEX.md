@@ -51,6 +51,7 @@
 - [FE-38 Planner observational evidence](CHECKPOINT_2026-10-13_FE38_PLANNER_OBSERVATIONAL_EVIDENCE.md)
 - [FE-39 Hunt factual provenance](CHECKPOINT_2026-10-13_FE39_HUNT_FACTUAL_PROVENANCE.md)
 - [FE-40 Catalog discovery](CHECKPOINT_2026-10-13_FE40_CATALOG_DISCOVERY.md) — código/QA local; consultar o checkpoint para CI e publicação.
+- [FE-41 Navigation/accessibility](CHECKPOINT_2026-10-13_FE41_NAVIGATION_ACCESSIBILITY.md).
 
 **Observação:** a numeração inicial `PHASE` e os nomes de arquivos FE-15–22 não necessariamente representam cobertura homogênea de todas as tarefas; não inventar checkpoints ausentes nem interpretar qualquer PASS sintético como aceitação de sessões reais.
 

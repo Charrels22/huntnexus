@@ -3,6 +3,7 @@
 **Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **FE-40 concluída tecnicamente: build/QA local e CI PASS; PR aberto, merge/publicação não executados.** Próximo bloco: **FE-41**. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
 
 ## FE-40 — execução no Codex
+FE-41: implementada na branch de continuação, build e QA SYNTHETIC desktop/mobile das cinco vocações PASS. Preserva contexto entre Planner/detail e busca do catálogo, adiciona abas acessíveis e retry. [Checkpoint FE-41](docs/CHECKPOINT_2026-10-13_FE41_NAVIGATION_ACCESSIBILITY.md). CI de continuação será registrado ao concluir os blocos.
 
 Catálogo `/hunts` acessível de Home/shell, busca com debounce e proteção contra respostas antigas, estados explícitos, links para Hunt Detail e Planner. Hunts sem sessões permanecem navegáveis, com fonte B separada de Tier C. Build/TypeScript, dez regressões canônicas, QA SYNTHETIC desktop/mobile, FE-38/39 browser e frontend local com API publicada real read-only passaram. Sem migration/deploy ou alteração de sessões privadas. Evidências e limitações: [checkpoint FE-40](docs/CHECKPOINT_2026-10-13_FE40_CATALOG_DISCOVERY.md).
 

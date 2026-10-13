@@ -2,7 +2,7 @@ name: HuntNexus Web CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, "codex/**"]
     paths:
       - "web/app/**"
       - "tests/**"
@@ -69,6 +69,8 @@ jobs:
 
       - name: FE-39 source provenance and coverage semantics
         run: node --experimental-strip-types ../../tests/fe39-hunt-evidence-contract.mjs
+      - name: FE-41 public navigation context
+        run: node --experimental-strip-types ../../tests/fe41-planner-context-contract.mjs
 
       - name: FE-32 duration and canonical loot sprite regression
         run: node --experimental-strip-types ../../tests/fe32-session-import-regressions.mjs

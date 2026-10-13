@@ -138,7 +138,7 @@ try {
     if (request.url().includes("/api/huntnexus") &&
         request.postData()?.includes('"action":"hunt_detail_setup"')) unrequestedOptimizer++;
   });
-  await hunt.getByRole("button", { name: "Setup", exact: true }).click();
+  await hunt.getByRole("tab", { name: "Setup", exact: true }).click();
   await hunt.getByRole("heading", { name: "Setup da hunt" }).waitFor();
   await hunt.getByRole("button", { name: /Calcular frontier universal/i }).waitFor();
   await hunt.waitForTimeout(1000);
@@ -147,7 +147,7 @@ try {
   }
   await hunt.screenshot({ path: resolve(output, "hunt-setup-before-calculation.png"), fullPage: true });
   results.push({ route: "/hunts/cobra-bastion#setup", lazy_optimizer_respected: true, screenshot: "hunt-setup-before-calculation.png" });
-  await hunt.getByRole("button", { name: "Community", exact: true }).click();
+  await hunt.getByRole("tab", { name: "Community", exact: true }).click();
   await hunt.getByText("Amostra de sessões com EK").first().waitFor({ timeout: 15000 });
   await hunt.getByText("São sessões verificáveis que incluíram a vocação").first().waitFor();
   await hunt.screenshot({ path: resolve(output, "hunt-community-vocation.png"), fullPage: true });
