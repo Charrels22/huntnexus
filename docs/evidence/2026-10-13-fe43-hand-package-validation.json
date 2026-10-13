@@ -1,0 +1,91 @@
+{
+  "mode": "real public catalog SQL read-only",
+  "observed_at": "2026-10-13",
+  "rows": [
+    {
+      "vocation": "EK",
+      "hunt_key": "cobra-bastion",
+      "summary": {
+        "returned": 12,
+        "truncated": false,
+        "raw_packages": 12,
+        "valid_packages": 12,
+        "blocked_packages": 0,
+        "incomplete_packages": 0,
+        "frontier_weapons_considered": 6
+      },
+      "returned_packages": 12,
+      "all_returned_valid": true,
+      "twohanded_offhand_compatible": true,
+      "rp_ammunition_and_offhand_present": true
+    },
+    {
+      "vocation": "RP",
+      "hunt_key": "iksupan-last-stand",
+      "summary": {
+        "returned": 8,
+        "truncated": false,
+        "raw_packages": 8,
+        "valid_packages": 8,
+        "blocked_packages": 0,
+        "incomplete_packages": 0,
+        "frontier_weapons_considered": 4
+      },
+      "returned_packages": 8,
+      "all_returned_valid": true,
+      "twohanded_offhand_compatible": true,
+      "rp_ammunition_and_offhand_present": true
+    },
+    {
+      "vocation": "ED",
+      "hunt_key": "nimmersatts-breeding-ground",
+      "summary": {
+        "returned": 10,
+        "truncated": false,
+        "raw_packages": 10,
+        "valid_packages": 10,
+        "blocked_packages": 0,
+        "incomplete_packages": 0,
+        "frontier_weapons_considered": 2
+      },
+      "returned_packages": 10,
+      "all_returned_valid": true,
+      "twohanded_offhand_compatible": true,
+      "rp_ammunition_and_offhand_present": true
+    },
+    {
+      "vocation": "MS",
+      "hunt_key": "podzilla",
+      "summary": {
+        "returned": 10,
+        "truncated": false,
+        "raw_packages": 10,
+        "valid_packages": 10,
+        "blocked_packages": 0,
+        "incomplete_packages": 0,
+        "frontier_weapons_considered": 2
+      },
+      "returned_packages": 10,
+      "all_returned_valid": true,
+      "twohanded_offhand_compatible": true,
+      "rp_ammunition_and_offhand_present": true
+    },
+    {
+      "vocation": "EM",
+      "hunt_key": "grounds-of-undeath",
+      "summary": {
+        "returned": 2,
+        "truncated": false,
+        "raw_packages": 2,
+        "valid_packages": 2,
+        "blocked_packages": 0,
+        "incomplete_packages": 0,
+        "frontier_weapons_considered": 2
+      },
+      "returned_packages": 2,
+      "all_returned_valid": true,
+      "twohanded_offhand_compatible": true,
+      "rp_ammunition_and_offhand_present": true
+    }
+  ]
+}

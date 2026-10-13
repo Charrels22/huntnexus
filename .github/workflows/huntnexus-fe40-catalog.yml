@@ -52,6 +52,8 @@ jobs:
         run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe40-catalog-live-browser.mjs
       - name: FE-41 five-vocation context and accessible tabs
         run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe41-navigation-preview.mjs
+      - name: FE-43 five-vocation owned build and imbuement UX
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe43-build-imbuement-preview.mjs
       - name: Preserve visual evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -62,6 +64,7 @@ jobs:
             web/app/fe39-hunt-evidence-qa/
             web/app/fe38-planner-qa/
             web/app/fe41-navigation-qa/
+            web/app/fe43-build-qa/
           retention-days: 14
       - name: Preview logs on failure
         if: failure()

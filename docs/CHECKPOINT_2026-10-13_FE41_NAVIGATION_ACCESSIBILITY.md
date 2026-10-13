@@ -5,7 +5,7 @@ Status: código/build/QA local PASS; CI será registrado na entrega da branch de
 
 ## Mudanças verificadas
 
-- `planner-context.ts`: valida contexto público de URL (EK/RP/ED/MS/EM, nível 1–10000, objetivos, party 1–5); IDs de conta e propriedade nunca entram no contexto.
+- `planner-context.ts`: valida contexto público de URL (EK/RP/ED/MS/EM, nível 1–5000 conforme schema da API, objetivos, party 1–5); IDs de conta e propriedade nunca entram no contexto.
 - Planner → Hunt Detail → Planner preserva vocação/nível/objetivos/party. Perfil recebido tardiamente não sobrescreve filtros explícitos da URL nem edições já feitas.
 - Catálogo → detalhe → catálogo preserva texto de busca, incluindo acentos.
 - Abas do detalhe usam tablist/tab/tabpanel, roving tabindex, setas/Home/End, seleção anunciada e painel rotulado. Seletores do QA geral foram atualizados para o novo papel ARIA.

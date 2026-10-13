@@ -17,6 +17,7 @@ import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
 import { describeHuntEvidence } from "@/lib/hunt-evidence";
 import { parsePlannerContext, type PlannerContext } from "@/lib/planner-context";
+import { imbuementPotency, observedDamageShare, observedProfileCount } from "@/lib/imbuement-evidence";
 
 export const Route = createFileRoute("/hunts/$huntKey")({
   validateSearch: (search: Record<string, unknown>): PlannerContext & { vocation: string; level: number; setObjective: string; catalogQuery?: string } => {
@@ -906,12 +907,18 @@ function Imbuements({ data }: { data:any }) {
   return (
     <div>
       <SectionTitle title="Imbuements" subtitle="Prioridade defensiva baseada no dano observado; uso comunitário continua Tier C." />
+      <p className="mt-3 text-xs leading-5 text-slate-400">A potência é o efeito do imbuement; as parcelas mostram o dano recebido na amostra. Dano total e dano protegível têm denominadores diferentes. Esta prioridade não define a combinação final para seu equipamento nem garante desempenho.</p>
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <Panel title="Prioridade defensiva">
-          <div className="space-y-2">{priorities.map((x:any) => <Metric key={x.imbuement_key} label={x.name} value={`${x.element} · ${formatNumber(Number(x.powerful_value||0),1)}%`} />)}{!priorities.length && <Muted>Sem prioridade defensiva calculável.</Muted>}</div>
+          <div className="space-y-3">{priorities.map((x:any) => <div key={x.imbuement_key} className="rounded-xl border border-white/8 p-3">
+            <Metric label={x.name} value={`${x.element || "Elemento não informado"} · ${imbuementPotency(x.powerful_value, x.unit)}`} />
+            <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2"><div><dt className="text-slate-500">Parcela do dano total</dt><dd>{observedDamageShare(x.total_damage_share)}</dd></div><div><dt className="text-slate-500">Parcela do dano protegível</dt><dd>{observedDamageShare(x.protectable_damage_share)}</dd></div></dl>
+            <p className="mt-3 text-[11px] text-slate-400">{x.priority_basis === "observed_incoming_damage" ? "Base da prioridade: dano recebido observado · Tier C." : "Base da prioridade não informada."} Fonte específica do efeito não informada.</p>
+          </div>)}{!priorities.length && <Muted>Sem prioridade defensiva calculável. Ausência de amostra não significa dano zero.</Muted>}</div>
         </Panel>
         <Panel title="Uso comunitário observado">
-          <div className="space-y-2">{usage.slice(0,10).map((x:any) => <Metric key={x.imbuement_key} label={x.name} value={`${x.observed_profiles}/${x.eligible_profiles} perfis`} />)}{!usage.length && <Muted>Sem uso comunitário observado.</Muted>}</div>
+          <p className="mb-3 text-xs leading-5 text-slate-400">Uso observado · Tier C. Popularidade não altera a prioridade defensiva nem comprova compatibilidade com seu set.</p>
+          <div className="space-y-2">{usage.slice(0,10).map((x:any) => <Metric key={x.imbuement_key} label={x.name} value={`${observedProfileCount(x.observed_profiles)}/${observedProfileCount(x.eligible_profiles)} perfis`} />)}{!usage.length && <Muted>Sem uso comunitário observado.</Muted>}</div>
         </Panel>
       </div>
     </div>
@@ -1085,12 +1092,6 @@ function OwnedBuildOptionCard({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onSelect();
-      }}
       className={`group w-full cursor-pointer rounded-2xl border p-4 text-left transition ${
         selected
           ? option.option_type === "main"
@@ -1099,6 +1100,7 @@ function OwnedBuildOptionCard({
           : "border-white/7 bg-slate-950/45 hover:border-white/14"
       }`}
     >
+      <button type="button" aria-pressed={selected} onClick={onSelect} className="hn-secondary-button mb-3 w-full justify-center">Comparar {option.option_order}ª opção</button>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-black text-white">{option.option_order}ª opção</div>
