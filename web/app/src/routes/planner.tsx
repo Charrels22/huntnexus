@@ -5,17 +5,19 @@ import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { OfficialAssetSlot } from "@/components/shell/app-shell";
 import { CanonicalSprite } from "@/components/shared/canonical-sprite";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { parsePlannerContext } from "@/lib/planner-context";
 
-export const Route = createFileRoute("/planner")({ component: PlannerPage });
+export const Route = createFileRoute("/planner")({ validateSearch: parsePlannerContext, component: PlannerPage });
 
 type FinalResponse = { data?: any; warnings?: any[]; error?: string; detail?: string };
 
 function PlannerPage() {
-  const [vocation, setVocation] = useState("EK");
-  const [level, setLevel] = useState("700");
-  const [huntObjective, setHuntObjective] = useState("balanced");
-  const [setObjective, setSetObjective] = useState("offense");
-  const [party, setParty] = useState("1");
+  const context = Route.useSearch();
+  const [vocation, setVocation] = useState(context.vocation ?? "EK");
+  const [level, setLevel] = useState(String(context.level ?? 700));
+  const [huntObjective, setHuntObjective] = useState(context.huntObjective ?? "balanced");
+  const [setObjective, setSetObjective] = useState(context.setObjective ?? "offense");
+  const [party, setParty] = useState(String(context.party ?? 1));
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
@@ -31,21 +33,26 @@ function PlannerPage() {
   }
 
   useEffect(() => {
+    let active = true;
     const clientId = getOrCreateClientId();
     if (!clientId) return;
 
     callHuntNexusApi<any>({ action: "player_profile_get", client_id: clientId })
       .then((response) => {
+        if (!active) return;
         const profile = response?.data?.profile;
         if (!profile) return;
         setSavedProfile(profile);
-        if (profile.vocation) setVocation(profile.vocation);
-        if (profile.level) setLevel(String(profile.level));
-        if (profile.defaults?.hunt_objective) setHuntObjective(profile.defaults.hunt_objective);
-        if (profile.defaults?.set_objective) setSetObjective(profile.defaults.set_objective);
-        if (profile.defaults?.party_size) setParty(String(profile.defaults.party_size));
+        // A delayed Profile response must not overwrite filters edited by the player.
+        if (requestRef.current > 0) return;
+        if (!context.vocation && profile.vocation) setVocation(profile.vocation);
+        if (!context.level && profile.level) setLevel(String(profile.level));
+        if (!context.huntObjective && profile.defaults?.hunt_objective) setHuntObjective(profile.defaults.hunt_objective);
+        if (!context.setObjective && profile.defaults?.set_objective) setSetObjective(profile.defaults.set_objective);
+        if (!context.party && profile.defaults?.party_size) setParty(String(profile.defaults.party_size));
       })
       .catch(() => undefined);
+    return () => { active = false; };
   }, []);
 
   async function run() {
@@ -282,6 +289,8 @@ function PlannerPage() {
                           vocation,
                           level: Number(level),
                           setObjective,
+                          huntObjective,
+                          party: Number(party),
                         }}
                         className="hn-primary-button mt-4 w-full justify-center"
                       >

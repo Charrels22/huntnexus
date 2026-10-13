@@ -34,9 +34,10 @@ function HuntCatalogPage() {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     setState({ query, loading: true, error: false, hunts: [] });
     const timer = window.setTimeout(() => {
-      callHuntNexusApi<{ data?: CatalogHunt[] }>({ action: "search_hunts", query: query.trim(), limit: 50 })
+      callHuntNexusApi<{ data?: CatalogHunt[] }>({ action: "search_hunts", query: query.trim(), limit: 50 }, { signal: controller.signal, timeoutMs: 15000 })
         .then((response) => {
           if (!Array.isArray(response.data)) throw new Error("Invalid catalog response");
           if (active) setState({ query, loading: false, error: false,
@@ -46,7 +47,7 @@ function HuntCatalogPage() {
           if (active) setState({ query, loading: false, error: true, hunts: [] });
         });
     }, 300);
-    return () => { active = false; window.clearTimeout(timer); };
+    return () => { active = false; controller.abort(); window.clearTimeout(timer); };
   }, [query, retry]);
 
   const loading = state.loading || state.query !== query;
@@ -92,14 +93,14 @@ function HuntCatalogPage() {
           {hunts.map((hunt) => <article key={hunt.hunt_key} className="hn-hunt-card space-y-4 p-5">
             <div>
               <span className="text-xs text-cyan-300">Catálogo factual · fonte B</span>
-              <h2 className="mt-2 text-xl font-bold text-white"><Link to="/hunts/$huntKey" params={{ huntKey: hunt.hunt_key }} search={{ vocation: "EK", level: 700, setObjective: "balanced" }} className="hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300">{hunt.name}</Link></h2>
+              <h2 className="mt-2 text-xl font-bold text-white"><Link to="/hunts/$huntKey" params={{ huntKey: hunt.hunt_key }} search={{ vocation: "EK", level: 700, setObjective: "balanced", catalogQuery: query }} className="hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300">{hunt.name}</Link></h2>
               <p className="mt-1 text-sm text-slate-400">{hunt.city || "Cidade não informada"}</p>
             </div>
             <dl className="grid grid-cols-3 gap-2 text-xs text-slate-300">
               {([["EK", hunt.level_knights], ["RP", hunt.level_paladins], ["Mages", hunt.level_mages]] as const).map(([label, value]) => <div key={label}><dt className="text-slate-500">Nível {label}</dt><dd className="mt-1">{value ?? "Não informado"}</dd></div>)}
             </dl>
             <p className="text-xs leading-5 text-slate-400">{hunt.observed_sessions === 0 ? "Sem sessões de desempenho observadas. A hunt continua disponível no catálogo." : typeof hunt.observed_sessions === "number" ? `${hunt.observed_sessions} sessões observadas · Tier C, sem garantia de performance.` : "Sessões observadas: não informado."}</p>
-            <Link to="/hunts/$huntKey" params={{ huntKey: hunt.hunt_key }} search={{ vocation: "EK", level: 700, setObjective: "balanced" }} className="hn-secondary-button">Ver detalhes de {hunt.name}</Link>
+            <Link to="/hunts/$huntKey" params={{ huntKey: hunt.hunt_key }} search={{ vocation: "EK", level: 700, setObjective: "balanced", catalogQuery: query }} className="hn-secondary-button">Ver detalhes de {hunt.name}</Link>
           </article>)}
         </div>
       </section>

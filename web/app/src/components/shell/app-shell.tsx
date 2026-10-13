@@ -17,7 +17,7 @@ import {
   UserRoundCog,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
 import { isolateClientAfterAuthLoss } from "@/lib/account-session-guard";
@@ -58,7 +58,28 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [catalogQuery, setCatalogQuery] = useState("");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const navigation = useRef<HTMLElement>(null);
   const [recentSessions, setRecentSessions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => { setIsMobile(media.matches); if (!media.matches) setMobileOpen(false); };
+    update(); media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  const closeNavigation = () => { setMobileOpen(false); menuButton.current?.focus(); };
+  useEffect(() => {
+    if (!mobileOpen) return;
+    navigation.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); closeNavigation(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
 
   useEffect(() => {
     let active = true;
@@ -106,14 +127,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="hn-app min-h-screen bg-background text-foreground">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-slate-900 focus:p-3 focus:text-cyan-100">Pular para o conteúdo</a>
       <div className="hn-backdrop" />
       <header className="sticky top-0 z-40 border-b border-white/7 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1700px] items-center gap-4 px-4 lg:px-6">
           <button
+            ref={menuButton}
             type="button"
             className="grid size-10 place-items-center rounded-lg border border-white/10 bg-white/5 lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Abrir navegação"
+            aria-label={mobileOpen ? "Fechar menu de navegação" : "Abrir navegação"}
+            aria-expanded={mobileOpen}
+            aria-controls="primary-navigation"
           >
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -144,9 +169,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="mx-auto flex max-w-[1700px]">
         <aside
-          className={`fixed inset-y-16 left-0 z-30 w-64 border-r border-white/7 bg-slate-950/96 p-3 backdrop-blur-xl transition-transform lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+          id="primary-navigation"
+          ref={navigation}
+          inert={isMobile && !mobileOpen}
+          aria-hidden={isMobile && !mobileOpen}
+          className={`fixed inset-y-16 left-0 z-30 w-64 overflow-y-auto border-r border-white/7 bg-slate-950/96 p-3 backdrop-blur-xl transition-transform lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
-          <nav className="space-y-1">
+          <nav aria-label="Navegação principal" className="space-y-1">
             {nav.map((item) => {
               const Icon = item.icon;
               const active =
@@ -157,6 +186,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to}
+                  aria-current={active ? "page" : undefined}
                   onClick={() => setMobileOpen(false)}
                   className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${active ? "border border-cyan-400/15 bg-cyan-400/10 text-cyan-100 shadow-[inset_3px_0_0_rgba(34,211,238,.7)]" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"}`}
                 >
@@ -186,7 +216,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <div className="absolute bottom-4 left-3 right-3">
+          <div className="mt-6">
             <div className="rounded-xl border border-amber-400/10 bg-amber-400/[0.035] p-3 text-[11px] leading-relaxed text-slate-500">
               Conteúdo canônico de Tibia/RubinOT mantém assets oficiais. O HuntNexus estiliza a interface, não o jogo.
             </div>
@@ -198,11 +228,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             type="button"
             aria-label="Fechar navegação"
             className="fixed inset-0 top-16 z-20 bg-black/60 lg:hidden"
-            onClick={() => setMobileOpen(false)}
+            onClick={closeNavigation}
           />
         )}
 
-        <main className="relative min-w-0 flex-1 px-4 py-5 lg:px-7 lg:py-7">
+        <main id="main-content" tabIndex={-1} className="relative min-w-0 flex-1 px-4 py-5 lg:px-7 lg:py-7">
           {children}
         </main>
       </div>

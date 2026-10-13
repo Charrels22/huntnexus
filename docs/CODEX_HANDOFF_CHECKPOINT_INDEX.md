@@ -51,6 +51,14 @@
 - [FE-38 Planner observational evidence](CHECKPOINT_2026-10-13_FE38_PLANNER_OBSERVATIONAL_EVIDENCE.md)
 - [FE-39 Hunt factual provenance](CHECKPOINT_2026-10-13_FE39_HUNT_FACTUAL_PROVENANCE.md)
 - [FE-40 Catalog discovery](CHECKPOINT_2026-10-13_FE40_CATALOG_DISCOVERY.md) — código/QA local; consultar o checkpoint para CI e publicação.
+- [FE-41 Navigation/accessibility](CHECKPOINT_2026-10-13_FE41_NAVIGATION_ACCESSIBILITY.md).
+- [FE-42 Factual/overlay audit](CHECKPOINT_2026-10-13_FE42_FACTUAL_OVERLAY_AUDIT.md).
+- [FE-43 Build/imbuement UX](CHECKPOINT_2026-10-13_FE43_BUILD_IMBUEMENT_UX.md).
+- [FE-44 Detail resilience](CHECKPOINT_2026-10-13_FE44_DETAIL_RESILIENCE.md) — incremento; carga/cache pendentes.
+- [FE-45 Auth redirect e login desktop](CHECKPOINT_2026-10-13_FE45_AUTH_REDIRECT_BLOCK.md) — configuração conferida e login de duas contas evidenciado pelo usuário; A/B e dispositivos pendentes.
+- [FE-46 Shell accessibility](CHECKPOINT_2026-10-13_FE46_SHELL_ACCESSIBILITY.md) — incremento teclado/mobile.
+- [FE-48 Release preparation](CHECKPOINT_2026-10-13_FE48_RELEASE_PREPARATION.md) — preparação, sem deploy; FE-45/47 pendentes.
+- [Continuação CI e limites](CHECKPOINT_2026-10-13_CONTINUATION_CI.md) — SHA, runs PASS, blocos entregues e homologação pendente.
 
 **Observação:** a numeração inicial `PHASE` e os nomes de arquivos FE-15–22 não necessariamente representam cobertura homogênea de todas as tarefas; não inventar checkpoints ausentes nem interpretar qualquer PASS sintético como aceitação de sessões reais.
 

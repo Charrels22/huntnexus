@@ -1,4 +1,4 @@
-export async function callHuntNexusApi<T = unknown>(body: Record<string, unknown>): Promise<T> {
+export async function callHuntNexusApi<T = unknown>(body: Record<string, unknown>, options: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<T> {
   let payload: Record<string, unknown> = body;
 
   if (typeof window !== "undefined" && typeof body["access_token"] !== "string") {
@@ -14,6 +14,7 @@ export async function callHuntNexusApi<T = unknown>(body: Record<string, unknown
   }
 
   const response = await fetch("/api/huntnexus", {
+    signal: options.timeoutMs ? AbortSignal.any([...(options.signal ? [options.signal] : []), AbortSignal.timeout(options.timeoutMs)]) : options.signal ?? null,
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),

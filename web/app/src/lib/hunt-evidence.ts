@@ -62,7 +62,9 @@ export function describeHuntEvidence(
     coverage:dimensions,
     observedSessions,
     vocationSourcedSessions,
-    observationalWarning:observedSessions===null || observedSessions===0
+    observationalWarning:observedSessions===null
+      ?"Sessões de desempenho indisponíveis; o conteúdo factual permanece independente."
+      :observedSessions===0
       ?"Sem sessões de desempenho observadas; o conteúdo factual permanece independente."
       :observedSessions<3
         ?"Amostra geral limitada: não use os resultados como garantia de XP ou profit."

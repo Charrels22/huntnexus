@@ -16,13 +16,16 @@ import { CanonicalTibiaMap, parseMapperCoords } from "@/components/shared/tibia-
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
 import { describeHuntEvidence } from "@/lib/hunt-evidence";
+import { parsePlannerContext, type PlannerContext } from "@/lib/planner-context";
+import { imbuementPotency, observedDamageShare, observedProfileCount } from "@/lib/imbuement-evidence";
 
 export const Route = createFileRoute("/hunts/$huntKey")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    vocation: typeof search.vocation === "string" ? search.vocation : "EK",
-    level: Number.isFinite(Number(search.level)) ? Number(search.level) : 700,
-    setObjective: typeof search.setObjective === "string" ? search.setObjective : "balanced",
-  }),
+  validateSearch: (search: Record<string, unknown>): PlannerContext & { vocation: string; level: number; setObjective: string; catalogQuery?: string } => {
+    const context = parsePlannerContext(search);
+    return { ...context, vocation: context.vocation ?? "EK", level: context.level ?? 700,
+      setObjective: context.setObjective ?? "balanced",
+      ...(typeof search.catalogQuery === "string" ? { catalogQuery: search.catalogQuery.slice(0, 100) } : {}) };
+  },
   component: HuntDetailPage,
 });
 
@@ -46,6 +49,7 @@ function HuntDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [detailRetry, setDetailRetry] = useState(0);
   const [personalReview, setPersonalReview] = useState<any>(null);
   const [ownedBuildOptions, setOwnedBuildOptions] = useState<any>(null);
   const [personalBuildPerformance, setPersonalBuildPerformance] = useState<any>(null);
@@ -79,7 +83,7 @@ function HuntDetailPage() {
       .catch((e) => { if (active) setError((e as Error).message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [huntKey, search.vocation, search.level, search.setObjective]);
+  }, [huntKey, search.vocation, search.level, search.setObjective, detailRetry]);
 
   useEffect(() => {
     if (tab !== "setup" || setupRequestedKey !== setupKey || (setupLoad?.key === setupKey && !setupError)) return;
@@ -266,11 +270,11 @@ function HuntDetailPage() {
   }
 
   if (loading) {
-    return <div className="grid min-h-[70vh] place-items-center"><Loader2 className="size-7 animate-spin text-cyan-300" /></div>;
+    return <div role="status" aria-label="Carregando hunt" className="grid min-h-[70vh] place-items-center"><Loader2 aria-hidden="true" className="size-7 animate-spin text-cyan-300" /><span className="sr-only">Carregando hunt...</span></div>;
   }
 
   if (error || !data) {
-    return <div className="mx-auto max-w-3xl rounded-3xl border border-red-400/20 bg-red-400/8 p-6 text-red-200"><p>{error || "Hunt não encontrada."}</p><Link to="/hunts" search={{ q: "" }} className="hn-secondary-button mt-4">Voltar ao catálogo</Link></div>;
+    return <div role="alert" className="mx-auto max-w-3xl rounded-3xl border border-red-400/20 bg-red-400/8 p-6 text-red-200"><p>Não foi possível carregar esta hunt.</p><div className="mt-4 flex flex-wrap gap-3"><button className="hn-secondary-button" onClick={() => setDetailRetry((value) => value + 1)}>Tentar novamente</button><Link to="/hunts" search={{ q: search.catalogQuery ?? "" }} className="hn-secondary-button">Voltar ao catálogo</Link></div></div>;
   }
 
   const hunt = data.factual?.hunt ?? {};
@@ -293,9 +297,10 @@ function HuntDetailPage() {
   return (
     <div className="mx-auto max-w-[1450px] space-y-5">
       <nav aria-label="Navegação da hunt" className="flex flex-wrap gap-4 text-sm text-cyan-300">
-        <Link to="/hunts" search={{ q: "" }}>Voltar ao catálogo</Link>
-        <Link to="/planner">Abrir Hunt Planner</Link>
+        <Link to="/hunts" search={{ q: search.catalogQuery ?? "" }}>Voltar ao catálogo</Link>
+        <Link to="/planner" search={parsePlannerContext(search)}>Abrir Hunt Planner</Link>
       </nav>
+      {data.availability && Object.entries(data.availability).some(([key, available]) => key !== "factual" && available === false) && <p role="status" className="rounded-xl border border-amber-400/15 bg-amber-400/5 p-3 text-sm text-amber-100">Parte das informações auxiliares está indisponível. O conteúdo factual foi preservado; valores ausentes não são zero.</p>}
       <section className="hn-hero overflow-hidden rounded-3xl border border-white/8">
         <div className="grid xl:grid-cols-[1.15fr_.85fr]">
           <div className="p-5 md:p-7">
@@ -308,7 +313,7 @@ function HuntDetailPage() {
               <Badge>{search.vocation}</Badge>
               <Badge>Level {search.level}</Badge>
               <Badge>{labelObjective(search.setObjective)}</Badge>
-              <Badge>{perf.session_count ? `${perf.session_count} sessões comunitárias · todas as vocações` : "Sem sessões comunitárias observadas"}</Badge>
+              <Badge>{typeof perf.session_count !== "number" ? "Sessões comunitárias não informadas" : perf.session_count > 0 ? `${perf.session_count} sessões comunitárias · todas as vocações` : "Sem sessões comunitárias observadas"}</Badge>
             </div>
             <div className="mt-6 grid max-w-3xl gap-3 sm:grid-cols-3">
               <HeroMetric label="XP/h mediana · amostra geral" value={compact(perf.median_xp_per_hour)} />
@@ -376,11 +381,28 @@ function HuntDetailPage() {
         </div>
       </section>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div role="tablist" aria-label="Informações da hunt" className="flex gap-2 overflow-x-auto pb-1">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
+            id={`hunt-tab-${key}`}
+            role="tab"
+            aria-selected={tab === key}
+            aria-controls={`hunt-panel-${key}`}
+            tabIndex={tab === key ? 0 : -1}
             onClick={() => setTab(key)}
+            onKeyDown={(event) => {
+              const index = tabs.findIndex((item) => item.key === key);
+              const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
+                : event.key === "ArrowLeft" ? (index - 1 + tabs.length) % tabs.length
+                : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1;
+              if (next < 0) return;
+              const nextTab = tabs[next];
+              if (!nextTab) return;
+              event.preventDefault();
+              setTab(nextTab.key);
+              document.getElementById(`hunt-tab-${nextTab.key}`)?.focus();
+            }}
             className={`flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${tab === key ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-100" : "border-white/7 bg-white/[0.02] text-slate-500 hover:text-slate-200"}`}
           >
             <Icon className="size-3.5" /> {label}
@@ -388,7 +410,7 @@ function HuntDetailPage() {
         ))}
       </div>
 
-      <section className="rounded-3xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
+      <section role="tabpanel" id={`hunt-panel-${tab}`} aria-labelledby={`hunt-tab-${tab}`} tabIndex={0} className="rounded-3xl border border-white/8 bg-white/[0.025] p-5 md:p-6">
         {tab === "overview" && <Overview data={data} />}
         {tab === "creatures" && <Creatures monsters={monsters} observed={data.observed} />}
         {tab === "map" && <MapPanel hunt={hunt} media={media} />}
@@ -439,7 +461,7 @@ function Overview({ data }: { data:any }) {
       <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
       <Panel title="Performance observada · todas as vocações">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Metric label="Sessões" value={perf.session_count == null ? "Sem observações" : formatNumber(Number(perf.session_count))} />
+          <Metric label="Sessões" value={perf.session_count == null ? "Não informado" : formatNumber(Number(perf.session_count))} />
           <Metric label="Duração média" value={perf.avg_duration_minutes != null ? `${formatNumber(Number(perf.avg_duration_minutes),1)} min` : "—"} />
           <Metric label="XP/h mínima" value={compact(perf.min_xp_per_hour)} />
           <Metric label="XP/h máxima" value={compact(perf.max_xp_per_hour)} />
@@ -589,6 +611,7 @@ function MapPanel({ hunt, media }: { hunt:any; media:any }) {
 }
 
 function Damage({ defensive }: { defensive:any }) {
+  if (defensive == null) return <Muted>Dados de dano recebido indisponíveis. Tente novamente mais tarde.</Muted>;
   const elements = Array.isArray(defensive?.elements) ? defensive.elements : [];
   const max = Math.max(0, ...elements.map((e:any) => e.damage_share == null ? 0 : Number(e.damage_share) || 0));
   return (
@@ -612,7 +635,7 @@ function Damage({ defensive }: { defensive:any }) {
         </Panel>
         <Panel title="Picos observados">
           <div className="space-y-2">
-            {elements.map((e:any) => <Metric key={e.element} label={`${e.element} max DPS mediano`} value={e.median_max_dps == null ? "Não observado" : formatNumber(Number(e.median_max_dps))} />)}
+            {elements.map((e:any) => <Metric key={e.element} label={`${e.element} max DPS mediano`} value={e.median_max_dps == null ? "Não informado" : formatNumber(Number(e.median_max_dps))} />)}
           </div>
         </Panel>
       </div>
@@ -881,17 +904,24 @@ function Spells({ spells, composition }: { spells:any; composition:any }) {
 }
 
 function Imbuements({ data }: { data:any }) {
+  if (data == null) return <Muted>Dados de imbuements indisponíveis. Tente novamente mais tarde.</Muted>;
   const priorities = Array.isArray(data?.defensive_priority) ? data.defensive_priority : [];
   const usage = Array.isArray(data?.community_observed_usage) ? data.community_observed_usage : [];
   return (
     <div>
       <SectionTitle title="Imbuements" subtitle="Prioridade defensiva baseada no dano observado; uso comunitário continua Tier C." />
+      <p className="mt-3 text-xs leading-5 text-slate-400">A potência é o efeito do imbuement; as parcelas mostram o dano recebido na amostra. Dano total e dano protegível têm denominadores diferentes. Esta prioridade não define a combinação final para seu equipamento nem garante desempenho.</p>
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <Panel title="Prioridade defensiva">
-          <div className="space-y-2">{priorities.map((x:any) => <Metric key={x.imbuement_key} label={x.name} value={`${x.element} · ${formatNumber(Number(x.powerful_value||0),1)}%`} />)}{!priorities.length && <Muted>Sem prioridade defensiva calculável.</Muted>}</div>
+          <div className="space-y-3">{priorities.map((x:any) => <div key={x.imbuement_key} className="rounded-xl border border-white/8 p-3">
+            <Metric label={x.name} value={`${x.element || "Elemento não informado"} · ${imbuementPotency(x.powerful_value, x.unit)}`} />
+            <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2"><div><dt className="text-slate-500">Parcela do dano total</dt><dd>{observedDamageShare(x.total_damage_share)}</dd></div><div><dt className="text-slate-500">Parcela do dano protegível</dt><dd>{observedDamageShare(x.protectable_damage_share)}</dd></div></dl>
+            <p className="mt-3 text-[11px] text-slate-400">{x.priority_basis === "observed_incoming_damage" ? "Base da prioridade: dano recebido observado · Tier C." : "Base da prioridade não informada."} Fonte específica do efeito não informada.</p>
+          </div>)}{!priorities.length && <Muted>Sem prioridade defensiva calculável. Ausência de amostra não significa dano zero.</Muted>}</div>
         </Panel>
         <Panel title="Uso comunitário observado">
-          <div className="space-y-2">{usage.slice(0,10).map((x:any) => <Metric key={x.imbuement_key} label={x.name} value={`${x.observed_profiles}/${x.eligible_profiles} perfis`} />)}{!usage.length && <Muted>Sem uso comunitário observado.</Muted>}</div>
+          <p className="mb-3 text-xs leading-5 text-slate-400">Uso observado · Tier C. Popularidade não altera a prioridade defensiva nem comprova compatibilidade com seu set.</p>
+          <div className="space-y-2">{usage.slice(0,10).map((x:any) => <Metric key={x.imbuement_key} label={x.name} value={`${observedProfileCount(x.observed_profiles)}/${observedProfileCount(x.eligible_profiles)} perfis`} />)}{!usage.length && <Muted>Sem uso comunitário observado.</Muted>}</div>
         </Panel>
       </div>
     </div>
@@ -903,7 +933,9 @@ function Community({ observed, vocationObserved, vocation }: { observed:any; voc
   const mix = Array.isArray(observed?.kill_mix) ? observed.kill_mix : [];
   const sample = vocationObserved?.sample ?? {};
   const methodology = vocationObserved?.methodology ?? {};
-  const insufficient = Number(sample.session_count ?? 0) < Number(methodology.minimum_sample_for_median ?? 3);
+  const countKnown = observedProfileCount(sample.session_count) !== "Não informado";
+  const insufficient = countKnown && Number(sample.session_count) < Number(methodology.minimum_sample_for_median ?? 3);
+  const absentMedian = insufficient ? "Amostra insuficiente" : "Não informado";
   return (
     <div>
       <SectionTitle title="Community" subtitle="Amostra agregada da hunt (todas as vocações e níveis), Tier C: observação real, não estimativa personalizada." />
@@ -914,9 +946,9 @@ function Community({ observed, vocationObserved, vocation }: { observed:any; voc
           não são atribuídos a um jogador individual. Medianas são exibidas somente com pelo menos 3 sessões válidas.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Metric label="Sessões com fonte" value={formatNumber(Number(sample.sourced_session_count ?? 0))} />
-          <Metric label="XP/h mediana da amostra" value={sample.median_xp_per_hour == null ? "Amostra insuficiente" : compact(sample.median_xp_per_hour)} />
-          <Metric label="Profit/h mediano da amostra" value={sample.median_balance_per_hour == null ? "Amostra insuficiente" : compact(sample.median_balance_per_hour)} />
+          <Metric label="Sessões com fonte" value={observedProfileCount(sample.sourced_session_count)} />
+          <Metric label="XP/h mediana da amostra" value={sample.median_xp_per_hour == null ? absentMedian : compact(sample.median_xp_per_hour)} />
+          <Metric label="Profit/h mediano da amostra" value={sample.median_balance_per_hour == null ? absentMedian : compact(sample.median_balance_per_hour)} />
         </div>
         {insufficient && (
           <p className="mt-3 text-xs text-amber-200/85">
@@ -927,10 +959,10 @@ function Community({ observed, vocationObserved, vocation }: { observed:any; voc
       <div className="mt-5 grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
         <Panel title="Amostra">
           <div className="space-y-2">
-            <Metric label="Sessões" value={p.session_count == null ? "Sem observações" : formatNumber(Number(p.session_count))} />
-            <Metric label="Solo" value={p.solo_sessions == null ? "Não observado" : formatNumber(Number(p.solo_sessions))} />
-            <Metric label="Duo" value={p.duo_sessions == null ? "Não observado" : formatNumber(Number(p.duo_sessions))} />
-            <Metric label="Party" value={p.party_sessions == null ? "Não observado" : formatNumber(Number(p.party_sessions))} />
+            <Metric label="Sessões" value={p.session_count == null ? "Não informado" : formatNumber(Number(p.session_count))} />
+            <Metric label="Solo" value={p.solo_sessions == null ? "Não informado" : formatNumber(Number(p.solo_sessions))} />
+            <Metric label="Duo" value={p.duo_sessions == null ? "Não informado" : formatNumber(Number(p.duo_sessions))} />
+            <Metric label="Party" value={p.party_sessions == null ? "Não informado" : formatNumber(Number(p.party_sessions))} />
           </div>
         </Panel>
         <Panel title="Kill mix observado">
@@ -1065,12 +1097,6 @@ function OwnedBuildOptionCard({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onSelect();
-      }}
       className={`group w-full cursor-pointer rounded-2xl border p-4 text-left transition ${
         selected
           ? option.option_type === "main"
@@ -1079,6 +1105,7 @@ function OwnedBuildOptionCard({
           : "border-white/7 bg-slate-950/45 hover:border-white/14"
       }`}
     >
+      <button type="button" aria-pressed={selected} onClick={onSelect} className="hn-secondary-button mb-3 w-full justify-center">Comparar {option.option_order}ª opção</button>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-black text-white">{option.option_order}ª opção</div>
