@@ -1,0 +1,27 @@
+name: HuntNexus FE-36 Input and Misc Private Roundtrip
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe36-private-input-misc-http-smoke.mjs"
+      - "web/app/src/lib/session-parser.ts"
+      - ".github/workflows/huntnexus-fe36-input-misc-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  input-misc-private-roundtrip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify private Input and Misc persistence with cleaned synthetic sessions
+        run: node tests/fe36-private-input-misc-http-smoke.mjs
