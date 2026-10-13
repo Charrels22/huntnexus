@@ -204,8 +204,8 @@ try{
   await page.getByText("Duração: 2h 03m").waitFor({timeout:15000});
   await page.getByTestId("session-integrity-report").waitFor({timeout:15000});
   await page.getByTestId("session-integrity-input").getByText("Parcial",{exact:true}).waitFor();
-  await page.getByTestId("session-integrity-misc").getByText("Reconhecido").waitFor();
-  await page.getByTestId("session-integrity-party").getByText("Não enviado").waitFor();
+  await page.getByTestId("session-integrity-misc").getByText("Reconhecido",{exact:true}).waitFor();
+  await page.getByTestId("session-integrity-party").getByText("Não enviado",{exact:true}).waitFor();
   await page.getByTestId("session-integrity-storage-status").getByText(/coerentes/).waitFor();
   await page.getByTestId("session-integrity-parser-drift").getByText(/sem diferenças observadas/).waitFor();
   await page.screenshot({path:resolve(folder,"fe37-session-integrity-private-report.png"),fullPage:true});
