@@ -117,6 +117,22 @@ try {
   await planner.close();
 
   const hunt = await audit("/hunts/cobra-bastion", /Cobra Bastion/i, "hunt-detail-desktop.png");
+  const evidencePanel=hunt.getByTestId("hunt-factual-evidence");
+  await evidencePanel.waitFor({timeout:20000});
+  await evidencePanel.getByText("ByteWizards TibiaData",{exact:true}).waitFor({timeout:20000});
+  await hunt.getByTestId("hunt-source-core-status").getByText("Base factual preenchida").waitFor();
+  for (const dim of ["elements","detail","abilities","loot"]) {
+    await hunt.getByTestId(`hunt-coverage-${dim}`).getByText("11/11",{exact:true}).waitFor();
+  }
+  const sourceDate=await hunt.getByTestId("hunt-evidence-update-date").innerText();
+  if (!/Atualização registrada: \\d{2}\\/\\d{2}\\/\\d{4}/.test(sourceDate)) {
+    throw new Error("FE-39 factual provenance update date must be explicit, not assumed live");
+  }
+  await hunt.getByTestId("hunt-community-evidence-separation").waitFor();
+  await hunt.screenshot({path:resolve(output,"hunt-fe39-factual-provenance.png"),fullPage:true});
+  results.push({route:"/hunts/cobra-bastion#overview",source_factual_shown:true,
+    coverage_confirmed:"11/11",observational_evidence_separate:true,
+    screenshot:"hunt-fe39-factual-provenance.png"});
   let unrequestedOptimizer = 0;
   hunt.on("request", (request) => {
     if (request.url().includes("/api/huntnexus") &&
