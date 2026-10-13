@@ -28,14 +28,14 @@ assert.ok(!JSON.stringify(completeAudit).includes("synthetic spectre"),
 assert.ok(!JSON.stringify(completeAudit).includes("Critical Hit"),
   "Individual stat names must not be returned");
 
-const partialBlocks={hunt,input:"Received Damage Total: 12,000\\nMax-DPS: 345"};
+const partialBlocks={hunt,input:"Received Damage Total: 12,000\nMax-DPS: 345"};
 const partialStored=parseSessionImport(partialBlocks);
 const sectionKeys=["hunt_analyse","misc","damage","party_hunt","availability","validation"];
 const storedDetail=(v)=>Object.fromEntries(sectionKeys.map(k=>[k,v[k]]));
 const partialInput=mk(partialBlocks,partialStored,storedDetail(partialStored));
 assert.deepEqual(partialInput.blocks.map(x=>x.status),["recognized","partial","missing","missing"]);
-const unreadableBlocks={hunt,input:"Damage Types:\\nUnknown Element: 300",
-  misc:"Miscellaneous\\nCombat Stats"};
+const unreadableBlocks={hunt,input:"Damage Types:\nUnknown Element: 300",
+  misc:"Miscellaneous\nCombat Stats"};
 const unreadableStored=parseSessionImport(unreadableBlocks);
 const unreadable=mk(unreadableBlocks,unreadableStored,storedDetail(unreadableStored));
 assert.equal(unreadable.blocks[1].status,"unrecognized");
