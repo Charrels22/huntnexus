@@ -1,0 +1,28 @@
+name: HuntNexus FE-35 Session Restoration Safety
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tests/fe35-session-revision-restoration-live-smoke.mjs"
+      - "db/migrations/0160_fe35_session_revision_restore.sql"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - ".github/workflows/huntnexus-fe35-session-restoration-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  revision-restore-private-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check owner-scoped historical revisions and denied invalid restores
+        run: node tests/fe35-session-revision-restoration-live-smoke.mjs
