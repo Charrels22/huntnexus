@@ -1,6 +1,6 @@
 # HuntNexus — FE-37: integridade e completude das sessões privadas
 
-**Data:** 2026-10-13 BRT. **Estado:** API publicada e testes sintéticos privados **PASS**; encerramento depende da última execução Web CI e Browser QA da interface publicada. Homologação real The Void (Zao) permanece **PENDENTE**, Issue #1 aberto.
+**Data:** 2026-10-13 BRT. **Estado:** **FE-37 CONCLUÍDA TECNICAMENTE**, com Web CI, API privada no Worker publicado e Browser QA local/publicado **SUCCESS**. Homologação real The Void (Zao) permanece **PENDENTE**, Issue #1 aberto.
 
 ## Motivo
 
@@ -21,8 +21,8 @@ A sessão real de MS em The Void (Zao) revelou diferença entre expectativa do j
 
 - **[FE-37 Live Session Integrity #38340804062 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38340804062):** testou no site publicado quatro casos: original armazenado coerente com histórico, outra identidade bloqueada com HTTP 404, Input parcialmente observado, Input/Misc enviados mas não reconhecidos. **Três sessões sintéticas criadas e excluídas**, zero dados reais.
 - **[FE-37 Live Session Integrity atualizado #38341115989 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38341115989)**, após correções de import e fixtures.
-- **[Web CI final](https://github.com/Charrels22/huntnexus/actions/runs/38341173685)**: conferir conclusão antes de fechar.
-- **[Browser QA local/publicado final](https://github.com/Charrels22/huntnexus/actions/runs/38341173588)**: conferir conclusão antes de fechar.
+- **[Web CI final #38341410338 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38341410338)**: build + TypeScript, teste de consistência FE-37 e regressões anteriores aprovados; [#38341173685](https://github.com/Charrels22/huntnexus/actions/runs/38341173685) também SUCCESS.
+- **[Browser QA final #38341410291 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38341410291)**: valida renderização de blocos (Input Parcial, Misc Reconhecido, Party Não enviado), banco ↔ histórico coerentes, parser sem drift no mock autorizado, preservando FE-32/33/34/35 e sprites de loot **3/3 decodificados**. Passou **tanto na build local quanto no domínio publicado**; nenhuma gravação privada no Browser QA. Artifacts `huntnexus-fe32-session-visual-qa`, ID `11786942058`, **4.557.058 bytes**, com `fe37-session-integrity-private-report.png` em preview e published.
 - Alguns runs intermediários do CI falharam por resolução da extensão `.ts` do helper em Node strip-types e por fixtures que usavam o mesmo objeto parsed para blocos diferentes; ambos corrigidos. Runs intermediários do Playwright tiveram locators não exatos (`Parcial`, `Reconhecido` dentro de textos mais longos); corrigidos com correspondência exata. Não atribuir esses erros a perda de sessão real.
 
 ## Critérios externos ainda pendentes
@@ -35,3 +35,7 @@ A sessão real de MS em The Void (Zao) revelou diferença entre expectativa do j
 ## Progresso editorial
 
 Backend ~94%; Optimizer ~92%; Profile/Inventário ~96%; Session Analyzer ~87%; Hunt Planner ~86%; Conteúdo Factual ~74%; Frontend Visual ~74%; Produção/Contas/Segurança ~70%. **Percentuais não medem cobertura e não são aumentados por fixtures.**
+
+## Correção de estabilidade do Browser QA
+
+Um run intermediário do frontend publicado não exibiu o indicador de duração logo após o preenchimento antes da hidratação. O teste passou a repetir uma única colagem **apenas se** a duração não aparecer, e continua exigindo o resultado real visível; não simula nem injeta métricas. [Run final #38341410291 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38341410291). Isso não prova que falhas intermitentes de rede foram eliminadas definitivamente.
