@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { OfficialAssetSlot } from "@/components/shell/app-shell";
@@ -20,6 +20,15 @@ function PlannerPage() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
   const [savedProfile, setSavedProfile] = useState<any>(null);
+  const requestRef=useRef(0);
+
+  function changeFilters(update:()=>void) {
+    requestRef.current++;
+    update();
+    setResult(null);
+    setError("");
+    setLoading(false);
+  }
 
   useEffect(() => {
     const clientId = getOrCreateClientId();
@@ -40,7 +49,8 @@ function PlannerPage() {
   }, []);
 
   async function run() {
-    setLoading(true); setError("");
+    const requestId=++requestRef.current;
+    setLoading(true); setError(""); setResult(null);
     try {
       const stats = savedProfile?.manual_stats ?? {};
       const weaponFamily = stats.weapon_family;
@@ -76,12 +86,14 @@ function PlannerPage() {
         character_profile: characterProfile,
         proficiency_selections: savedProfile?.proficiency_selections ?? {},
       });
-      setResult(response.data ?? response);
+      if(requestRef.current===requestId) setResult(response.data ?? response);
     } catch (e) {
-      setError((e as Error).message);
-      setResult(null);
+      if(requestRef.current===requestId) {
+        setError((e as Error).message);
+        setResult(null);
+      }
     } finally {
-      setLoading(false);
+      if(requestRef.current===requestId) setLoading(false);
     }
   }
 
@@ -104,23 +116,23 @@ function PlannerPage() {
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
           <Field label="Vocação">
-            <select value={vocation} onChange={(e) => setVocation(e.target.value)} className="hn-control">
+            <select value={vocation} onChange={(e) => changeFilters(()=>setVocation(e.target.value))} className="hn-control">
               <option value="EK">Elite Knight</option><option value="RP">Royal Paladin</option><option value="ED">Elder Druid</option><option value="MS">Master Sorcerer</option><option value="EM">Exalted Monk</option>
             </select>
           </Field>
-          <Field label="Level"><input className="hn-control" type="number" min="1" value={level} onChange={(e) => setLevel(e.target.value)} /></Field>
+          <Field label="Level"><input className="hn-control" type="number" min="1" value={level} onChange={(e) => changeFilters(()=>setLevel(e.target.value))} /></Field>
           <Field label="Objetivo da hunt">
-            <select className="hn-control" value={huntObjective} onChange={(e) => setHuntObjective(e.target.value)}>
+            <select className="hn-control" value={huntObjective} onChange={(e) => changeFilters(()=>setHuntObjective(e.target.value))}>
               <option value="xp">XP</option><option value="profit">Profit</option><option value="balanced">Balanced</option>
             </select>
           </Field>
           <Field label="Objetivo do set">
-            <select className="hn-control" value={setObjective} onChange={(e) => setSetObjective(e.target.value)}>
+            <select className="hn-control" value={setObjective} onChange={(e) => changeFilters(()=>setSetObjective(e.target.value))}>
               <option value="offense">Offense</option><option value="defense">Defense</option><option value="sustain">Sustain</option><option value="utility">Utility</option><option value="balanced">Balanced</option>
             </select>
           </Field>
           <Field label="Party">
-            <select className="hn-control" value={party} onChange={(e) => setParty(e.target.value)}>
+            <select className="hn-control" value={party} onChange={(e) => changeFilters(()=>setParty(e.target.value))}>
               <option value="1">Solo</option><option value="2">Duo</option><option value="3">Trio</option><option value="4">x4</option><option value="5">x5+</option>
             </select>
           </Field>
@@ -147,13 +159,32 @@ function PlannerPage() {
         </section>
       )}
 
+      {result && !loading && results.length===0 && (
+        <section className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.035] p-5"
+                 data-testid="planner-no-observed-evidence">
+          <h2 className="text-lg font-semibold text-slate-100">Sem sessões observadas para esses filtros</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Isso não significa que não existam hunts adequadas. A base de performance observada
+            ainda não cobre todo o catálogo. Experimente outra faixa de level, objetivo ou tamanho de party.
+            Nenhum XP/h ou profit foi estimado para preencher a ausência.
+          </p>
+        </section>
+      )}
+
       {results.length > 0 && (
         <section className="space-y-4">
           <div>
             <div className="text-xs uppercase tracking-[0.18em] text-cyan-400">Resultado</div>
-            <h2 className="mt-1 text-2xl font-bold text-white">Hunts recomendadas</h2>
+            <h2 className="mt-1 text-2xl font-bold text-white">Hunts com desempenho observado</h2>
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-400"
+               data-testid="planner-observational-disclosure">
+              Ranking experimental baseado em sessões observadas, não em simulações de desempenho.
+              XP/h e Profit/h representam registros de terceiros, não resultados garantidos para seu personagem.
+              O catálogo de hunts é maior do que a amostra disponível; ausência aqui não significa que uma hunt seja inadequada.
+              O índice interno de confiança do modelo não é uma probabilidade estatística.
+            </p>
           </div>
-          <div className="grid gap-4 xl:grid-cols-3">
+          <div className="grid gap-4 xl:grid-cols-3" data-testid="planner-observed-results">
             {results.map((row: any, index: number) => {
               const hunt = row.hunt ?? {};
               const ownedBuilds = row.owned_builds ?? {};
@@ -173,9 +204,20 @@ function PlannerPage() {
                     <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
                       <Mini label="XP/h" value={formatMetric(hunt.median_xp_per_hour)} />
                       <Mini label="Profit/h" value={formatMetric(hunt.median_balance_per_hour)} />
-                      <Mini label="Conf." value={hunt.confidence_score != null ? `${Math.round(Number(hunt.confidence_score) * 100)}%` : "—"} />
+                      <Mini label="Sessões" value={String(row.evidence?.observed_session_count ?? hunt.session_count ?? "—")} />
                     </div>
-                    {personalSessions > 0 && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]"
+                          data-testid="planner-evidence-status">
+                       <span className="rounded-lg border border-white/8 px-2 py-1 text-slate-400">
+                         Fonte: sessões observadas
+                       </span>
+                       {(row.evidence?.limited_sample ?? (Number(hunt.session_count ?? 0)<3)) && (
+                         <span className="rounded-lg border border-amber-400/20 bg-amber-400/5 px-2 py-1 text-amber-200">
+                           Amostra limitada — comparar com cautela
+                         </span>
+                       )}
+                     </div>
+                     {personalSessions > 0 && (
                       <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-violet-400/12 bg-violet-400/[0.025] p-3">
                         <div className="min-w-0 flex-1">
                           <div className="text-xs font-semibold text-violet-100">Seu histórico nesta hunt</div>
