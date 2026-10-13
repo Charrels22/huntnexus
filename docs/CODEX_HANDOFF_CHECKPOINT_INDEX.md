@@ -7,9 +7,16 @@
 1. [AGENTS.md](../AGENTS.md): invariantes, tiers, segurança e execução por etapas.
 2. [CODEX_START_HERE.md](../CODEX_START_HERE.md): prompt inicial para Codex.
 3. [CURRENT_STATUS.md](../CURRENT_STATUS.md): estado mais recente confirmado.
-4. [ROADMAP_EXECUTION.md](../ROADMAP_EXECUTION.md): FE-40 e próximas frentes; tarefa [Issue #2](https://github.com/Charrels22/huntnexus/issues/2).
-5. [TESTING_GUIDELINES.md](../TESTING_GUIDELINES.md): procedimentos verificáveis de CI/QA.
-6. [ARCHITECTURE.md](ARCHITECTURE.md): camadas e infraestrutura.
+4. [ADR-0001](ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md): definição vinculante de produto, conta/personagens e Brain.
+5. [ROADMAP_EXECUTION.md](../ROADMAP_EXECUTION.md): 15 tópicos de realinhamento; a sequência FE-40–48 é histórica.
+6. [TESTING_GUIDELINES.md](../TESTING_GUIDELINES.md): procedimentos verificáveis de CI/QA.
+7. [ARCHITECTURE.md](ARCHITECTURE.md): camadas e infraestrutura.
+
+## Realinhamento de produto e arquitetura
+
+- [Tópico 1 — congelamento de release](CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md)
+- [Tópico 2 — definição oficial do produto](CHECKPOINT_2026-10-13_TOPIC02_PRODUCT_CONTRACT.md)
+- Próximo: Tópico 3 — auditoria completa do Brain.
 
 ## Primeiras fases: base e infraestrutura
 
@@ -55,7 +62,8 @@
 
 ## O que o Codex deverá fazer
 
-- Criar checkpoint FE-40 após modificar código e executar testes.
-- Adicionar o novo link a este índice.
-- Atualizar [CURRENT_STATUS.md](../CURRENT_STATUS.md) com o progresso real e próximo passo.
-- Não reabrir repetidamente o aceite manual de [Issue #1](https://github.com/Charrels22/huntnexus/issues/1); deixá-lo para a fase final, sem alterar dados do usuário.
+- Executar o tópico marcado como próximo em [ROADMAP_EXECUTION.md](../ROADMAP_EXECUTION.md), sem misturar o seguinte.
+- Adicionar cada checkpoint novo a este índice.
+- Atualizar [CURRENT_STATUS.md](../CURRENT_STATUS.md) com progresso real e próximo passo.
+- Manter PRs #3/#4 e deploy congelados até decisão explícita de promoção.
+- Não reabrir repetidamente o aceite manual de [Issue #1](https://github.com/Charrels22/huntnexus/issues/1); deixá-lo para a fase de pilotos, sem alterar dados do usuário.

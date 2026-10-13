@@ -1,63 +1,69 @@
-# HuntNexus — roadmap para execução contínua pelo Codex
+# HuntNexus — roadmap de realinhamento e execução
 
-**Ponto de partida:** FE-39 encerrada tecnicamente. **Etapa seguinte:** FE-40. Execute em blocos pequenos e verificáveis; o objetivo não é reescrever o projeto. Reavaliar a prioridade conforme código real, regressões e bloqueios. Atualizar `CURRENT_STATUS.md` e checkpoint ao fim de **cada** etapa.
+**Decisão vinculante:** [ADR-0001](docs/ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md). **Estado:** promoção congelada; executar um tópico por vez, fechar evidências e checkpoint antes de avançar. O trabalho FE-40–48 nos PRs #3/#4 é histórico técnico preservado e não define a ordem atual.
 
-## Processo de cada etapa
+## Processo de cada tópico
 
-1. Ler `AGENTS.md`, `PROJECT_CONTEXT.md`, `CURRENT_STATUS.md`, este roteiro e `TESTING_GUIDELINES.md`.
-2. Confirmar HEAD, pendências não commitadas, últimas execuções de Actions e arquivos existentes; **não presumir que documentação antiga seja a implementação atual**.
-3. Analisar arquitetura, RPCs, dados de fonte e testes já disponíveis; desenhar mudança mínima; evitar N+1 queries, duplicações de fonte e breakage de API.
-4. Implementar frontend, backend, migrations e docs estritamente necessários à etapa.
-5. Executar `npm run build`, testes específicos e regressões; QA de browser com screenshots quando UI for alterada; verificar endpoint publicado apenas depois de deploy confirmado.
-6. No GitHub, manter commits coesos e PR ou branch de trabalho quando disponível; não fazer merge com CI falhando. Criar checkpoint com hashes, Actions e evidências **efetivamente executadas**.
-7. Entregar quadro compacto **FE-NN — PASS / Pendente / Bloqueado**, módulo alterado, URLs, risco residual e próximo bloco. Prosseguir com a próxima etapa permitida; pedir intervenção apenas para permissões, decisões essenciais, mudanças destrutivas ou dados privados.
+1. Confirmar branch, HEAD, ambiente e pendências não commitadas.
+2. Ler `AGENTS.md`, `CODEX_START_HERE.md`, `PROJECT_CONTEXT.md`, `CURRENT_STATUS.md`, este roteiro, ADR-0001 e os checkpoints relevantes.
+3. Definir um resultado observável e não misturar o tópico seguinte.
+4. Reutilizar código, dados e testes válidos; aplicar mudanças aditivas e reversíveis.
+5. Separar evidência documental, build, fixture `SYNTHETIC`, API read-only, SQL, browser e gameplay real.
+6. Atualizar `CURRENT_STATUS.md`, criar checkpoint, registrar SHA/runs e publicar branch/PR sem merge/deploy enquanto o congelamento estiver ativo.
+7. Entregar `PASS / Pendente / Bloqueado`; avançar somente quando o critério de término do tópico estiver satisfeito.
 
-## FE-40 (primeiro trabalho a executar) — navegação e descoberta do catálogo
+## Sequência vinculante
 
-**GitHub issue de implementação:** [#2 — FE-40 para Codex](https://github.com/Charrels22/huntnexus/issues/2).
+| # | Tópico | Estado | Termina quando |
+| ---: | --- | --- | --- |
+| 1 | Congelar merge e deploy | **PASS** | branch, produção, banco, PRs, SHAs/versões e rollback registrados; promoção automática bloqueada |
+| 2 | Registrar definição oficial do produto | **PASS** | ADR, contexto, arquitetura, instruções e roadmap usam os mesmos conceitos e critérios |
+| 3 | Auditar o Brain completo | Próximo | cada fonte tem estado mensurável de cadastro, acesso, coletor, ingestão, normalização, proveniência, atualização, termos, cobertura e lacunas |
+| 4 | Corrigir modelo de conta e personagens | Pendente | uma conta gerencia vários personagens sem mistura, com migração aditiva dos dados existentes |
+| 5 | Reconstruir autenticação e recuperação | Pendente | entrada forte, MFA/recuperação/sessões e isolamento A/B comprovados na API e RLS |
+| 6 | Fechar segurança do Supabase e API | Pendente | matriz de acesso, funções/grants/RLS auditados, testes negativos/positivos, backup e restauração comprovados |
+| 7 | Completar fontes Tier A e B | Pendente | fatos usados em cálculos têm fonte, URL, data, versão, validade e confiança |
+| 8 | Reconciliar overlay RubinOT | Pendente | cada valor efetivo distingue base Tibia, alteração RubinOT, versão e evidência |
+| 9 | Formalizar motor do Brain | Pendente | recomendações são determinísticas, versionadas, explicáveis e reproduzíveis |
+| 10 | Construir experiência pública | Pendente | visitante descobre e analisa hunts sem cadastrar personagem |
+| 11 | Conectar experiência pessoal | Pendente | personagem ativo troca todo contexto privado sem alterar catálogo global |
+| 12 | Implementar aprendizado controlado | Pendente | divergências geram candidatos rastreáveis e promoção exige critérios explícitos |
+| 13 | Realizar pilotos por vocação | Pendente | EK/RP/ED/MS/EM confrontados com exports consentidos e divergências registradas |
+| 14 | Homologar produto inteiro | Pendente | segurança, desktop/mobile, acessibilidade, carga, operação, privacidade e rollback estão nos portões finais |
+| 15 | Fazer release gradual | Pendente | interno → convidados → beta fechado → beta público → estável, com SHA, métricas e rollback testado |
 
-**Problema:** Home mostra hunts com amostras observadas, Planner ranqueia subset e Hunt Detail funciona por slug. O usuário ainda precisa descobrir as demais hunts **factuais** facilmente, inclusive aquelas sem dados de performance.
+## Critérios dos próximos blocos
 
-**Investigar antes de codificar:**
-- `web/app/src/routes/index.tsx`, `planner.tsx`, `hunts.$huntKey.tsx`, shell.
-- API existente `search_hunts` em `web/app/src/routes/api/huntnexus.ts`, RPC `huntnexus_search_hunts` e filtro de elegibilidade em `db/migrations/0143_search_hunts_catalog_eligibility.sql`.
-- Contrato real de resposta: colunas, busca vazia, limites, slug único, status de spawns não fixos, carga/latência; usar read-only para verificar. Não assumir endpoint ou campo não verificado.
+### Tópico 3 — auditoria do Brain
 
-**Implementação-alvo**, caso lacuna persista:
-- Uma descoberta de catálogo acessível a partir da navegação ou Home (por exemplo `/hunts` com busca), conectando cada resultado à URL canônica `/hunts/$huntKey` e ao Planner.
-- Diferenciar cards **catálogo factual** e **performance observada**. Não rotular ausência de sessões como hunt inexistente/inadequada. Não usar `confidence_score` como probabilidade.
-- Busca responsiva com debounce, estados carregando/vazio/erro, atalhos de teclado/acessibilidade e proteção contra respostas fora de ordem (filtros antigos).
-- Não ocultar cidades/hunts úteis por exigir amostra Tier C. Honrar exclusões `planner_eligible`, papéis boss/non-fixed e regras atuais da API, justificando filtros.
-- Reutilizar sprites e estilos já existentes; não baixar imagens ou criar arte especulativa. Evitar consultas pesadas e N+1 por item.
-- Navegação compatível mobile e desktop; breadcrumbs/links para retorno do detalhe quando apropriado.
+- Inventariar todas as fontes informadas e as fontes realmente registradas.
+- Provar conexão por artefato atual: configuração, coletor, snapshot, tabela/linha, job e data de observação.
+- Medir cobertura por domínio sem transformar contagem em qualidade.
+- Separar A/B/C/D e termos de uso.
+- Publicar matriz versionada e visualização navegável baseada no mesmo snapshot.
 
-**Aceite mínimo FE-40:**
-- Pelo menos uma consulta com resultados **sem performance** permanece navegável no catálogo (se disponível na fonte), sem inventar métricas.
-- Busca e resultado vazio testados; caracteres acentuados/slug preservados.
-- Links de detalhes corretos e sem regressão do Planner/Session Analyzer/optimizer.
-- `npm run build` e regressões verdes; Playwright com fixture `SYNTHETIC` mais teste read-only do catálogo real; screenshots antes de marcar visual PASS.
-- Checkpoint `docs/CHECKPOINT_YYYY-MM-DD_FE40_CATALOG_DISCOVERY.md` e atualização de `CURRENT_STATUS.md`.
+### Tópico 4 — conta e personagens
 
-**Escopo fora da FE-40:** reparsing de sessões reais, login real, migração/ingestão massiva, deploy com credenciais desconhecidas, nova fórmula de ranking, reescrita completa da UI.
+- Desenhar `huntnexus_accounts` e `player_characters` com ownership e personagem ativo.
+- Mapear toda FK/PK e RPC presa ao `client_id` antes da migration.
+- Migrar aditivamente, preservar legado e fornecer rollback/verificação.
+- Não alterar autenticação no mesmo tópico.
 
-## Sequência após FE-40
+### Tópico 5 — autenticação
 
-| Bloco | Prioridade | Objetivo observável | Condição de aceite |
-| --- | --- | --- | --- |
-| FE-41 | Alta | Hunt Detail/Planner: navegação cruzada, acessibilidade e estados de fonte ausente | Desktop/mobile, filtros coerentes, snapshots visuais, API sem consultas extras pesadas |
-| FE-42 | Alta | Auditoria de lacunas **factuais** e overlays RubinOT por fonte/patch | Fonte/tier/data e ausência explícita, sem inventar conteúdo; testes SQL read-only |
-| FE-43 | Alta | Optimizer e imbuements: UX de opções reais Main/BP, trade-offs e proveniência | EK/RP/ED/MS/EM em testes distintos, constraints de mão/ammo e sem itens externos como possuídos |
-| FE-44 | Alta | Performance, cache e robustez: rotas quentes, concorrência e falhas parciais | Medidas antes/depois, regressões e rollback claro; sem overclaim de SLO |
-| FE-45 | Alta | Conta/sincronização e privacidade: Auth real em múltiplos dispositivos, RLS, guest↔conta | Teste autorizado, isolamento A/B, logs sem dados privados |
-| FE-46 | Média/alta | Acessibilidade, visual final, navegação mobile e boas mensagens | QA visual/manual orientado, fallbacks, teclado e layout |
-| FE-47 | Alta | Matriz real de pilotos EK/RP/ED/MS/EM, analisadores, conteúdo, builds e optimizer | Exports consentidos e dados reais; divergências rastreadas, nunca preenchidas |
-| FE-48 | Alta | Preparação de release: deploy, health checks, monitoração e critérios de abertura pública | Checklist operação + rollback + termos/privacidade + aprovação do dono |
+- Selecionar métodos suportados pela infraestrutura atual com base em documentação oficial.
+- Exigir proteção reforçada para troca de e-mail, recuperação, remoção de MFA, exportação e exclusão.
+- Testar contas e personagens distintos, sessões/dispositivos e caminhos negativos.
 
-**A ordem é proposta, não promessa**: dividir etapas maiores e repriorizar quando os testes justificarem. Registrar claramente o que não foi concluído. Não travar o avanço de catálogo e UX por falta de exports privados que só serão usados no piloto.
+## Operações que exigem o usuário
 
-## Bloqueios que requerem o usuário
+- segredos por gestão segura do provedor;
+- alterações destrutivas, custos, autenticação real e deploy;
+- dados privados e participação de pilotos;
+- aprovação do descongelamento, merge e cada fase do release.
 
-- Conectar repositório/organização ao ambiente Codex ou autorizar permissões que faltarem.
-- Fornecer secrets **via gestão segura do provedor**, nunca colando em código/issue.
-- Aprovar operações irreversíveis no banco, exclusões/reimportação de dados privados, publicação comunitária, gastos de infraestrutura e mudança sensível de autenticação.
-- Agendar participação de jogadores reais na homologação final.
+## Histórico preservado
+
+- FE-40 / PR #3 e FE-41–48 / PR #4 permanecem Draft.
+- Seus testes e implementações podem ser reaproveitados após revisão contra ADR-0001.
+- Nada no histórico autoriza chamar o Brain de completo ou o release de homologado.

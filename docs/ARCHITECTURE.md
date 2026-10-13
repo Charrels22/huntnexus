@@ -1,4 +1,6 @@
-# Arquitetura atual
+# Arquitetura atual e domínio alvo
+
+[ADR-0001](ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) define o contrato de produto. A infraestrutura abaixo é atual; o domínio privado `account → characters` é o alvo obrigatório da migração aditiva do Tópico 4.
 
 ```text
                          ┌────────────────────────┐
@@ -16,6 +18,29 @@
                                      ▼
                              HuntNexus produto
 ```
+
+## Fronteiras do produto
+
+```text
+Público
+  Dashboard / catálogo / fatos / fontes / metodologia
+                         │
+                         ▼
+                 HuntNexus Brain
+    A RubinOT │ B Tibia │ C comunidade │ D editorial
+                         │
+                         ▼
+        cálculo determinístico + recomendação explicada
+
+Privado
+  auth.users → huntnexus_accounts → player_characters (1:N)
+                                      ├─ profile/skills
+                                      ├─ Main/Backpack
+                                      ├─ builds por hunt
+                                      └─ sessões/snapshots
+```
+
+O catálogo global e o Brain não pertencem a uma conta ou personagem. `client_id` permanece como compatibilidade legada até a migração; novos contratos não podem tratá-lo como identidade final.
 
 ## Runtime
 
