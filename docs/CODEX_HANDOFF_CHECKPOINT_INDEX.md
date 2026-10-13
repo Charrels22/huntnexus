@@ -52,6 +52,7 @@
 - [FE-39 Hunt factual provenance](CHECKPOINT_2026-10-13_FE39_HUNT_FACTUAL_PROVENANCE.md)
 - [FE-40 Catalog discovery](CHECKPOINT_2026-10-13_FE40_CATALOG_DISCOVERY.md) — código/QA local; consultar o checkpoint para CI e publicação.
 - [FE-41 Navigation/accessibility](CHECKPOINT_2026-10-13_FE41_NAVIGATION_ACCESSIBILITY.md).
+- [FE-42 Factual/overlay audit](CHECKPOINT_2026-10-13_FE42_FACTUAL_OVERLAY_AUDIT.md).
 
 **Observação:** a numeração inicial `PHASE` e os nomes de arquivos FE-15–22 não necessariamente representam cobertura homogênea de todas as tarefas; não inventar checkpoints ausentes nem interpretar qualquer PASS sintético como aceitação de sessões reais.
 

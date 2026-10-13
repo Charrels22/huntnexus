@@ -1,0 +1,416 @@
+{
+  "sources": [
+    {
+      "url": "https://tibiadata.bytewizards.de",
+      "name": "ByteWizards TibiaData",
+      "tier": "B",
+      "hunts": 459,
+      "layer": "tibia_factual",
+      "newest_recorded": "2026-09-28T03:03:52.363821+00:00",
+      "oldest_recorded": "2026-04-06T12:27:14.596422+00:00"
+    }
+  ],
+  "summary": {
+    "catalog_entries": 459,
+    "fixed_spawn_entries": 455,
+    "source_core_complete": 454,
+    "with_incoming_damage": 22,
+    "source_core_incomplete": 1,
+    "with_observed_sessions": 26,
+    "planner_eligible_entries": 454,
+    "non_fixed_catalog_entries": 4
+  },
+  "candidates": [
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "spit-nettle",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "behavior",
+      "entity_type": "creature",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.4",
+      "reconciliation_status": "pending"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "book-world",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "loot",
+      "entity_type": "hunt",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.4",
+      "reconciliation_status": "needs_exact_value"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "bloodjaw",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "spell_frequency",
+      "entity_type": "creature",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.5",
+      "reconciliation_status": "needs_exact_value"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "biscuit-barrier",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "item_effects",
+      "entity_type": "item",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.6",
+      "reconciliation_status": "needs_exact_value"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "phantasmal-axe",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "attack_property",
+      "entity_type": "item",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.6",
+      "reconciliation_status": "needs_exact_value"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "soul-war",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "mechanics",
+      "entity_type": "boss_group",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.7",
+      "reconciliation_status": "pending"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "magma-bubble",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "mechanics",
+      "entity_type": "boss",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.8",
+      "reconciliation_status": "pending"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": null,
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "behavior",
+      "entity_type": "creature",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.8",
+      "reconciliation_status": "needs_exact_value"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": null,
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "spawn_behavior",
+      "entity_type": "creature",
+      "observed_at": "2026-10-07T17:30:27.645631+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.8",
+      "reconciliation_status": "pending"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "lycanthrope-bosses",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "instance_system",
+      "entity_type": "boss_group",
+      "observed_at": "2026-10-07T17:35:08.454634+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.9",
+      "reconciliation_status": "pending"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "paw-and-fur",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "boss_points",
+      "entity_type": "boss_group",
+      "observed_at": "2026-10-07T17:35:08.454634+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.9",
+      "reconciliation_status": "pending"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": null,
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "familiar_creation",
+      "entity_type": "boss_system",
+      "observed_at": "2026-10-07T17:35:08.454634+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.9",
+      "reconciliation_status": "pending"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "forked-glacier",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "targeting_range",
+      "entity_type": "spell",
+      "observed_at": "2026-10-07T17:35:08.454634+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.9",
+      "reconciliation_status": "needs_exact_value"
+    },
+    {
+      "tier": "A",
+      "layer": "rubinot_overlay",
+      "entity_key": "forked-thorns",
+      "source_url": "https://rubinot.com.br/changelog",
+      "change_kind": "targeting_range",
+      "entity_type": "spell",
+      "observed_at": "2026-10-07T17:35:08.454634+00:00",
+      "source_name": "RubinOT Changelog",
+      "patch_version": "v13.9",
+      "reconciliation_status": "needs_exact_value"
+    }
+  ],
+  "exceptions": [
+    {
+      "name": "Pits of Inferno Levers",
+      "coverage": {
+        "city": false,
+        "location": false,
+        "creatures": false,
+        "loot_complete": false,
+        "creature_count": 0,
+        "level_guidance": false,
+        "elements_complete": false,
+        "abilities_complete": false,
+        "creatures_with_loot": 0,
+        "creatures_with_detail": 0,
+        "creatures_with_elements": 0,
+        "creature_detail_complete": false,
+        "creatures_with_abilities": 0
+      },
+      "hunt_key": "pits-of-inferno-levers",
+      "observed": {
+        "kill_mix": false,
+        "sessions": 0,
+        "performance": false,
+        "element_profile": false,
+        "incoming_damage": false
+      },
+      "fixed_spawn": true,
+      "catalog_role": "quest_subarea",
+      "planner_eligible": false,
+      "readiness_status": "source_core_incomplete",
+      "semantic_source_kind": "current_tibiawiki_semantics",
+      "source_core_complete": false,
+      "semantic_evidence_note": "Current TibiaWiki groups creatures as \"Levers and other quest areas\"; no exclusive fixed creature composition for the Levers subarea is established, so it is excluded from recommendations rather than inferred.",
+      "optional_source_fields_missing": [
+        "city",
+        "location",
+        "level_guidance"
+      ],
+      "observational_enrichment_missing": [
+        "community_sessions",
+        "incoming_damage"
+      ]
+    },
+    {
+      "name": "Forsaken Mine",
+      "coverage": {
+        "city": false,
+        "location": false,
+        "creatures": false,
+        "loot_complete": false,
+        "creature_count": 0,
+        "level_guidance": false,
+        "elements_complete": false,
+        "abilities_complete": false,
+        "creatures_with_loot": 0,
+        "creatures_with_detail": 0,
+        "creatures_with_elements": 0,
+        "creature_detail_complete": false,
+        "creatures_with_abilities": 0
+      },
+      "hunt_key": "forsaken-mine",
+      "observed": {
+        "kill_mix": false,
+        "sessions": 0,
+        "performance": false,
+        "element_profile": false,
+        "incoming_damage": false
+      },
+      "fixed_spawn": false,
+      "catalog_role": "dynamic_spawn_container",
+      "planner_eligible": false,
+      "readiness_status": "non_fixed_catalog_entry",
+      "semantic_source_kind": "source_page_semantics",
+      "source_core_complete": false,
+      "semantic_evidence_note": "Source states the mine can change daily and links distinct creature variants.",
+      "optional_source_fields_missing": [
+        "city",
+        "location",
+        "level_guidance"
+      ],
+      "observational_enrichment_missing": [
+        "community_sessions",
+        "incoming_damage"
+      ]
+    },
+    {
+      "name": "Hunting Places",
+      "coverage": {
+        "city": false,
+        "location": false,
+        "creatures": false,
+        "loot_complete": false,
+        "creature_count": 0,
+        "level_guidance": false,
+        "elements_complete": false,
+        "abilities_complete": false,
+        "creatures_with_loot": 0,
+        "creatures_with_detail": 0,
+        "creatures_with_elements": 0,
+        "creature_detail_complete": false,
+        "creatures_with_abilities": 0
+      },
+      "hunt_key": "hunting-places",
+      "observed": {
+        "kill_mix": false,
+        "sessions": 0,
+        "performance": false,
+        "element_profile": false,
+        "incoming_damage": false
+      },
+      "fixed_spawn": false,
+      "catalog_role": "directory",
+      "planner_eligible": false,
+      "readiness_status": "non_fixed_catalog_entry",
+      "semantic_source_kind": "source_page_semantics",
+      "source_core_complete": false,
+      "semantic_evidence_note": "Source page is explicitly a list/directory of documented hunting places, not a hunting spawn.",
+      "optional_source_fields_missing": [
+        "city",
+        "location",
+        "level_guidance"
+      ],
+      "observational_enrichment_missing": [
+        "community_sessions",
+        "incoming_damage"
+      ]
+    },
+    {
+      "name": "Magician Quarter",
+      "coverage": {
+        "city": true,
+        "location": true,
+        "creatures": false,
+        "loot_complete": false,
+        "creature_count": 0,
+        "level_guidance": true,
+        "elements_complete": false,
+        "abilities_complete": false,
+        "creatures_with_loot": 0,
+        "creatures_with_detail": 0,
+        "creatures_with_elements": 0,
+        "creature_detail_complete": false,
+        "creatures_with_abilities": 0
+      },
+      "hunt_key": "magician-quarter",
+      "observed": {
+        "kill_mix": false,
+        "sessions": 0,
+        "performance": false,
+        "element_profile": false,
+        "incoming_damage": false
+      },
+      "fixed_spawn": false,
+      "catalog_role": "aggregate_region",
+      "planner_eligible": false,
+      "readiness_status": "non_fixed_catalog_entry",
+      "semantic_source_kind": "source_page_semantics",
+      "source_core_complete": false,
+      "semantic_evidence_note": "Source states the quarter is divided into six distinct hunting regions.",
+      "optional_source_fields_missing": [],
+      "observational_enrichment_missing": [
+        "community_sessions",
+        "incoming_damage"
+      ]
+    },
+    {
+      "name": "Poacher Caves",
+      "coverage": {
+        "city": false,
+        "location": false,
+        "creatures": false,
+        "loot_complete": false,
+        "creature_count": 0,
+        "level_guidance": false,
+        "elements_complete": false,
+        "abilities_complete": false,
+        "creatures_with_loot": 0,
+        "creatures_with_detail": 0,
+        "creatures_with_elements": 0,
+        "creature_detail_complete": false,
+        "creatures_with_abilities": 0
+      },
+      "hunt_key": "poacher-caves",
+      "observed": {
+        "kill_mix": false,
+        "sessions": 0,
+        "performance": false,
+        "element_profile": false,
+        "incoming_damage": false
+      },
+      "fixed_spawn": false,
+      "catalog_role": "dynamic_spawn_container",
+      "planner_eligible": false,
+      "readiness_status": "non_fixed_catalog_entry",
+      "semantic_source_kind": "source_page_semantics",
+      "source_core_complete": false,
+      "semantic_evidence_note": "Source states this is a Varying Monster Spawn with three daily cave variations.",
+      "optional_source_fields_missing": [
+        "city",
+        "location",
+        "level_guidance"
+      ],
+      "observational_enrichment_missing": [
+        "community_sessions",
+        "incoming_damage"
+      ]
+    }
+  ],
+  "invariants": {
+    "eligible_core_complete": true,
+    "hunt_provenance_present": true,
+    "override_provenance_present": true,
+    "candidate_provenance_present": true,
+    "override_intervals_do_not_overlap": true
+  },
+  "observed_at": "2026-10-13T06:04:47.891953+00:00",
+  "active_overrides": 0,
+  "optional_missing": {
+    "city": 16,
+    "location": 28,
+    "level_guidance": 60
+  },
+  "override_versions": 0
+}
