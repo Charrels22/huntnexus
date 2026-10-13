@@ -24,6 +24,7 @@ try {
       await menu.click();
       const nav = page.getByRole("navigation", { name: "Navegação principal" });
       await nav.waitFor();
+      await page.waitForFunction(() => document.getElementById("primary-navigation").getBoundingClientRect().left >= 0);
       assert.equal(await page.getByRole("button", { name: "Fechar menu de navegação" }).getAttribute("aria-expanded"), "true");
       assert.ok(await nav.getByRole("link", { name: "Dashboard", exact: true }).evaluate(element => document.activeElement === element));
       await page.screenshot({ path: resolve(output, `${width}-navigation-open.png`), fullPage: true });
