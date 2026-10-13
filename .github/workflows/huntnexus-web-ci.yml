@@ -1,6 +1,12 @@
 name: HuntNexus Web CI
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "web/app/**"
+      - "tests/**"
+      - ".github/workflows/huntnexus-web-ci.yml"
   push:
     branches: [main]
     paths:

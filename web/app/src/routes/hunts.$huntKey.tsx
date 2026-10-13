@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -270,7 +270,7 @@ function HuntDetailPage() {
   }
 
   if (error || !data) {
-    return <div className="mx-auto max-w-3xl rounded-3xl border border-red-400/20 bg-red-400/8 p-6 text-red-200">{error || "Hunt não encontrada."}</div>;
+    return <div className="mx-auto max-w-3xl rounded-3xl border border-red-400/20 bg-red-400/8 p-6 text-red-200"><p>{error || "Hunt não encontrada."}</p><Link to="/hunts" search={{ q: "" }} className="hn-secondary-button mt-4">Voltar ao catálogo</Link></div>;
   }
 
   const hunt = data.factual?.hunt ?? {};
@@ -292,6 +292,10 @@ function HuntDetailPage() {
 
   return (
     <div className="mx-auto max-w-[1450px] space-y-5">
+      <nav aria-label="Navegação da hunt" className="flex flex-wrap gap-4 text-sm text-cyan-300">
+        <Link to="/hunts" search={{ q: "" }}>Voltar ao catálogo</Link>
+        <Link to="/planner">Abrir Hunt Planner</Link>
+      </nav>
       <section className="hn-hero overflow-hidden rounded-3xl border border-white/8">
         <div className="grid xl:grid-cols-[1.15fr_.85fr]">
           <div className="p-5 md:p-7">

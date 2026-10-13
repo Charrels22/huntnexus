@@ -1,6 +1,12 @@
 # HuntNexus — status e ponto exato da transferência
 
-**Data da fotografia:** 2026-10-13. **Última etapa técnica fechada e evidenciada:** **FE-39**. **Próxima etapa de desenvolvimento:** **FE-40**. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
+**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **FE-40 concluída tecnicamente: build/QA local e CI PASS; PR aberto, merge/publicação não executados.** Próximo bloco: **FE-41**. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
+
+## FE-40 — execução no Codex
+
+Catálogo `/hunts` acessível de Home/shell, busca com debounce e proteção contra respostas antigas, estados explícitos, links para Hunt Detail e Planner. Hunts sem sessões permanecem navegáveis, com fonte B separada de Tier C. Build/TypeScript, dez regressões canônicas, QA SYNTHETIC desktop/mobile, FE-38/39 browser e frontend local com API publicada real read-only passaram. Sem migration/deploy ou alteração de sessões privadas. Evidências e limitações: [checkpoint FE-40](docs/CHECKPOINT_2026-10-13_FE40_CATALOG_DISCOVERY.md).
+
+[PR #3](https://github.com/Charrels22/huntnexus/pull/3); [Web CI PASS #38347197819](https://github.com/Charrels22/huntnexus/actions/runs/38347197819); [FE-40 QA PASS #38347197928](https://github.com/Charrels22/huntnexus/actions/runs/38347197928), commit `eba2a6a`. GitHub, Supabase read-only e Cloudflare/Worker settings acessíveis; não há bloqueio de configuração identificado para esta etapa.
 
 ## Entregas que devem permanecer funcionais
 
@@ -51,4 +57,4 @@ Não incrementar automaticamente por ter criado documentação, fixtures ou test
 
 ## Próxima ação sem intervenção manual obrigatória
 
-**Executar [FE-40 — Issue #2](https://github.com/Charrels22/huntnexus/issues/2), segundo [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**: inspecionar fluxo existente de `search_hunts`, home, shell, Planner e Hunt Detail; implementar avanço tangível de navegação e descoberta do catálogo; testar CI e browser; documentar. A homologação manual das sessões fica para a fase final.
+**Fechar CI/revisão da [FE-40 — Issue #2](https://github.com/Charrels22/huntnexus/issues/2) e avançar para FE-41 conforme [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**. A homologação manual das sessões fica para a fase final. Não declarar FE-40 publicada com base no QA local.
