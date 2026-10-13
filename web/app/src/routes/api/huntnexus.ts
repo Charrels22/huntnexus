@@ -683,13 +683,17 @@ export const Route = createFileRoute("/api/huntnexus")({
                 }),
               });
             case "hunt_detail": {
-              const [factual, observed, vocationObserved, defensive, imbuements, media] = await Promise.all([
+              const [factual, observed, vocationObserved, defensive, imbuements, media, evidence] = await Promise.all([
                 rpc("huntnexus_hunt_factual_profile", { p_hunt_key: b.hunt_key }),
                 rpc("huntnexus_hunt_observed_profile", { p_hunt_key: b.hunt_key }),
                 rpc("huntnexus_hunt_vocation_observation_sample", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
                 rpc("huntnexus_hunt_defensive_profile", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
                 rpc("huntnexus_imbuement_hunt_context_universal", { p_hunt_key: b.hunt_key, p_vocation: b.vocation }),
                 rpc("huntnexus_hunt_media_context", { p_hunt_key: b.hunt_key }),
+                // Scoped to a single hunt; optional if the provenance RPC is
+                // temporarily unavailable during deployment. Never infer it.
+                rpc("huntnexus_hunt_evidence_context", { p_hunt_key: b.hunt_key })
+                  .catch(() => null),
               ]);
               return json({
                 data: {
@@ -699,11 +703,15 @@ export const Route = createFileRoute("/api/huntnexus")({
                   defensive,
                   imbuements,
                   media,
+                  evidence: evidence && typeof evidence === "object" && !evidence.error ? evidence : null,
                   methodology: {
                     stage: "hunt_detail_lazy_heavy_v1",
                     setup_loaded_on_demand: true,
                     spells_loaded_on_demand: true,
                     factual_separate_from_observed: true,
+                    factual_source_provenance_explicit: true,
+                    source_timestamp_is_not_live_verification: true,
+                    optional_coverage_not_equivalent_to_observed_performance: true,
                   },
                 },
               });
