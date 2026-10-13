@@ -1038,6 +1038,17 @@ export const Route = createFileRoute("/api/huntnexus")({
               return json({ data, warnings: Array.isArray(warnings) ? warnings : [] });
             }
             case "planner_personalized": {
+              const plannerEvidence = (hunt: any, method: any) => {
+                const count = Math.max(0, Number(hunt?.session_count) || 0);
+                return {
+                  source_layer: method?.source_layer ?? "unknown",
+                  observed_session_count: count,
+                  limited_sample: count < 3,
+                  confidence_index_is_statistical_probability: false,
+                  ranking_is_experimental: method?.final_recommendation !== true,
+                  private_sessions_do_not_change_rank: true,
+                };
+              };
               const ranking = await rpc("huntnexus_rank_observed_hunts", {
                 p_vocation: b.vocation,
                 p_level: b.level,
@@ -1053,6 +1064,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                     return {
                       hunt,
                       hunt_rank_order: index + 1,
+                      evidence: plannerEvidence(hunt, ranking?.methodology),
                       owned_builds: null,
                       saved_owned_choice: { exists: false, choice: null },
                     };
@@ -1083,6 +1095,7 @@ export const Route = createFileRoute("/api/huntnexus")({
                   return {
                     hunt,
                     hunt_rank_order: index + 1,
+                    evidence: plannerEvidence(hunt, ranking?.methodology),
                     owned_builds: ownedBuilds,
                     saved_owned_choice: savedChoice,
                     personal_performance: personalPerformance,
@@ -1107,6 +1120,12 @@ export const Route = createFileRoute("/api/huntnexus")({
                     hunts_with_saved_build_choice: results.filter(
                       (row: any) => row?.saved_owned_choice?.exists === true,
                     ).length,
+                    observed_sessions_in_displayed_hunts: results.reduce(
+                      (sum: number, row: any) => sum + Number(row?.evidence?.observed_session_count ?? 0), 0,
+                    ),
+                    hunts_with_limited_sample: results.filter(
+                      (row: any) => row?.evidence?.limited_sample === true,
+                    ).length,
                   },
                   methodology: {
                     stage: "planner_personalized_api_v1",
@@ -1117,6 +1136,10 @@ export const Route = createFileRoute("/api/huntnexus")({
                     owned_builds_enrich_results_only: true,
                     main_set_is_baseline: true,
                     external_items_used_in_owned_options: false,
+                    experimental_observational_ranking: ranking?.methodology?.final_recommendation !== true,
+                    performance_values_are_observed_not_guaranteed: true,
+                    confidence_index_is_not_a_statistical_probability: true,
+                    no_results_does_not_mean_no_hunts_exist: true,
                   },
                 },
               });
