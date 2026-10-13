@@ -39,7 +39,7 @@ Fonte de menor confiança nunca sobrescreve silenciosamente uma de maior confian
 
 ## Execução contínua no Codex (a partir da FE-40)
 
-**Leia nesta ordem** antes de desenvolver: [CODEX_START_HERE.md](CODEX_START_HERE.md) → [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) → [CURRENT_STATUS.md](CURRENT_STATUS.md) → [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md) → [TESTING_GUIDELINES.md](TESTING_GUIDELINES.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) → último checkpoint em `docs/CHECKPOINT_*.md`.
+**Leia nesta ordem** antes de desenvolver: [CODEX_START_HERE.md](CODEX_START_HERE.md) → [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) → [CURRENT_STATUS.md](CURRENT_STATUS.md) → [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md) → [TESTING_GUIDELINES.md](TESTING_GUIDELINES.md) → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) → [índice de checkpoints](docs/CODEX_HANDOFF_CHECKPOINT_INDEX.md) → último checkpoint em `docs/CHECKPOINT_*.md`.
 
 1. **Não começar do zero.** A FE-39 já foi concluída tecnicamente. A primeira etapa pendente é a **FE-40**, descoberta e navegação pelo catálogo factual de hunts. Confirmar HEAD, código e testes atuais antes de codificar.
 2. Trabalhar em **blocos pequenos** com código, regressões e checkpoint por FE. Evitar substituições de arquitetura sem necessidade; preferir reutilizar rotas/RPCs e controles existentes.
