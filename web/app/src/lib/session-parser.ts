@@ -17,7 +17,12 @@ export function sessionImportWarningLabel(warning: string): string {
     invalid_duration_format: "Duração não reconhecida na linha Session (aceitos HH:MMh, HH:MM, HH:MM:SS ou 1h 30m)",
     session_time_range_unrecognized: "O intervalo de datas da sessão não pôde ser interpretado",
     party_block_present_but_no_players_recognized: "Party enviada, mas nenhum jogador foi reconhecido",
-    input_block_present_but_no_damage_rows_recognized: "Damage Input enviado sem linhas de dano reconhecidas",
+    input_block_present_but_no_damage_rows_recognized: "Damage Input enviado sem totais ou linhas de dano reconhecidos",
+    input_breakdown_not_observed: "Damage Input possui totais, mas não contém elementos ou fontes discriminados (eles podem estar ocultos na origem)",
+    input_element_labels_unrecognized: "Damage Input contém rótulos de tipos de dano desconhecidos; não serão tratados como elementos do jogo",
+    input_numeric_rows_unrecognized: "Damage Input contém linhas numéricas fora do formato reconhecido; revise o bloco original",
+    input_percentage_invalid: "Damage Input contém percentual inválido; a participação desta linha não será estimada",
+    misc_block_present_but_no_combat_stats_recognized: "Miscellaneous enviado sem campos Combat Stats reconhecidos",
   };
   return labels[warning] ?? warning;
 }
@@ -41,7 +46,8 @@ export function detectAnalyzerType(text: string): AnalyzerType | null {
     return "hunt";
   }
 
-  if (/Damage Types:?/i.test(normalized) || /Damage Sources:?/i.test(normalized)) {
+  if (/(?:^|\n)\s*(?:Damage Types|Damage Sources|Max[ -]?DPS|Received Damage Total)\s*:/i.test(normalized) ||
+      /(?:^|\n)\s*Max[ -]?DPS\s*:/i.test(normalized)) {
     return "input";
   }
 
@@ -141,6 +147,9 @@ export type ParsedSessionImport = {
     party_player_rows: number;
     incoming_element_rows: number;
     incoming_source_rows: number;
+    input_unrecognized_element_labels: number;
+    input_unrecognized_numeric_rows: number;
+    input_invalid_percentages: number;
     misc_stat_rows: number;
     warnings: string[];
   };
@@ -400,17 +409,30 @@ function parseInputAnalyzer(textLines: string[]) {
   let section: "elements" | "sources" | null = null;
   let totalDamage: number | null = null;
   let maxDps: number | null = null;
+  let unrecognizedElementLabels = 0;
+  let unrecognizedNumericRows = 0;
+  let invalidShares = 0;
+  const knownElements = new Set([
+    "physical", "fire", "ice", "earth", "energy", "death", "holy",
+    "life drain", "mana drain", "drowning",
+  ]);
 
   for (const line of textLines) {
-    const totalMatch = line.match(/^(?:Total|Received Damage Total)\s*:\s*([\d,.]+)$/i);
+    // Keep type/source headings separate. The client can hide either section.
+    // Never interpret the Hunt Analyzer's outgoing "Damage" as incoming.
+    const totalMatch = line.match(/^(?:Total|Received Damage Total)\s*:\s*(.+)$/i);
     if (totalMatch?.[1]) {
-      totalDamage = parseIntegerLike(totalMatch[1]);
+      const amount = parseIntegerLike(totalMatch[1]);
+      if (amount !== null && amount >= 0) totalDamage = amount;
+      else unrecognizedNumericRows++;
       continue;
     }
 
-    const maxDpsMatch = line.match(/^Max[ -]?DPS\s*:\s*([\d,.]+)$/i);
+    const maxDpsMatch = line.match(/^Max[ -]?DPS\s*:\s*(.+)$/i);
     if (maxDpsMatch?.[1]) {
-      maxDps = parseIntegerLike(maxDpsMatch[1]);
+      const amount = parseIntegerLike(maxDpsMatch[1]);
+      if (amount !== null && amount >= 0) maxDps = amount;
+      else unrecognizedNumericRows++;
       continue;
     }
 
@@ -423,28 +445,48 @@ function parseInputAnalyzer(textLines: string[]) {
       continue;
     }
 
-    const match = line.match(/^(.+?)\s*:\s*([\d,.]+)(?:\s*\(([-\d,.]+)%\))?$/);
-    if (!match) continue;
-
+    const match = line.match(/^(.+?)\s*:\s*([+-]?[\d,.\s]+)(?:\s*\(([-\d,.]+)%\))?$/);
+    if (!match) {
+      if (section !== null && /^\S.*?:/.test(line)) unrecognizedNumericRows++;
+      continue;
+    }
     const rawLabel = match[1];
     const rawValue = match[2];
     if (!rawLabel || !rawValue) continue;
     const label = rawLabel.trim();
     const value = parseIntegerLike(rawValue);
+    if (value === null || value < 0) {
+      unrecognizedNumericRows++;
+      continue;
+    }
+    const normalized = label.toLowerCase().replace(/\s+/g, " ");
+    const knownElement = knownElements.has(normalized);
+    // A percent is an optional *observed* field; absent/invalid is null.
     const share = match[3] ? parseDecimalLike(match[3]) : null;
-    if (value == null) continue;
-
-    const normalized = label.toLowerCase();
-    const knownElement = ["physical","fire","ice","earth","energy","death","holy","life drain","mana drain","drowning"].includes(normalized);
+    const safeShare = share != null && share >= 0 && share <= 100 ? share : null;
+    if (match[3] && safeShare === null) invalidShares++;
 
     if (section === "elements" || (section === null && knownElement)) {
-      elements.push({ element: normalized.replace(/\s+/g, "_"), damage: value, share_percent: share });
+      if (!knownElement) {
+        unrecognizedElementLabels++;
+        continue;
+      }
+      elements.push({
+        element: normalized.replace(/\s+/g, "_"),
+        damage: value,
+        share_percent: safeShare,
+      });
     } else if (section === "sources") {
-      sources.push({ source_name_raw: label, damage: value, share_percent: share });
+      sources.push({ source_name_raw: label, damage: value, share_percent: safeShare });
+    } else {
+      unrecognizedNumericRows++;
     }
   }
 
-  return { elements, sources, totalDamage, maxDps };
+  return {
+    elements, sources, totalDamage, maxDps,
+    unrecognizedElementLabels, unrecognizedNumericRows, invalidShares,
+  };
 }
 
 function parseMisc(textLines: string[]) {
@@ -578,7 +620,17 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
       textMetric(primary, ["Session data"]) !== null &&
       metrics.duration_seconds === null) warnings.push("session_time_range_unrecognized");
   if (partyLines.length && partyPlayers.length === 0) warnings.push("party_block_present_but_no_players_recognized");
-  if (inputLines.length && input.elements.length === 0 && input.sources.length === 0) warnings.push("input_block_present_but_no_damage_rows_recognized");
+  if (inputLines.length && input.elements.length === 0 && input.sources.length === 0) {
+    if (input.totalDamage != null || input.maxDps != null) {
+      warnings.push("input_breakdown_not_observed");
+    } else {
+      warnings.push("input_block_present_but_no_damage_rows_recognized");
+    }
+  }
+  if (input.unrecognizedElementLabels > 0) warnings.push("input_element_labels_unrecognized");
+  if (input.unrecognizedNumericRows > 0) warnings.push("input_numeric_rows_unrecognized");
+  if (input.invalidShares > 0) warnings.push("input_percentage_invalid");
+  if (miscLines.length && miscStats.length === 0) warnings.push("misc_block_present_but_no_combat_stats_recognized");
 
   for (const [label, source, aliases] of [
     ["Raw XP Gain", huntLines, ["Raw XP Gain"]],
@@ -636,7 +688,8 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
     availability: {
       hunt_analyse: huntLines.length > 0 && recognizedMetricCount > 0,
       misc: miscStats.length > 0 || creatures.length > 0 || lootedItems.length > 0,
-      damage: metrics.total_damage != null || input.elements.length > 0 || input.sources.length > 0,
+      damage: metrics.total_damage != null || input.totalDamage != null ||
+        input.maxDps != null || input.elements.length > 0 || input.sources.length > 0,
       party_hunt: partyPlayers.length > 1,
       charm_damage: observedCharm.observed,
     },
@@ -648,6 +701,9 @@ export function parseSessionImport(blocks: SessionImportBlocks): ParsedSessionIm
       party_player_rows: partyPlayers.length,
       incoming_element_rows: input.elements.length,
       incoming_source_rows: input.sources.length,
+      input_unrecognized_element_labels: input.unrecognizedElementLabels,
+      input_unrecognized_numeric_rows: input.unrecognizedNumericRows,
+      input_invalid_percentages: input.invalidShares,
       misc_stat_rows: miscStats.length,
       warnings,
     },
