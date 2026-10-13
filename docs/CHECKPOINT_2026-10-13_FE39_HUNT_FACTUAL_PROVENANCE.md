@@ -1,6 +1,6 @@
 # HuntNexus — FE-39: proveniência e cobertura factual no Hunt Detail
 
-**Data:** 2026-10-13. **Status:** Backend e API real verificados; Web CI aprovado; QA visual local e publicado em execução no primeiro registro deste checkpoint. Os resultados finais de Actions devem ser acrescentados após conclusão.
+**Data:** 2026-10-13. **Status:** **FE-39 CONCLUÍDA TECNICAMENTE**. Migração Supabase, regressão SQL, Web CI, API publicada, Browser QA local/publicado e Browser QA geral **SUCCESS**.
 
 ## Objetivo e contexto
 
@@ -27,8 +27,8 @@ Exemplos:
 - Migração 0161: **SUCCESS**, dados anteriores preservados.
 - `tests/sql/fe39_hunt_evidence_parity.sql`: **executado e aprovado** contra Supabase (DO block), verificando paridade da cobertura do novo RPC com o audit global para Cobra Bastion, Forest of Life e uma entrada com core incompleto; ausência de caça inexistente e não vazamento do snapshot ID.
 - **[Web CI FE-39 #38344655758 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38344655758):** build TypeScript, regressões anteriores e `tests/fe39-hunt-evidence-contract.mjs` aprovados.
-- **[FE-39 Hunt Evidence #38344677821](https://github.com/Charrels22/huntnexus/actions/runs/38344677821):** etapa de **API publicada de duas hunts** e regressão de formatação de fontes **PASS**; aguardar o workflow completo para declarar Browser QA local e publicado aprovado. `tests/fe39-hunt-evidence-live-smoke.mjs`, `web/app/tests/fe39-hunt-evidence-preview.mjs`.
-- **[Frontend Live QA #38344690024](https://github.com/Charrels22/huntnexus/actions/runs/38344690024):** acompanha a renderização real de Cobra Bastion, badge de core, quatro contagens **11/11**, data registrada e separação observacional. Resultado ainda pendente na primeira escrita.
+- **[FE-39 Hunt Evidence #38344677821 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38344677821):** API real Cobra Bastion (11 criaturas) e Forest of Life (3 criaturas), fonte factual, snapshot boolean, cobertura e separação de observação aprovados; teste pure model e Browser QA **local e publicado** aprovados (dois cenários em cada: cobertura incompleta explícita; origem indisponível sem estimativas). Artefato `huntnexus-fe39-factual-provenance`, ID `11787798638`, **1.641.662 bytes**, com screenshots dos 4 cenários. O QA de browser utiliza **fixtures sintéticas** para os estados parcial/ausente, não gameplay real.
+- **[Frontend Live QA #38344690024 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38344690024):** publicou QA Chromium desktop/mobile com **Cobra Bastion real** no domínio Cloudflare, exibindo ByteWizards TibiaData, core factual preenchido, elementos/detalhes/habilidades/loot **11/11**, data de atualização registrada e camada comunitária separada; manteve testes de lazy optimizer, classes, sessão, conta e demais abas. Captura `hunt-fe39-factual-provenance.png` no artefato do workflow.
 
 ## Próximos blocos
 
