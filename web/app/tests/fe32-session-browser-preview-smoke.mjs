@@ -48,6 +48,21 @@ try{
     };
     else if(action==="search_hunts")data=[{hunt_key:"the-void",name:"The Void (Zao)",city:"Zao",vocation:"All",observed_sessions:0}];
     else if(action==="player_session_list")data={sessions:[{session_id:sessionId,hunt_name:"The Void (Zao)",vocation:"MS",status:"parsed",duration_seconds:7380,xp_per_hour:8031558}]};
+    else if(action==="player_session_integrity_review")data={
+      session_id:sessionId,
+      stage:"fe37_session_integrity_readonly",
+      blocks:[
+        {key:"hunt",status:"recognized",supplied:true,observed_fields:7,note:"Métricas principais registradas"},
+        {key:"input",status:"partial",supplied:true,observed_fields:2,note:"Há dados observados, mas o bloco é parcial ou requer revisão"},
+        {key:"misc",status:"recognized",supplied:true,observed_fields:2,note:"Combat Stats registrados"},
+        {key:"party",status:"missing",supplied:false,observed_fields:0,note:"Party Hunt não foi fornecido"},
+      ],
+      storage_consistency:{status:"consistent",checked_sections:6,mismatched_sections:[]},
+      parser_version:"session_parser_v2",
+      current_parser_drift:{status:"same",differing_sections:[],not_a_persistence_error:true},
+      original_blocks_preserved:true,contains_raw_analyzer_text:false,
+      requires_real_export_acceptance:true,
+    };
     else if(action==="player_session_detail")data={
       session:{session_id:sessionId,hunt_name_raw:"The Void (Zao)",vocation:"MS",hunt_key:null},
       hunt_analyse:{duration_seconds:7380,xp_per_hour:8031558,balance_value:727000,total_kills:944,total_damage:3510000,total_healing:1300000},
@@ -187,6 +202,13 @@ try{
   nav=await page.goto(site+"/sessions",{waitUntil:"domcontentloaded",timeout:30000});
   assert.ok(nav?.ok());
   await page.getByText("Duração: 2h 03m").waitFor({timeout:15000});
+  await page.getByTestId("session-integrity-report").waitFor({timeout:15000});
+  await page.getByTestId("session-integrity-input").getByText("Parcial").waitFor();
+  await page.getByTestId("session-integrity-misc").getByText("Reconhecido").waitFor();
+  await page.getByTestId("session-integrity-party").getByText("Não enviado").waitFor();
+  await page.getByTestId("session-integrity-storage-status").getByText(/coerentes/).waitFor();
+  await page.getByTestId("session-integrity-parser-drift").getByText(/sem diferenças observadas/).waitFor();
+  await page.screenshot({path:resolve(folder,"fe37-session-integrity-private-report.png"),fullPage:true});
   await page.getByTestId("session-reparse-compare").click();
   await page.getByTestId("session-reparse-diff").waitFor({timeout:15000});
   await page.getByText("Duração (segundos)",{exact:true}).waitFor();
@@ -241,6 +263,7 @@ try{
     raw_misc_duration_visible:true,canonical_sprite_filenames_verified:true,
     fe34_reparse_preview_confirmed_without_real_write:true,
     fe35_restore_preview_double_confirmed_without_real_write:true,
+    fe37_owner_scoped_import_integrity_rendered_without_raw_blocks:true,
     observed_image_loads:imageNames.filter(x=>x.loaded).length,
     image_files:imageNames.map(x=>({name:x.name,loaded:x.loaded})),
     image_traffic:imageTraffic.slice(-15)});
