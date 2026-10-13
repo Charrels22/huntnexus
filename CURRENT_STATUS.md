@@ -1,6 +1,12 @@
 # HuntNexus — status e ponto exato da transferência
 
-**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **FE-40: build/QA local e CI PASS; PR #3 aberto. FE-41–44/46: incrementos e auditoria em continuação; FE-48: preparação documental.** Merge/publicação não executados. Próximos passos: revisão/CI da continuação e portões reais de homologação. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
+**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **Release congelado para realinhamento:** PRs #3 e #4 em Draft; filtro de build de produção Cloudflare alterado de `web/app/**` para o caminho reservado inexistente `.__huntnexus_release_freeze__/**`; Worker ativo preservado na versão 250 (`143d8692-b52c-4c0b-bd0e-af6cf980341e`). Merge/publicação não executados. [Checkpoint do Tópico 1](docs/CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md). Consultar `git log`, GitHub e Cloudflare antes de executar, pois este arquivo pode ficar desatualizado.
+
+## Realinhamento — Tópico 1 concluído
+
+GitHub `main` está em `f87893888d58dc8ccf589bd3294646a2cb8cc328`; PR #3 está no head `102513f8874bf26e86ab707861fc112a4dd9734b`; a baseline de código do PR #4 antes do checkpoint documental é `373990fee73c837597b9c49975a8637c92b6aa89`. Os dois permanecem abertos, agora como Draft. Supabase `urbncbjapasnjqjqicjv` está `ACTIVE_HEALTHY`, com 167 migrations e última `0161_fe39_hunt_evidence_context`; nenhuma escrita foi feita.
+
+O deployment ativo foi criado por Wrangler e não contém SHA Git atribuível. A identidade comprovada de produção é Cloudflare deployment `4df50565-35a8-4d58-9103-b406d920b059`, versão 250. Não executar merge, `wrangler deploy` nem restaurar `web/app/**` até o descongelamento explícito após o realinhamento.
 
 ## FE-40 — execução no Codex
 FE-45 parcial: Site URL/allowlist corrigidos e conferidos. Após uma tentativa bloqueada por cota, o usuário forneceu capturas das duas contas autenticadas e Dados/Sincronizados em navegador padrão/anônimo: login/resolução na UI PASS parcial. Celular apenas abriu a página, sem Auth concluído; dados A/B, negativos de acesso cruzado e sincronização real entre dispositivos seguem pendentes. [Checkpoint FE-45](docs/CHECKPOINT_2026-10-13_FE45_AUTH_REDIRECT_BLOCK.md).
