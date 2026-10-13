@@ -13,6 +13,7 @@ try {
   for (const width of [1440, 390]) {
     const page = await browser.newPage({ viewport: { width, height: 900 } });
     const errors = [];
+    let detailSessionCount = null;
     page.on("pageerror", (error) => errors.push(String(error)));
     await page.route("**/api/huntnexus", async (route) => {
       const req = route.request().postDataJSON();
@@ -21,7 +22,9 @@ try {
       const body = req.action === "search_hunts" ? { action: req.action, query: req.query, limit: req.limit }
         : { action: req.action, hunt_key: req.hunt_key, vocation: req.vocation, level: req.level, set_objective: req.set_objective };
       const response = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(50000) });
-      return route.fulfill({ status: response.status, contentType: "application/json", body: await response.text() });
+      const text = await response.text();
+      if (req.action === "hunt_detail" && response.ok) detailSessionCount = JSON.parse(text)?.data?.observed?.performance?.session_count ?? null;
+      return route.fulfill({ status: response.status, contentType: "application/json", body: text });
     });
     await page.goto(site + "/hunts?q=forest-of-life", { waitUntil: "domcontentloaded" });
     await page.getByRole("heading", { name: "Forest of Life", exact: true }).waitFor({ timeout: 60000 });
@@ -29,7 +32,9 @@ try {
     await page.screenshot({ path: resolve(output, `${width}-real-api-catalog.png`), fullPage: true });
     await page.getByRole("link", { name: "Ver detalhes de Forest of Life" }).click();
     await page.getByTestId("hunt-evidence-source-name").getByText("ByteWizards TibiaData").waitFor({ timeout: 60000 });
-    await page.getByTestId("hunt-community-evidence-separation").getByText(/Sem sessões de desempenho observadas/).waitFor();
+    const warning = detailSessionCount === null ? /Sessões de desempenho indisponíveis/
+      : detailSessionCount === 0 ? /Sem sessões de desempenho observadas/ : /não garantem desempenho|não use os resultados como garantia/;
+    await page.getByTestId("hunt-community-evidence-separation").getByText(warning).waitFor();
     await page.screenshot({ path: resolve(output, `${width}-real-api-detail.png`), fullPage: true });
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ status: "PASS", width, mode: "local frontend + real published read-only API", hunt: "forest-of-life", private_requests: "stubbed empty", deployment_verified: false }));
