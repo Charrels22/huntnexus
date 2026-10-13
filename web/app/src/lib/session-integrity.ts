@@ -1,7 +1,7 @@
 // FE-37: privacy-safe session import completeness and saved/detail consistency.
 // This helper runs SERVER-SIDE with protected raw blocks. Never return raw text,
 // player names, individual loot, creatures, or sources to the browser.
-import { parseSessionImport, type ParsedSessionImport, type SessionImportBlocks } from "./session-parser";
+import { parseSessionImport, type ParsedSessionImport, type SessionImportBlocks } from "./session-parser.ts";
 
 export type BlockIntegrityStatus = "missing" | "unrecognized" | "partial" | "recognized";
 type SectionKey = "hunt_analyse" | "misc" | "damage" | "party_hunt" | "availability" | "validation";
