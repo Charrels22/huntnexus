@@ -132,6 +132,29 @@ try{
   await page.getByText("2h 03m",{exact:true}).waitFor({timeout:15000});
   await page.getByText(/Bloco não enviado. Elementos e fontes de dano recebido/).waitFor();
   await page.getByText(/Bloco não enviado. Combat Stats permanecerá sem dados/).waitFor();
+  // FE-36: verify observed Input totals aren't silently treated as Misc.
+  await page.getByRole("button",{name:"Input Analyzer",exact:true}).click();
+  await page.locator("textarea").first().fill(
+    "Received Damage Total: 12,000\\nMax-DPS: 345");
+  await page.getByText(/Total ou Max-DPS reconhecido/).waitFor({timeout:12000});
+  await page.getByTestId("session-input-recognized-preview").getByText(/Total recebido:/).waitFor();
+  await page.locator("textarea").first().fill(
+    "Total: 12,000\\nMax-DPS: 345\\nDamage Types:\\nFire: 7,000 (58.3%)" +
+    "\\nPhysical: 5,000 (41.7%)\\nDamage Sources:\\nsynthetic spectre: 12,000 (100%)");
+  await page.getByText("2 elementos e 1 fontes reconhecidos.").waitFor({timeout:12000});
+  await page.getByTestId("session-input-recognized-preview").getByText("synthetic spectre").waitFor();
+
+  await page.getByRole("button",{name:"Miscellaneous",exact:true}).click();
+  await page.locator("textarea").first().fill(
+    "Session: 00:30h\\nCritical Hit: 393\\nMana Gain: 1,234\\nLife Gain: 2,345");
+  await page.getByTestId("session-misc-recognized-preview").getByText("Critical Hit").waitFor();
+  await page.getByTestId("session-misc-recognized-preview").getByText("Mana Gain").waitFor();
+  await page.screenshot({path:resolve(folder,"fe36-input-misc-observed-before-save.png"),fullPage:true});
+  // Restore missing-block fixture to keep earlier FE-32/33 assertions isolated.
+  await page.locator("textarea").first().fill("");
+  await page.getByRole("button",{name:"Input Analyzer",exact:true}).click();
+  await page.locator("textarea").first().fill("");
+  await page.getByRole("button",{name:"Hunt Analyzer",exact:true}).click();
   await page.getByText("Setup usado na sessão").waitFor();
   const location=page.getByPlaceholder("Selecione no catálogo ou digite o nome da hunt");
   await location.focus();
@@ -159,7 +182,8 @@ try{
   assert.equal(interceptedSyntheticSave?.metadata?.setupMode,"main");
   assert.equal(interceptedSyntheticSave?.metadata?.hunt_key,"the-void");
   await page.screenshot({path:resolve(folder,"fe32-session-import-preview.png"),fullPage:true});
-  results.push({case:"session_import_preview",result:"PASS",duration:"02:03h",missing_damage_and_misc_explicit:true,hunt_catalog_on_focus:true});
+  results.push({case:"session_import_preview",result:"PASS",duration:"02:03h",missing_damage_and_misc_explicit:true,hunt_catalog_on_focus:true,
+    fe36_optional_input_breakdown_and_combat_stats_previewed:true});
   nav=await page.goto(site+"/sessions",{waitUntil:"domcontentloaded",timeout:30000});
   assert.ok(nav?.ok());
   await page.getByText("Duração: 2h 03m").waitFor({timeout:15000});
