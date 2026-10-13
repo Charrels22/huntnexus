@@ -54,6 +54,8 @@ jobs:
         run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe41-navigation-preview.mjs
       - name: FE-43 five-vocation owned build and imbuement UX
         run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe43-build-imbuement-preview.mjs
+      - name: FE-44 partial public data degradation
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe44-resilience-preview.mjs
       - name: Preserve visual evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -300,6 +300,7 @@ function HuntDetailPage() {
         <Link to="/hunts" search={{ q: search.catalogQuery ?? "" }}>Voltar ao catálogo</Link>
         <Link to="/planner" search={parsePlannerContext(search)}>Abrir Hunt Planner</Link>
       </nav>
+      {data.availability && Object.entries(data.availability).some(([key, available]) => key !== "factual" && available === false) && <p role="status" className="rounded-xl border border-amber-400/15 bg-amber-400/5 p-3 text-sm text-amber-100">Parte das informações auxiliares está indisponível. O conteúdo factual foi preservado; valores ausentes não são zero.</p>}
       <section className="hn-hero overflow-hidden rounded-3xl border border-white/8">
         <div className="grid xl:grid-cols-[1.15fr_.85fr]">
           <div className="p-5 md:p-7">
@@ -312,7 +313,7 @@ function HuntDetailPage() {
               <Badge>{search.vocation}</Badge>
               <Badge>Level {search.level}</Badge>
               <Badge>{labelObjective(search.setObjective)}</Badge>
-              <Badge>{perf.session_count ? `${perf.session_count} sessões comunitárias · todas as vocações` : "Sem sessões comunitárias observadas"}</Badge>
+              <Badge>{typeof perf.session_count !== "number" ? "Sessões comunitárias não informadas" : perf.session_count > 0 ? `${perf.session_count} sessões comunitárias · todas as vocações` : "Sem sessões comunitárias observadas"}</Badge>
             </div>
             <div className="mt-6 grid max-w-3xl gap-3 sm:grid-cols-3">
               <HeroMetric label="XP/h mediana · amostra geral" value={compact(perf.median_xp_per_hour)} />
@@ -460,7 +461,7 @@ function Overview({ data }: { data:any }) {
       <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
       <Panel title="Performance observada · todas as vocações">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Metric label="Sessões" value={perf.session_count == null ? "Sem observações" : formatNumber(Number(perf.session_count))} />
+          <Metric label="Sessões" value={perf.session_count == null ? "Não informado" : formatNumber(Number(perf.session_count))} />
           <Metric label="Duração média" value={perf.avg_duration_minutes != null ? `${formatNumber(Number(perf.avg_duration_minutes),1)} min` : "—"} />
           <Metric label="XP/h mínima" value={compact(perf.min_xp_per_hour)} />
           <Metric label="XP/h máxima" value={compact(perf.max_xp_per_hour)} />
@@ -633,7 +634,7 @@ function Damage({ defensive }: { defensive:any }) {
         </Panel>
         <Panel title="Picos observados">
           <div className="space-y-2">
-            {elements.map((e:any) => <Metric key={e.element} label={`${e.element} max DPS mediano`} value={e.median_max_dps == null ? "Não observado" : formatNumber(Number(e.median_max_dps))} />)}
+            {elements.map((e:any) => <Metric key={e.element} label={`${e.element} max DPS mediano`} value={e.median_max_dps == null ? "Não informado" : formatNumber(Number(e.median_max_dps))} />)}
           </div>
         </Panel>
       </div>
@@ -902,6 +903,7 @@ function Spells({ spells, composition }: { spells:any; composition:any }) {
 }
 
 function Imbuements({ data }: { data:any }) {
+  if (data == null) return <Muted>Dados de imbuements indisponíveis. Tente novamente mais tarde.</Muted>;
   const priorities = Array.isArray(data?.defensive_priority) ? data.defensive_priority : [];
   const usage = Array.isArray(data?.community_observed_usage) ? data.community_observed_usage : [];
   return (
@@ -930,7 +932,9 @@ function Community({ observed, vocationObserved, vocation }: { observed:any; voc
   const mix = Array.isArray(observed?.kill_mix) ? observed.kill_mix : [];
   const sample = vocationObserved?.sample ?? {};
   const methodology = vocationObserved?.methodology ?? {};
-  const insufficient = Number(sample.session_count ?? 0) < Number(methodology.minimum_sample_for_median ?? 3);
+  const countKnown = observedProfileCount(sample.session_count) !== "Não informado";
+  const insufficient = countKnown && Number(sample.session_count) < Number(methodology.minimum_sample_for_median ?? 3);
+  const absentMedian = insufficient ? "Amostra insuficiente" : "Não informado";
   return (
     <div>
       <SectionTitle title="Community" subtitle="Amostra agregada da hunt (todas as vocações e níveis), Tier C: observação real, não estimativa personalizada." />
@@ -941,9 +945,9 @@ function Community({ observed, vocationObserved, vocation }: { observed:any; voc
           não são atribuídos a um jogador individual. Medianas são exibidas somente com pelo menos 3 sessões válidas.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Metric label="Sessões com fonte" value={formatNumber(Number(sample.sourced_session_count ?? 0))} />
-          <Metric label="XP/h mediana da amostra" value={sample.median_xp_per_hour == null ? "Amostra insuficiente" : compact(sample.median_xp_per_hour)} />
-          <Metric label="Profit/h mediano da amostra" value={sample.median_balance_per_hour == null ? "Amostra insuficiente" : compact(sample.median_balance_per_hour)} />
+          <Metric label="Sessões com fonte" value={observedProfileCount(sample.sourced_session_count)} />
+          <Metric label="XP/h mediana da amostra" value={sample.median_xp_per_hour == null ? absentMedian : compact(sample.median_xp_per_hour)} />
+          <Metric label="Profit/h mediano da amostra" value={sample.median_balance_per_hour == null ? absentMedian : compact(sample.median_balance_per_hour)} />
         </div>
         {insufficient && (
           <p className="mt-3 text-xs text-amber-200/85">
@@ -954,10 +958,10 @@ function Community({ observed, vocationObserved, vocation }: { observed:any; voc
       <div className="mt-5 grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
         <Panel title="Amostra">
           <div className="space-y-2">
-            <Metric label="Sessões" value={p.session_count == null ? "Sem observações" : formatNumber(Number(p.session_count))} />
-            <Metric label="Solo" value={p.solo_sessions == null ? "Não observado" : formatNumber(Number(p.solo_sessions))} />
-            <Metric label="Duo" value={p.duo_sessions == null ? "Não observado" : formatNumber(Number(p.duo_sessions))} />
-            <Metric label="Party" value={p.party_sessions == null ? "Não observado" : formatNumber(Number(p.party_sessions))} />
+            <Metric label="Sessões" value={p.session_count == null ? "Não informado" : formatNumber(Number(p.session_count))} />
+            <Metric label="Solo" value={p.solo_sessions == null ? "Não informado" : formatNumber(Number(p.solo_sessions))} />
+            <Metric label="Duo" value={p.duo_sessions == null ? "Não informado" : formatNumber(Number(p.duo_sessions))} />
+            <Metric label="Party" value={p.party_sessions == null ? "Não informado" : formatNumber(Number(p.party_sessions))} />
           </div>
         </Panel>
         <Panel title="Kill mix observado">

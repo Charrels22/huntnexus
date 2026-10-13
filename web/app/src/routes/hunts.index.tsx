@@ -34,9 +34,10 @@ function HuntCatalogPage() {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     setState({ query, loading: true, error: false, hunts: [] });
     const timer = window.setTimeout(() => {
-      callHuntNexusApi<{ data?: CatalogHunt[] }>({ action: "search_hunts", query: query.trim(), limit: 50 })
+      callHuntNexusApi<{ data?: CatalogHunt[] }>({ action: "search_hunts", query: query.trim(), limit: 50 }, { signal: controller.signal, timeoutMs: 15000 })
         .then((response) => {
           if (!Array.isArray(response.data)) throw new Error("Invalid catalog response");
           if (active) setState({ query, loading: false, error: false,
@@ -46,7 +47,7 @@ function HuntCatalogPage() {
           if (active) setState({ query, loading: false, error: true, hunts: [] });
         });
     }, 300);
-    return () => { active = false; window.clearTimeout(timer); };
+    return () => { active = false; controller.abort(); window.clearTimeout(timer); };
   }, [query, retry]);
 
   const loading = state.loading || state.query !== query;
