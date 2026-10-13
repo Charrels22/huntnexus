@@ -34,6 +34,8 @@ function SessionHistoryPage() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [detail, setDetail] = useState<any>(null);
+  const [integrityReport, setIntegrityReport] = useState<any>(null);
+  const [integrityLoading, setIntegrityLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -119,6 +121,29 @@ function SessionHistoryPage() {
       });
     return () => { detailRequestRef.current++; };
   }, [selectedId, detailVersion]);
+
+  useEffect(() => {
+    const clientId=getOrCreateClientId();
+    if (!selectedId || !clientId) {
+      setIntegrityReport(null);
+      setIntegrityLoading(false);
+      return;
+    }
+    let alive=true;
+    setIntegrityLoading(true);
+    setIntegrityReport(null);
+    callHuntNexusApi<any>({
+      action:"player_session_integrity_review",
+      client_id:clientId,session_id:selectedId,
+    }).then((response)=>{
+      if (alive && response?.data?.session_id===selectedId) {
+        setIntegrityReport(response.data);
+      }
+    }).catch(()=>{
+      if (alive) setIntegrityReport({unavailable:true});
+    }).finally(()=>{if(alive)setIntegrityLoading(false)});
+    return ()=>{alive=false};
+  },[selectedId,detailVersion]);
 
   async function compareReparse() {
     const clientId = getOrCreateClientId();
@@ -369,6 +394,84 @@ function SessionHistoryPage() {
         <div className="rounded-2xl border border-red-400/20 bg-red-400/8 p-4 text-sm text-red-200">
           {error}
         </div>
+      )}
+
+      {selectedId && detail && (
+        <section className="rounded-2xl border border-white/8 bg-slate-950/40 p-4"
+                 data-testid="session-integrity-report">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-100">Conferência dos dados importados</h2>
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
+                Estado de cada bloco originalmente fornecido. Confere armazenamento e histórico
+                sem mostrar os textos copiados nem modificar sua sessão.
+              </p>
+            </div>
+            <button type="button" className="hn-secondary-button"
+              disabled={integrityLoading}
+              data-testid="session-integrity-refresh"
+              onClick={()=>setDetailVersion(v=>v+1)}>
+              {integrityLoading?"Conferindo...":"Conferir novamente"}
+            </button>
+          </div>
+          {integrityLoading && (
+            <p className="mt-3 text-xs text-slate-400">Verificando os blocos privados e os dados do histórico...</p>
+          )}
+          {integrityReport?.unavailable && (
+            <p className="mt-3 text-xs text-amber-300">
+              A conferência está indisponível. Isso não significa que os dados foram perdidos.
+            </p>
+          )}
+          {Array.isArray(integrityReport?.blocks) && (
+            <>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {integrityReport.blocks.map((block:any)=>(
+                  <div key={block.key} className="rounded-xl border border-white/8 bg-black/20 p-3"
+                       data-testid={`session-integrity-${block.key}`}>
+                    <div className="text-xs font-semibold text-slate-200">
+                      {({hunt:"Hunt Analyzer",input:"Damage Input",misc:"Miscellaneous",
+                        party:"Party Hunt"} as Record<string,string>)[block.key]??block.key}
+                    </div>
+                    <div className={`mt-1 text-xs font-semibold ${
+                      block.status==="recognized"?"text-emerald-300":
+                      block.status==="missing"?"text-slate-500":"text-amber-300"
+                    }`}>
+                      {({missing:"Não enviado",unrecognized:"Não reconhecido",
+                        partial:"Parcial",recognized:"Reconhecido"} as Record<string,string>)[block.status]??block.status}
+                    </div>
+                    <p className="mt-2 text-[11px] leading-4 text-slate-500">{block.note}</p>
+                    <div className="mt-1 text-[10px] text-slate-600">
+                      {block.observed_fields} campos ou linhas reconhecidos
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
+                <span data-testid="session-integrity-storage-status">
+                  Banco ↔ histórico: {integrityReport.storage_consistency?.status==="consistent"
+                    ? "coerentes":"divergência detectada"}
+                </span>
+                <span>Parser salvo: {integrityReport.parser_version}</span>
+                <span data-testid="session-integrity-parser-drift">
+                  Versão atual do parser: {integrityReport.current_parser_drift?.status==="same"
+                    ? "sem diferenças observadas":"diferenças possíveis"}
+                </span>
+              </div>
+              {integrityReport.storage_consistency?.status==="mismatch" && (
+                <p className="mt-2 text-xs text-amber-300">
+                  O detalhe apresentado não corresponde a todas as seções salvas.
+                  Não reimporte automaticamente; preserve a evidência e solicite revisão.
+                </p>
+              )}
+              {integrityReport.current_parser_drift?.status==="different" && (
+                <p className="mt-2 text-xs leading-5 text-slate-400">
+                  Uma mudança na interpretação atual não significa corrupção da sessão.
+                  Use “Comparar parser” abaixo antes de decidir se deseja aplicar uma revisão.
+                </p>
+              )}
+            </>
+          )}
+        </section>
       )}
 
       {selectedId && detail && (
