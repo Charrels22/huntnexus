@@ -19,6 +19,7 @@ try{
   const imageTraffic=[];
   let interceptedSyntheticSave=null;
   let interceptedSyntheticReparse=null;
+  let interceptedSyntheticRestore=null;
   page.on("pageerror",e=>runtimeErrors.push(e.message));
   page.on("response",response=>{
     if(response.url().toLowerCase().includes(".gif")) {
@@ -84,6 +85,38 @@ try{
         original_loadout_snapshot_preserved:true,
       };
     }
+    else if(action==="player_session_revision_list")data={
+      session_id:sessionId,
+      revisions:[{revision_id:"bb8a1b54-b286-4c52-a562-85ef906d948a",
+        revised_at:"2026-10-12T19:30:00Z",
+        previous_parser_version:"session_parser_v1",
+        next_parser_version:"session_parser_v2"}],
+    };
+    else if(action==="player_session_restore_preview")data={
+      session_id:sessionId,
+      revision_id:"bb8a1b54-b286-4c52-a562-85ef906d948a",
+      current_parser_version:"session_parser_v2",
+      target_parser_version:"session_parser_v1",
+      snapshot_source:"main_default",
+      expected_fingerprint:"2".repeat(32),
+      raw_blocks_preserved:true,
+      loadout_snapshot_preserved:true,
+      data_loss_warning:true,
+      review:{
+        changed:true,
+        changes:[{key:"hunt_analyse.duration_seconds",
+          label:"Duração (segundos)",before:7380,after:null,regression:true}],
+        warnings_before:[],warnings_after:[],
+        regression_reasons:["Perda de dado antes conhecido em Duração (segundos)"],
+        no_raw_text_exposed:true,
+      },
+    };
+    else if(action==="player_session_restore_apply"){
+      interceptedSyntheticRestore=request;
+      data={restored:true,session_id:sessionId,parser_version:"session_parser_v1",
+        raw_blocks_preserved:true,loadout_snapshot_preserved:true,
+        undo_revision_id:"5b8b6ff4-c22c-4265-b38c-29d5f09dfc88"};
+    }
     else if(action==="session_import_save"){
       interceptedSyntheticSave=request;
       return route.fulfill({status:405,contentType:"application/json",body:JSON.stringify({error:"synthetic_write_disabled"})});
@@ -145,6 +178,28 @@ try{
   assert.equal(interceptedSyntheticReparse?.expected_fingerprint,"1".repeat(32));
   assert.equal(interceptedSyntheticReparse?.confirm,true);
   await page.screenshot({path:resolve(folder,"fe34-session-reparse-applied-synthetic.png"),fullPage:true});
+  // FE-35: historical version only for this synthetic session; no real writes.
+  await page.getByTestId("session-restore-list").click();
+  await page.getByTestId("session-restore-revisions").waitFor({timeout:15000});
+  await page.getByTestId("session-restore-preview-0").click();
+  await page.getByTestId("session-restore-diff").waitFor({timeout:15000});
+  const restoreApply=page.getByTestId("session-restore-apply");
+  assert.equal(await restoreApply.isDisabled(),true);
+  await page.getByTestId("session-restore-confirm").check();
+  assert.equal(await restoreApply.isDisabled(),true,
+    "A potentially regressive restore must require separate loss acknowledgement");
+  await page.getByTestId("session-restore-accept-loss").check();
+  assert.equal(await restoreApply.isEnabled(),true);
+  await page.screenshot({path:resolve(folder,"fe35-revision-diff-before-restore.png"),fullPage:true});
+  page.once("dialog",dialog=>dialog.accept());
+  await restoreApply.click();
+  await page.getByText(/Interpretação anterior restaurada/).waitFor({timeout:15000});
+  assert.equal(interceptedSyntheticRestore?.action,"player_session_restore_apply");
+  assert.equal(interceptedSyntheticRestore?.session_id,sessionId);
+  assert.equal(interceptedSyntheticRestore?.confirm,true);
+  assert.equal(interceptedSyntheticRestore?.accept_regressions,true);
+  assert.equal(interceptedSyntheticRestore?.expected_fingerprint,"2".repeat(32));
+  await page.screenshot({path:resolve(folder,"fe35-restore-confirmed-synthetic.png"),fullPage:true});
   await page.getByRole("button",{name:"Misc",exact:true}).click();
   await page.getByText("blue crystal shard",{exact:true}).waitFor();
   await page.getByText("02:03h",{exact:true}).waitFor();
@@ -161,6 +216,7 @@ try{
   results.push({case:"saved_session_read_with_synthetic_fixture",result:"PASS",
     raw_misc_duration_visible:true,canonical_sprite_filenames_verified:true,
     fe34_reparse_preview_confirmed_without_real_write:true,
+    fe35_restore_preview_double_confirmed_without_real_write:true,
     observed_image_loads:imageNames.filter(x=>x.loaded).length,
     image_files:imageNames.map(x=>({name:x.name,loaded:x.loaded})),
     image_traffic:imageTraffic.slice(-15)});
