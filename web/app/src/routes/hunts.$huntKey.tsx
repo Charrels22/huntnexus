@@ -15,6 +15,7 @@ import { CanonicalSprite, CanonicalSpriteGroup } from "@/components/shared/canon
 import { CanonicalTibiaMap, parseMapperCoords } from "@/components/shared/tibia-map";
 import { callHuntNexusApi, formatNumber } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
+import { describeHuntEvidence } from "@/lib/hunt-evidence";
 
 export const Route = createFileRoute("/hunts/$huntKey")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -423,6 +424,8 @@ function Overview({ data }: { data:any }) {
   const hunt = data.factual?.hunt ?? {};
   return (
     <div className="space-y-5">
+      <HuntEvidencePanel evidence={data.evidence} observed={data.observed} vocationObserved={data.vocation_observed} />
+
       <div className="grid gap-3 sm:grid-cols-3">
         <CanonicalLevelCard label="Knight" value={hunt.level_knights} />
         <CanonicalLevelCard label="Paladin" value={hunt.level_paladins} />
@@ -455,6 +458,85 @@ function Overview({ data }: { data:any }) {
       </Panel>
       </div>
     </div>
+  );
+}
+
+function HuntEvidencePanel({evidence,observed,vocationObserved}:{
+  evidence:any;observed:any;vocationObserved:any;
+}) {
+  const report=describeHuntEvidence(evidence,observed,vocationObserved);
+  const known=report.status!=="unavailable";
+  return (
+    <section className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.025] p-4 md:p-5"
+             data-testid="hunt-factual-evidence">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-100">Origem e cobertura factual</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-400">
+            Dados de catálogo e criaturas são independentes das sessões de desempenho.
+            A cobertura indica se existem registros de fonte, não se os resultados de uma hunt são garantidos.
+          </p>
+        </div>
+        <span className={`rounded-lg border px-3 py-1 text-[11px] font-semibold ${
+          report.status==="complete"?"border-emerald-400/20 bg-emerald-400/5 text-emerald-300":
+          report.status==="incomplete"?"border-amber-400/20 bg-amber-400/5 text-amber-200":
+          "border-white/10 bg-slate-900 text-slate-400"
+        }`} data-testid="hunt-source-core-status">
+          {report.status==="complete"?"Base factual preenchida":
+            report.status==="incomplete"?"Cobertura factual parcial":"Evidência factual indisponível"}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1.35fr]">
+        <div className="rounded-xl border border-white/8 bg-slate-950/45 p-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Fonte do catálogo</div>
+          <div className="mt-1 text-sm font-semibold text-slate-200"
+               data-testid="hunt-evidence-source-name">{report.sourceName}</div>
+          {report.sourceUrl && (
+            <a href={report.sourceUrl} target="_blank" rel="noreferrer noopener"
+               className="mt-2 inline-block text-xs text-cyan-300 hover:underline">
+              Ver site da fonte <span aria-hidden="true">↗</span>
+            </a>
+          )}
+          <div className="mt-3 space-y-1 text-[11px] text-slate-400">
+            <p>Camada: {report.sourceLayer??"Não informada"}{report.sourceTier?` · Tier ${report.sourceTier}`:""}</p>
+            <p data-testid="hunt-evidence-update-date">Atualização registrada: {report.lastUpdated??"Data não informada"}</p>
+            <p>Snapshot registrado: {report.snapshotRecorded?"Sim":"Não identificado"}</p>
+            <p className="text-slate-500">A data registrada não comprova verificação em tempo real. O link abre a fonte geral, não uma página específica desta hunt.</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-white/8 bg-slate-950/45 p-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Cobertura das criaturas</div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {report.coverage.map(item=>(
+              <div className="flex items-center justify-between gap-2 text-xs" key={item.key}
+                   data-testid={`hunt-coverage-${item.key}`}>
+                <span className="text-slate-400">{item.label}</span>
+                <span className={item.complete?"font-semibold text-emerald-300":"font-semibold text-amber-200"}>
+                  {item.observed!==null && item.total!==null
+                    ?`${item.observed}/${item.total}`:"Não informado"}
+                </span>
+              </div>
+            ))}
+          </div>
+          {!known && <p className="mt-3 text-xs text-slate-500">Não foi possível carregar a proveniência nesta consulta. Os fatos não serão inferidos.</p>}
+          <p className="mt-3 text-[11px] text-slate-500">
+            {known?"Contagens de registros por criatura vinculada; não são garantia de atualização ou de completude absoluta.":"A conferência factual será exibida quando estiver disponível."}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 rounded-xl border border-white/8 bg-slate-950/30 p-3"
+           data-testid="hunt-community-evidence-separation">
+        <div className="flex flex-wrap gap-4 text-xs text-slate-300">
+          <span>Sessões observadas (todas as vocações):
+            <strong className="ml-1 text-slate-100">{report.observedSessions??"Não informado"}</strong>
+          </span>
+          <span>Sessões com fonte nesta vocação:
+            <strong className="ml-1 text-slate-100">{report.vocationSourcedSessions??"Não informado"}</strong>
+          </span>
+        </div>
+        <p className="mt-2 text-[11px] text-slate-400">{report.observationalWarning}</p>
+      </div>
+    </section>
   );
 }
 
