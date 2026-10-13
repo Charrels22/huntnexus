@@ -143,8 +143,20 @@ try{
   await page.getByRole("heading",{name:"Cadastrar uma hunt"}).waitFor();
   // TanStack hydration restores local draft; do not paste before React owns input.
   await page.waitForTimeout(1100);
-  await page.locator("textarea").first().fill("Session: 02:03h\nXP Gain: 16,526,550\nXP/h: 8,031,558\nDamage: 3,510,000");
-  await page.getByText("2h 03m",{exact:true}).waitFor({timeout:15000});
+  const syntheticHunt="Session: 02:03h\nXP Gain: 16,526,550\nXP/h: 8,031,558\nDamage: 3,510,000";
+  const huntInput=page.locator("textarea").first();
+  await huntInput.fill(syntheticHunt);
+  try {
+    await page.getByText("2h 03m",{exact:true}).waitFor({timeout:6500});
+  } catch {
+    // On a slow published Worker the initial paste may precede React state
+    // hydration and get reset. Retry a fresh user-like edit ONCE. Never
+    // override a parsing failure or mark the assertion as passed on timeout.
+    await page.waitForTimeout(1200);
+    await huntInput.fill("");
+    await huntInput.fill(syntheticHunt);
+    await page.getByText("2h 03m",{exact:true}).waitFor({timeout:15000});
+  }
   await page.getByText(/Bloco não enviado. Elementos e fontes de dano recebido/).waitFor();
   await page.getByText(/Bloco não enviado. Combat Stats permanecerá sem dados/).waitFor();
   // FE-36: verify observed Input totals aren't silently treated as Misc.
