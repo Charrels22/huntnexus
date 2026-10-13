@@ -1,0 +1,46 @@
+{
+  "captured_at": "2026-10-13",
+  "scope": "Release freeze; no merge, deploy, schema change, or database write",
+  "git": {
+    "main_sha": "f87893888d58dc8ccf589bd3294646a2cb8cc328",
+    "pull_requests": [
+      {
+        "number": 3,
+        "head_sha": "102513f8874bf26e86ab707861fc112a4dd9734b",
+        "draft": true,
+        "merged": false
+      },
+      {
+        "number": 4,
+        "head_sha": "373990fee73c837597b9c49975a8637c92b6aa89",
+        "head_sha_role": "code baseline before the release-freeze documentation commit",
+        "draft": true,
+        "merged": false
+      }
+    ]
+  },
+  "cloudflare": {
+    "worker": "huntnexus",
+    "production_branch": "main",
+    "production_path_includes_before": ["web/app/**"],
+    "production_path_includes_after": [".__huntnexus_release_freeze__/**"],
+    "production_build_command": "npm run build",
+    "production_deploy_command": "npx wrangler deploy",
+    "active_deployment_id": "4df50565-35a8-4d58-9103-b406d920b059",
+    "active_version_number": 250,
+    "active_version_id": "143d8692-b52c-4c0b-bd0e-af6cf980341e",
+    "active_percentage": 100,
+    "active_source": "wrangler",
+    "git_sha_attribution": null,
+    "git_sha_attribution_reason": "The active Wrangler deployment exposes no Git commit annotation."
+  },
+  "supabase": {
+    "project_id": "urbncbjapasnjqjqicjv",
+    "region": "sa-east-1",
+    "status": "ACTIVE_HEALTHY",
+    "postgres_engine": "17",
+    "migration_count": 167,
+    "latest_migration": "0161_fe39_hunt_evidence_context",
+    "development_branch_count": 0
+  }
+}

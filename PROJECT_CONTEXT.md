@@ -4,7 +4,7 @@
 
 ## Propósito
 
-HuntNexus é uma plataforma Tibia/RubinOT para descobrir hunts, analisar sessões, escolher sets reais e comparar builds. **HuntNexus Brain** é a camada versionada de conhecimento. O produto combina três fluxos que nunca podem ser confundidos:
+HuntNexus é uma plataforma Tibia/RubinOT para descobrir hunts, analisar sessões, escolher sets reais e comparar builds. **HuntNexus Brain** é a camada interna, versionada e explicável de conhecimento. [ADR-0001](docs/ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) fixa o domínio: descoberta pública, conta para personalização e uma conta com vários personagens. O produto combina três fluxos que nunca podem ser confundidos:
 
 1. **Tibia factual**: criaturas, elementos, itens, spells, loot, hunts, fontes e snapshots com procedência.
 2. **RubinOT oficial**: overrides por patch/data/versão sobre fatos canônicos; sem sobrepor versões silenciosamente.
@@ -21,16 +21,18 @@ Confiança: A (RubinOT oficial), B (Tibia canônico/estruturado), C (comunidade)
 - Tipos de conteúdo: `data/` e `collectors/`; analytics, contratos auxiliares e tests: `analytics/`, `api/`, `tests/`, `web/app/tests/`.
 - Infra: Cloudflare Worker denominado `huntnexus`, Supabase PostgreSQL; o deploy de frontend e migrations não é necessariamente simultâneo. Confirmar código publicado antes de afirmar deploy.
 - Frontend atual: `/`, `/planner`, `/hunts/$huntKey`, `/creatures`, `/bosses`, `/profile`, `/session`, `/sessions`, `/account` e `/loadouts`. Verificar rotas reais e `web/app/src/components/shell/app-shell.tsx` antes de adicionar navegação.
-- Documentos de passagem: [CURRENT_STATUS.md](CURRENT_STATUS.md), [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md), [TESTING_GUIDELINES.md](TESTING_GUIDELINES.md), [CODEX_START_HERE.md](CODEX_START_HERE.md).
+- Documentos de passagem: [ADR-0001](docs/ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md), [CURRENT_STATUS.md](CURRENT_STATUS.md), [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md), [TESTING_GUIDELINES.md](TESTING_GUIDELINES.md), [CODEX_START_HERE.md](CODEX_START_HERE.md).
 
 ## Decisões de produto já consolidadas
 
-- Perfil do personagem é contexto padrão de Planner, Analyzer e optimizer: vocation, level, mundo e inventário. Vocações-alvo: **EK, RP, ED, MS, EM**. Não usar EK como única classe arquitetural.
+- Uma conta HuntNexus possui zero ou mais personagens. O personagem ativo é o contexto de Planner, Analyzer e optimizer: vocation, level, mundo e inventário. Vocações-alvo: **EK, RP, ED, MS, EM**. Personagem não é identidade de autenticação e não se pode usar EK como única classe arquitetural.
 - **Set Main** é baseline canônico do Profile; opções secundárias priorizam itens que o usuário já possui na **Backpack**; itens externos ficam separados e nunca são rotulados como possuídos. Builds de hunt são escolhas explícitas e privadas.
 - Snapshot da build realmente escolhida no cadastro da sessão é **imutável**, independente de alterações futuras no Main/BP. FE-33 permite modos `auto/main/hunt/none`.
 - Session Analyzer diferencia `Hunt Analyzer`, `Damage Input`, `Miscellaneous`, `Party Hunt`, dano causado vs. recebido vs. vulnerabilidade do monstro. Input total sem breakdown continua parcial; valores não observados não são inventados.
 - FE-34/35 permitem comparação conservadora, reparse opt-in e restauração auditável de interpretação antiga **sem sobrescrever** `raw_blocks` ou `loadout_snapshot`.
-- Dados por conta, `client_id` convidado e identidade Supabase vinculada não são intercambiáveis. RLS e RPCs só do service role devem proteger registros privados; nunca admitir IDs arbitrários como autorização. Testes com fixture sintética exigem limpeza.
+- Conta, `character_id`, `client_id` convidado/legado e identidade Supabase não são intercambiáveis. O modelo alvo é `auth.users → huntnexus_accounts → player_characters`; dados pessoais pertencem ao personagem correto. RLS e RPCs server-side devem proteger registros privados; nunca admitir IDs arbitrários como autorização. Testes com fixture sintética exigem limpeza.
+- Dashboard, catálogo, fatos, fontes e metodologia oferecem valor público. Login é necessário para salvar personagens, inventário, builds, sessões, preferências e sincronizar dispositivos.
+- Recomendações devem ser determinísticas na mesma versão e apontar entradas, regras, evidências, exclusões, limitações e cobertura. O Brain gera candidatos de ajuste; não promove regras nem sobrescreve fatos silenciosamente.
 - Weapon Proficiency: apenas marcar topologia `source_backed_level_position` quando posições e níveis estiverem comprovados por fonte; caso contrário mostrar `flattened_source_order` com aviso. Não inventar perks/ícones/posições.
 - Planner usa observações reais do acervo de fonte Tier C, ranking **experimental**; `confidence_score` não é probabilidade estatística. Não substituir ausência de sessões por sugestões de performance imaginárias.
 - Hunt Detail diferencia cobertura factual, snapshots/datas coletadas e amostra comunitária. Datas registradas não equivalem a verificação ao vivo. Boss Room permanece independente das hunts regulares.
