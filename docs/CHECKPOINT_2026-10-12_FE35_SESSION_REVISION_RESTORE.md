@@ -1,6 +1,6 @@
 # HuntNexus — FE-35: restauração auditável de revisões privadas
 
-**Data:** 2026-10-12 (BRT). **Estado:** banco e API privados implementados, SQL atômico e HTTP de rejeição aprovados; Web CI e Browser QA finais devem ser verificados antes de encerrar tecnicamente a etapa. Homologação da hunt real continua pendente no Issue #1.
+**Data:** 2026-10-12 (BRT). **Estado:** **FE-35 CONCLUÍDA TECNICAMENTE**; migração no banco, SQL transacional, HTTP privado, Web CI e Browser QA local/publicado aprovados. Homologação da hunt real continua PENDENTE no Issue #1.
 
 ## Objetivo e contrato
 
@@ -26,8 +26,8 @@ A FE-34 passou a guardar a interpretação anterior do parser ao aplicar uma rev
 - Aplicação da migration `0160_fe35_session_revision_restore`: **SUCCESS**.
 - Script transacional no Supabase `tests/sql/fe35_session_revision_restore_atomic.sql`: **PASS**, sem sessões reais alteradas.
 - [FE-35 Session Restoration Safety — run #38325139153](https://github.com/Charrels22/huntnexus/actions/runs/38325139153): **SUCCESS**, acesso cruzado e revision id inexistente protegidos, fixture removida.
-- [Web CI — run #38325171775](https://github.com/Charrels22/huntnexus/actions/runs/38325171775): verificar conclusão final.
-- [Browser QA FE-32/33/34/35 — run #38325171739](https://github.com/Charrels22/huntnexus/actions/runs/38325171739): verificar conclusão final; publicada e preview.
+- **[Web CI — #38325171775 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38325171775):** build e TypeScript, contratos Parser, FE-28, FE-30, FE-32, FE-34 e comparativos das cinco vocações passaram.
+- **[Browser QA FE-32/33/34/35 — #38325171739 SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38325171739):** cenário sintético de revisão histórica testado no preview local **e no frontend publicado**, exige checkbox principal e aceite adicional de possível perda antes de permitir `Restaurar versão`; valida `revision_id`, `expected_fingerprint`, `confirm=true`, `accept_regressions=true`, sem efetuar writes reais. Também passaram cadastro, seleção Main/BP, reparse e três GIFs de loot. Artifact `huntnexus-fe32-session-visual-qa`, ID `11780571749`, 3.229.470 bytes, com `fe35-revision-diff-before-restore.png` e `fe35-restore-confirmed-synthetic.png` nas duas targets.
 
 ## Escopo ainda aberto
 
