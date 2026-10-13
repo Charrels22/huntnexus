@@ -12,6 +12,8 @@ on:
       - "web/app/src/routes/session.tsx"
       - "web/app/src/routes/planner.tsx"
       - 'web/app/src/routes/hunts.$huntKey.tsx'
+      - "web/app/src/lib/hunt-evidence.ts"
+      - "db/migrations/0161_fe39_hunt_evidence_context.sql"
       - ".github/workflows/huntnexus-frontend-browser-qa.yml"
 
 permissions:
