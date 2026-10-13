@@ -107,6 +107,7 @@ function PlannerPage() {
           <div>
             <div className="text-xs uppercase tracking-[0.18em] text-cyan-400">Hunt Planner</div>
             <h1 className="text-2xl font-bold text-white">Monte o contexto do seu personagem</h1>
+            <Link to="/hunts" search={{ q: "" }} className="mt-2 block text-sm text-cyan-300">Explorar catálogo factual, inclusive hunts sem sessões →</Link>
           </div>
           {savedProfile?.character_name && (
             <div className="ml-auto hidden rounded-full border border-emerald-400/15 bg-emerald-400/8 px-3 py-1 text-xs text-emerald-300 md:block">

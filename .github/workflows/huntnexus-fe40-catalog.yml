@@ -1,0 +1,65 @@
+name: HuntNexus FE-40 Catalog Discovery
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "web/app/**"
+      - "tests/fe40-catalog-live-smoke.mjs"
+      - ".github/workflows/huntnexus-fe40-catalog.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install app and pinned browser
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build and TypeScript
+        run: npm run build
+      - name: Published catalog API read-only
+        run: node ../../tests/fe40-catalog-live-smoke.mjs
+      - name: Launch compiled preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/fe40-preview.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:4173/hunts >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/fe40-preview.log
+          exit 1
+      - name: SYNTHETIC desktop and mobile catalog navigation
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe40-catalog-preview.mjs
+      - name: Hunt Detail provenance regression (SYNTHETIC)
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe39-hunt-evidence-preview.mjs
+      - name: Planner evidence regression (SYNTHETIC)
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe38-planner-evidence-browser.mjs
+      - name: Local catalog and detail with real read-only public API
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe40-catalog-live-browser.mjs
+      - name: Preserve visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huntnexus-fe40-catalog-qa
+          path: |
+            web/app/fe40-catalog-qa/
+            web/app/fe39-hunt-evidence-qa/
+            web/app/fe38-planner-qa/
+          retention-days: 14
+      - name: Preview logs on failure
+        if: failure()
+        run: cat /tmp/fe40-preview.log || true

@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
   BarChart3,
@@ -25,6 +25,7 @@ import { getSupabaseBrowserClient } from "@/integrations/supabase/client.browser
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/hunts", label: "Catálogo de hunts", icon: BookOpen },
   { to: "/planner", label: "Hunt Planner", icon: Compass },
   { to: "/session", label: "Session Analyzer", icon: Activity },
   { to: "/sessions", label: "Sessions", icon: BarChart3 },
@@ -53,6 +54,8 @@ function Brand() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+  const [catalogQuery, setCatalogQuery] = useState("");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [recentSessions, setRecentSessions] = useState<any[]>([]);
@@ -115,15 +118,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
           <Brand />
-          <div className="ml-auto hidden w-full max-w-xl items-center md:flex">
+          <form role="search" aria-label="Busca de hunts no cabeçalho" onSubmit={(event) => {
+            event.preventDefault();
+            void navigate({ to: "/hunts", search: { q: catalogQuery } });
+          }} className="ml-auto hidden w-full max-w-xl items-center md:flex">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
               <input
+                aria-label="Buscar hunts no catálogo"
+                value={catalogQuery}
+                maxLength={100}
+                onChange={(event) => setCatalogQuery(event.target.value)}
                 className="hn-search w-full rounded-xl border border-white/8 bg-white/[0.035] py-2.5 pl-10 pr-4 text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-400/35 focus:bg-white/[0.055]"
-                placeholder="Buscar hunts, criaturas, itens..."
+                placeholder="Buscar hunts no catálogo..."
               />
             </div>
-          </div>
+          </form>
           <div className="hidden items-center gap-2 xl:flex">
             <span className="rounded-full border border-emerald-400/15 bg-emerald-400/8 px-3 py-1 text-xs text-emerald-300">
               Optimizer online
@@ -142,7 +152,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               const active =
                 item.to === "/"
                   ? pathname === "/"
-                  : pathname === item.to || pathname.startsWith(`${item.to}/`);
+                  : pathname.replace(/\/$/, "") === item.to.replace(/\/$/, "") || pathname.startsWith(`${item.to.replace(/\/$/, "")}/`);
               return (
                 <Link
                   key={item.to}

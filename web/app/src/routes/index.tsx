@@ -48,6 +48,9 @@ function DashboardPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <Link to="/hunts" search={{ q: "" }} className="hn-secondary-button">
+                <Compass className="size-4" /> Explorar catálogo factual
+              </Link>
               <Link to="/planner" className="hn-primary-button">
                 <Compass className="size-4" /> Encontrar hunt
               </Link>

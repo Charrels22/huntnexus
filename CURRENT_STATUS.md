@@ -1,6 +1,10 @@
 # HuntNexus — status e ponto exato da transferência
 
-**Data da fotografia:** 2026-10-13. **Última etapa técnica fechada e evidenciada:** **FE-39**. **Próxima etapa de desenvolvimento:** **FE-40**. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
+**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **FE-40 implementada em branch, build/QA local PASS; CI e publicação pendentes.** Próximo bloco após fechamento técnico: **FE-41**. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
+
+## FE-40 — execução no Codex
+
+Catálogo `/hunts` acessível de Home/shell, busca com debounce e proteção contra respostas antigas, estados explícitos, links para Hunt Detail e Planner. Hunts sem sessões permanecem navegáveis, com fonte B separada de Tier C. Build/TypeScript, dez regressões canônicas, QA SYNTHETIC desktop/mobile, FE-38/39 browser e frontend local com API publicada real read-only passaram. Sem migration/deploy ou alteração de sessões privadas. Evidências e limitações: [checkpoint FE-40](docs/CHECKPOINT_2026-10-13_FE40_CATALOG_DISCOVERY.md).
 
 ## Entregas que devem permanecer funcionais
 
@@ -51,4 +55,4 @@ Não incrementar automaticamente por ter criado documentação, fixtures ou test
 
 ## Próxima ação sem intervenção manual obrigatória
 
-**Executar [FE-40 — Issue #2](https://github.com/Charrels22/huntnexus/issues/2), segundo [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**: inspecionar fluxo existente de `search_hunts`, home, shell, Planner e Hunt Detail; implementar avanço tangível de navegação e descoberta do catálogo; testar CI e browser; documentar. A homologação manual das sessões fica para a fase final.
+**Fechar CI/revisão da [FE-40 — Issue #2](https://github.com/Charrels22/huntnexus/issues/2) e avançar para FE-41 conforme [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**. A homologação manual das sessões fica para a fase final. Não declarar FE-40 publicada com base no QA local.
