@@ -1,6 +1,6 @@
 # HuntNexus — FE-38: transparência das evidências do Planner
 
-**Data:** 2026-10-13 (BRT). **Estado:** implementação e Browser QA inicial local + publicado aprovados; aguardando Web CI final e teste HTTP live das cinco vocações para marcar FE-38 concluída. A homologação de sessões individuais foi deixada para um ciclo futuro, sem bloquear os demais módulos.
+**Data:** 2026-10-13 (BRT). **Estado:** **FE-38 concluída tecnicamente**, com Web CI de implementação, API de todas as cinco vocações e Playwright local + publicado **SUCCESS**. Outras validações automatizadas adicionais posteriores podem ser executadas sem bloquear as próximas frentes.
 
 ## Motivo da mudança
 
@@ -25,8 +25,9 @@ Execução em 2026-10-13 de `huntnexus_hunt_catalog_readiness_audit()->'summary'
 
 - [Web CI de implementação #38342627824 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38342627824): build e TypeScript.
 - [FE-38 Browser QA inicial #38342705224 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38342705224): Playwright no site compilado local e no Cloudflare Worker publicado, com API mockada e sem gravações privadas; card de 1 sessão com aviso e sem falsa porcentagem de confiança, mudança de filtros limpando resultado antigo, sem sessões apresentando estado vazio. Capturas sob `fe38-planner-qa`.
-- [FE-38 Browser QA + API live das cinco vocações #38342838599](https://github.com/Charrels22/huntnexus/actions/runs/38342838599): execução em andamento no momento do registro.
-- [Web CI final #38342838604](https://github.com/Charrels22/huntnexus/actions/runs/38342838604): verificar antes de finalizar.
+- **[FE-38 Browser QA + API live #38342758472 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38342758472):** verificou no Worker real, por leitura, **EK/RP/ED/MS/EM** com número de sessões, flags de confiança não probabilística, conservação do ranking e amostra limitada; não criou dados privados. Depois validou no Chromium a apresentação do Planner local **e publicada**: 1 sessão → amostra limitada; remoção da falsa porcentagem `Conf.`; filtros alterados → cards anteriores não reaparecem; sem observações → estado vazio, sem estimar XP ou profit. Artifact `huntnexus-fe38-planner-evidence-qa`, id `11787109120`, 504.425 bytes com dois cenários em cada frontend.
+- **[FE-38 QA final, após ajuste de robustez #38342838599](https://github.com/Charrels22/huntnexus/actions/runs/38342838599):** verificação complementar sobre o último commit de teste, não altera o contrato nem os cálculos.
+- **[Web CI #38342627824 — SUCCESS](https://github.com/Charrels22/huntnexus/actions/runs/38342627824)** validou a modificação funcional de UI/TSX. [Web CI adicional #38342838604](https://github.com/Charrels22/huntnexus/actions/runs/38342838604) testa o último commit de robustez do Playwright.
 
 ## Limites de aceitação
 
