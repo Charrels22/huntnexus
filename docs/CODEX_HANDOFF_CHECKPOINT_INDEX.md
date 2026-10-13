@@ -55,7 +55,7 @@
 - [FE-42 Factual/overlay audit](CHECKPOINT_2026-10-13_FE42_FACTUAL_OVERLAY_AUDIT.md).
 - [FE-43 Build/imbuement UX](CHECKPOINT_2026-10-13_FE43_BUILD_IMBUEMENT_UX.md).
 - [FE-44 Detail resilience](CHECKPOINT_2026-10-13_FE44_DETAIL_RESILIENCE.md) — incremento; carga/cache pendentes.
-- [FE-45 Auth redirect e limite de envio](CHECKPOINT_2026-10-13_FE45_AUTH_REDIRECT_BLOCK.md) — configuração conferida; Auth real bloqueado por cota de e-mail.
+- [FE-45 Auth redirect e login desktop](CHECKPOINT_2026-10-13_FE45_AUTH_REDIRECT_BLOCK.md) — configuração conferida e login de duas contas evidenciado pelo usuário; A/B e dispositivos pendentes.
 - [FE-46 Shell accessibility](CHECKPOINT_2026-10-13_FE46_SHELL_ACCESSIBILITY.md) — incremento teclado/mobile.
 - [FE-48 Release preparation](CHECKPOINT_2026-10-13_FE48_RELEASE_PREPARATION.md) — preparação, sem deploy; FE-45/47 pendentes.
 - [Continuação CI e limites](CHECKPOINT_2026-10-13_CONTINUATION_CI.md) — SHA, runs PASS, blocos entregues e homologação pendente.

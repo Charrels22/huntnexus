@@ -1,6 +1,16 @@
 # FE-45 — URLs corrigidas, teste Auth bloqueado por envio
 
-Data: 2026-10-13. Resultado parcial: configuração PASS; envio de novo Magic Link BLOQUEADO; login, dois dispositivos e isolamento A/B PENDENTES.
+## Atualização: login desktop confirmado pelo usuário
+
+Em 2026-10-13, o usuário forneceu duas capturas, uma por conta de teste, exibindo Conta autenticada, Dados/Sincronizados e Conta sincronizada. Relatou uso do navegador padrão e janela anônima. Resultado: PASS parcial para login real e resolução da conta exibida na UI. Evidência fornecida pelo usuário; não é inspeção automatizada do backend nem prova de isolamento de dados/RLS.
+
+No celular, o usuário relatou apenas abertura da página; autenticação e leitura de dados não foram concluídas por limitação de envio. Abertura da página não comprova sincronização. PENDENTES: persistência/leitura de dados diferentes por conta A/B, negativos de acesso cruzado, mesma conta em dois dispositivos, logout/expiração e recuperação convidado. Nenhum perfil/sessão privada foi lido ou alterado pelo agente. Capturas e e-mails não são versionados.
+
+Próximo teste manual: cadastrar marcadores de perfil claramente SYNTHETIC e diferentes nas duas contas de teste, recarregar cada contexto e verificar que cada uma conserva apenas seu marcador. Depois, autenticar a primeira conta no celular e verificar o mesmo marcador persistido no desktop. Isso testa comportamento visível; segurança/RLS completa exige testes negativos específicos autorizados.
+
+## Registro anterior: bloqueio de envio
+
+Data: 2026-10-13, antes das capturas acima. Resultado parcial naquela tentativa: configuração PASS; envio de novo Magic Link BLOQUEADO; login, dois dispositivos e isolamento A/B PENDENTES.
 
 O usuário recebeu um link que terminou em localhost:3000 com otp_expired. Inspeção autenticada do painel confirmou Site URL localhost:3000 e zero Redirect URLs. Após o usuário salvar, nova leitura do painel confirmou Site URL `https://huntnexus.charr3ls22.workers.dev` e exatamente um retorno permitido: `https://huntnexus.charr3ls22.workers.dev/account`, com Save changes desabilitado.
 
