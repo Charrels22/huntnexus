@@ -9,6 +9,8 @@
 3. Se integração com Supabase/Cloudflare não estiver disponível, **não colar credenciais no chat/repositório**; a preparação de código e QA local pode continuar. Autorizar ações reais e deploy quando necessário.
 4. Verificar que o `AGENTS.md` na raiz foi lido pelo agente. Verificar estado atual/HEAD antes de assumir que 2026-10-13 ainda é a última mudança.
 
+**Tarefa inicial rastreada:** [FE-40 — Issue #2](https://github.com/Charrels22/huntnexus/issues/2). **Histórico versionado:** [índice dos checkpoints](docs/CODEX_HANDOFF_CHECKPOINT_INDEX.md).
+
 ## Prompt inicial para enviar ao Codex
 
 > Continue o desenvolvimento do HuntNexus no repositório `Charrels22/huntnexus` a partir da FE-40, **sem reescrever ou reiniciar** funcionalidades existentes.
