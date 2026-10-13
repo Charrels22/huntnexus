@@ -7,6 +7,7 @@ on:
       - "web/app/**"
       - "tests/session-parser-contract.mjs"
       - "tests/fe36-damage-misc-contract.mjs"
+      - "tests/fe37-session-integrity-contract.mjs"
       - "tests/fe32-session-import-regressions.mjs"
       - "tests/fe34-reparse-review-regressions.mjs"
       - "tests/fe28-client-id-regression.mjs"
@@ -54,6 +55,9 @@ jobs:
 
       - name: FE-36 Damage Input and Misc observed-vs-unobserved regression
         run: node --experimental-strip-types ../../tests/fe36-damage-misc-contract.mjs
+
+      - name: FE-37 session block completeness and stored/history consistency
+        run: node --experimental-strip-types ../../tests/fe37-session-integrity-contract.mjs
 
       - name: FE-32 duration and canonical loot sprite regression
         run: node --experimental-strip-types ../../tests/fe32-session-import-regressions.mjs
