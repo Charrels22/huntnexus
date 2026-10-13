@@ -203,7 +203,7 @@ try{
   assert.ok(nav?.ok());
   await page.getByText("Duração: 2h 03m").waitFor({timeout:15000});
   await page.getByTestId("session-integrity-report").waitFor({timeout:15000});
-  await page.getByTestId("session-integrity-input").getByText("Parcial").waitFor();
+  await page.getByTestId("session-integrity-input").getByText("Parcial",{exact:true}).waitFor();
   await page.getByTestId("session-integrity-misc").getByText("Reconhecido").waitFor();
   await page.getByTestId("session-integrity-party").getByText("Não enviado").waitFor();
   await page.getByTestId("session-integrity-storage-status").getByText(/coerentes/).waitFor();
