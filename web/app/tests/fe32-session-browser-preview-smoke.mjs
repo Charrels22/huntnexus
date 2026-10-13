@@ -135,18 +135,18 @@ try{
   // FE-36: verify observed Input totals aren't silently treated as Misc.
   await page.getByRole("button",{name:"Input Analyzer",exact:true}).click();
   await page.locator("textarea").first().fill(
-    "Received Damage Total: 12,000\\nMax-DPS: 345");
+    "Received Damage Total: 12,000\nMax-DPS: 345");
   await page.getByText(/Total ou Max-DPS reconhecido/).waitFor({timeout:12000});
   await page.getByTestId("session-input-recognized-preview").getByText(/Total recebido:/).waitFor();
   await page.locator("textarea").first().fill(
-    "Total: 12,000\\nMax-DPS: 345\\nDamage Types:\\nFire: 7,000 (58.3%)" +
-    "\\nPhysical: 5,000 (41.7%)\\nDamage Sources:\\nsynthetic spectre: 12,000 (100%)");
+    "Total: 12,000\nMax-DPS: 345\nDamage Types:\nFire: 7,000 (58.3%)" +
+    "\nPhysical: 5,000 (41.7%)\nDamage Sources:\nsynthetic spectre: 12,000 (100%)");
   await page.getByText("2 elementos e 1 fontes reconhecidos.").waitFor({timeout:12000});
   await page.getByTestId("session-input-recognized-preview").getByText("synthetic spectre").waitFor();
 
   await page.getByRole("button",{name:"Miscellaneous",exact:true}).click();
   await page.locator("textarea").first().fill(
-    "Session: 00:30h\\nCritical Hit: 393\\nMana Gain: 1,234\\nLife Gain: 2,345");
+    "Session: 00:30h\nCritical Hit: 393\nMana Gain: 1,234\nLife Gain: 2,345");
   await page.getByTestId("session-misc-recognized-preview").getByText("Critical Hit").waitFor();
   await page.getByTestId("session-misc-recognized-preview").getByText("Mana Gain").waitFor();
   await page.screenshot({path:resolve(folder,"fe36-input-misc-observed-before-save.png"),fullPage:true});
