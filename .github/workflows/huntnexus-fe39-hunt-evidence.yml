@@ -1,0 +1,68 @@
+name: HuntNexus FE-39 Hunt Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "db/migrations/0161_fe39_hunt_evidence_context.sql"
+      - "tests/fe39-hunt-evidence-live-smoke.mjs"
+      - "tests/fe39-hunt-evidence-contract.mjs"
+      - "web/app/src/lib/hunt-evidence.ts"
+      - "web/app/src/routes/api/huntnexus.ts"
+      - 'web/app/src/routes/hunts.$huntKey.tsx'
+      - "web/app/tests/fe39-hunt-evidence-preview.mjs"
+      - ".github/workflows/huntnexus-fe39-hunt-evidence.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  provenance-and-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned browser
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Verify published API factual source and coverage for two hunts
+        run: node ../../tests/fe39-hunt-evidence-live-smoke.mjs
+      - name: Verify source formatting and unavailable facts regression
+        run: node --experimental-strip-types ../../tests/fe39-hunt-evidence-contract.mjs
+      - name: Build HuntNexus
+        run: npm run build
+      - name: Launch local compiled frontend
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/fe39-preview.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:4173/hunts/cobra-bastion >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/fe39-preview.log
+          exit 1
+      - name: Browser QA local
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe39-hunt-evidence-preview.mjs
+      - name: Browser QA published
+        run: HUNTNEXUS_BASE_URL=https://huntnexus.charr3ls22.workers.dev node tests/fe39-hunt-evidence-preview.mjs
+      - name: Preserve images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huntnexus-fe39-factual-provenance
+          path: web/app/fe39-hunt-evidence-qa/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Display preview logs on failure
+        if: failure()
+        run: cat /tmp/fe39-preview.log || true
