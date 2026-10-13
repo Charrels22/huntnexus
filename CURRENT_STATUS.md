@@ -1,10 +1,12 @@
 # HuntNexus — status e ponto exato da transferência
 
-**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **FE-40 implementada em branch, build/QA local PASS; CI e publicação pendentes.** Próximo bloco após fechamento técnico: **FE-41**. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
+**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **FE-40 concluída tecnicamente: build/QA local e CI PASS; PR aberto, merge/publicação não executados.** Próximo bloco: **FE-41**. Consultar `git log` e GitHub Actions antes de executar, pois este arquivo pode ficar desatualizado.
 
 ## FE-40 — execução no Codex
 
 Catálogo `/hunts` acessível de Home/shell, busca com debounce e proteção contra respostas antigas, estados explícitos, links para Hunt Detail e Planner. Hunts sem sessões permanecem navegáveis, com fonte B separada de Tier C. Build/TypeScript, dez regressões canônicas, QA SYNTHETIC desktop/mobile, FE-38/39 browser e frontend local com API publicada real read-only passaram. Sem migration/deploy ou alteração de sessões privadas. Evidências e limitações: [checkpoint FE-40](docs/CHECKPOINT_2026-10-13_FE40_CATALOG_DISCOVERY.md).
+
+[PR #3](https://github.com/Charrels22/huntnexus/pull/3); [Web CI PASS #38347197819](https://github.com/Charrels22/huntnexus/actions/runs/38347197819); [FE-40 QA PASS #38347197928](https://github.com/Charrels22/huntnexus/actions/runs/38347197928), commit `eba2a6a`. GitHub, Supabase read-only e Cloudflare/Worker settings acessíveis; não há bloqueio de configuração identificado para esta etapa.
 
 ## Entregas que devem permanecer funcionais
 
