@@ -40,7 +40,7 @@ Referências oficiais:
 - bloquear sincronização enquanto a sessão estiver em `aal1`;
 - desafiar um TOTP já verificado para elevar a sessão a `aal2`;
 - cadastrar um segundo TOTP de reserva;
-- impedir pela interface a remoção do último fator verificado;
+- impedir pela interface a remoção do último fator verificado e exigir código atual de outro fator que permanecerá cadastrado;
 - encerrar a sessão local, outras sessões ou todas as sessões;
 - preservar o isolamento do perfil convidado anterior.
 
@@ -72,7 +72,7 @@ As tabelas `huntnexus_accounts` e `player_characters` continuam com RLS habilita
 | --- | --- |
 | E-mail comprometido, senha redefinida, sem TOTP | dados privados bloqueados em `aal1` |
 | Senha vazada, sem TOTP | dados privados bloqueados em `aal1` |
-| Perda de um autenticador, segundo TOTP disponível | entrar e confirmar pelo fator reserva |
+| Perda de um autenticador, segundo TOTP disponível | entrar pelo fator reserva; ele também autoriza remover o fator perdido |
 | Perda de todos os fatores | recuperação assistida futura; nenhuma remoção automática por e-mail |
 | Token revogado com JWT ainda dentro do `exp` | API recusa porque `auth.sessions` não contém sessão ativa |
 | UUID de outro jogador com token A | API recusa por ownership do binding |

@@ -21,7 +21,7 @@ Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-
 - recuperação de senha sem revelar existência da conta;
 - TOTP obrigatório antes de resolver ou acessar dados vinculados;
 - QR/chave manual, desafio AAL2 e segundo TOTP reserva;
-- remoção do último TOTP bloqueada pela interface;
+- remoção do último TOTP bloqueada; remover outro fator exige código atual do fator preservado e refresh imediato da sessão;
 - logout local, das outras sessões e global;
 - API exige token validado, `session_id`, sessão viva, fator verificado, AAL2 e ownership;
 - `0164_topic05_auth_session_gate` é read-only sobre schema `auth` e executável apenas por `service_role`;

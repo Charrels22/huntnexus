@@ -22,6 +22,10 @@ assert.match(account, /signOut\("global"\)/);
 assert.doesNotMatch(account, /signInWithOtp|sendMagicLink|shouldCreateUser/);
 assert.match(account, /verifiedFactors\.length < 2/);
 assert.match(account, /authGate === "ready"/);
+const removalFlow = account.slice(account.indexOf("async function confirmFactorRemoval"), account.indexOf("function restorePreviousGuest"));
+assert.ok(removalFlow.indexOf("mfa.challengeAndVerify") < removalFlow.indexOf("mfa.unenroll"), "MFA removal must reverify a preserved factor first");
+assert.match(removalFlow, /factor\.id !== factorToRemove\.id/);
+assert.match(removalFlow, /refreshSession\(\)/);
 
 assert.match(api, /auth\.getUser\(accessToken\)/);
 assert.match(api, /getAuthenticatorAssuranceLevel\(accessToken\)/);

@@ -38,6 +38,8 @@ function AccountPage() {
   const [verifiedFactors, setVerifiedFactors] = useState<Factor[]>([]);
   const [totpCode, setTotpCode] = useState("");
   const [totpEnrollment, setTotpEnrollment] = useState<TotpEnrollment | null>(null);
+  const [factorToRemove, setFactorToRemove] = useState<Factor | null>(null);
+  const [removalCode, setRemovalCode] = useState("");
   const [factorAction, setFactorAction] = useState(false);
   const [sending, setSending] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -81,6 +83,8 @@ function AccountPage() {
         setSyncInfo(null);
         setVerifiedFactors([]);
         setTotpEnrollment(null);
+        setFactorToRemove(null);
+        setRemovalCode("");
         setAuthGate("loading");
         // SIGNED_OUT can arrive from another tab or an expired/revoked session,
         // not only our local button. A canonical ID must never remain as an
@@ -343,16 +347,38 @@ function AccountPage() {
     setFactorAction(false);
   }
 
-  async function removeBackupFactor(factorId: string) {
+  async function confirmFactorRemoval() {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase || !session || verifiedFactors.length < 2 || authGate !== "ready" || factorAction) return;
+    const authorizationFactor = factorToRemove
+      ? verifiedFactors.find((factor) => factor.id !== factorToRemove.id)
+      : null;
+    if (!supabase || !session || !factorToRemove || !authorizationFactor || removalCode.length !== 6 || verifiedFactors.length < 2 || authGate !== "ready" || factorAction) return;
     setFactorAction(true);
     setError("");
-    const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId });
-    if (unenrollError) setError("Não foi possível remover o autenticador: " + unenrollError.message);
-    else {
-      setMessage("Autenticador reserva removido. Ao menos um fator verificado foi preservado.");
-      await refreshAuthSecurity(session);
+    const { error: challengeError } = await supabase.auth.mfa.challengeAndVerify({
+      factorId: authorizationFactor.id,
+      code: removalCode,
+    });
+    if (challengeError) {
+      setError("Confirmação do autenticador preservado falhou: " + challengeError.message);
+      setFactorAction(false);
+      return;
+    }
+    const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: factorToRemove.id });
+    if (unenrollError) {
+      setError("Não foi possível remover o autenticador: " + unenrollError.message);
+    } else {
+      setFactorToRemove(null);
+      setRemovalCode("");
+      setMessage("Autenticador removido após confirmação do fator preservado.");
+      const { data, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !data.session) {
+        setError("O fator foi removido, mas a sessão precisa ser autenticada novamente.");
+      } else {
+        accessTokenRef.current = data.session.access_token;
+        setSession(data.session);
+        await refreshAuthSecurity(data.session);
+      }
     }
     setFactorAction(false);
   }
@@ -401,6 +427,10 @@ function AccountPage() {
     else setMessage("As outras sessões foram encerradas. Esta sessão continua ativa.");
     setFactorAction(false);
   }
+
+  const removalAuthorizer = factorToRemove
+    ? verifiedFactors.find((factor) => factor.id !== factorToRemove.id) ?? null
+    : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -490,8 +520,13 @@ function AccountPage() {
                 {!totpEnrollment && <button type="button" className="hn-secondary-button" disabled={factorAction} onClick={() => void beginTotpEnrollment()}><Plus className="size-4" />Adicionar autenticador reserva</button>}
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {verifiedFactors.map((factor, index) => <div key={factor.id} className="rounded-xl border border-white/7 bg-white/[0.02] p-3 text-xs text-slate-400"><div className="font-semibold text-slate-200">{factor.friendly_name || `Autenticador ${index + 1}`}</div><div className="mt-1">TOTP verificado</div>{verifiedFactors.length > 1 && <button className="mt-2 text-red-300 hover:text-red-200" disabled={factorAction} onClick={() => void removeBackupFactor(factor.id)}>Remover</button>}</div>)}
+                {verifiedFactors.map((factor, index) => <div key={factor.id} className="rounded-xl border border-white/7 bg-white/[0.02] p-3 text-xs text-slate-400"><div className="font-semibold text-slate-200">{factor.friendly_name || `Autenticador ${index + 1}`}</div><div className="mt-1">TOTP verificado</div>{verifiedFactors.length > 1 && <button className="mt-2 text-red-300 hover:text-red-200" disabled={factorAction} onClick={() => { setFactorToRemove(factor); setRemovalCode(""); }}>Remover</button>}</div>)}
               </div>
+              {factorToRemove && removalAuthorizer && <div className="mt-4 rounded-xl border border-red-300/15 bg-red-300/[0.035] p-4">
+                <div className="font-semibold text-red-100">Confirmar remoção de {factorToRemove.friendly_name || "autenticador"}</div>
+                <p className="mt-2 text-xs leading-5 text-slate-400">Digite um código atual de {removalAuthorizer.friendly_name || "outro autenticador"}. O fator preservado autoriza esta operação sensível.</p>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row"><OtpInput value={removalCode} onChange={setRemovalCode} onEnter={() => void confirmFactorRemoval()} /><button className="hn-primary-button" disabled={factorAction || removalCode.length !== 6} onClick={() => void confirmFactorRemoval()}>{factorAction ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}Confirmar remoção</button><button className="hn-secondary-button" disabled={factorAction} onClick={() => { setFactorToRemove(null); setRemovalCode(""); }}>Cancelar</button></div>
+              </div>}
             </>
           )}
           {authGate === "ready" && syncInfo?.client_id_changed && syncInfo?.guest_data_merge_applied === false && (
