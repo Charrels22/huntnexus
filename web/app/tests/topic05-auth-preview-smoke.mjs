@@ -28,7 +28,10 @@ try {
   await page.getByRole("button", { name: "Entrar", exact: true }).waitFor();
   await page.screenshot({ path: resolve(screenshotDir, "topic05-desktop-empty.png"), fullPage: true });
   await page.getByPlaceholder("seu@email.com").fill("synthetic@example.invalid");
-  await page.getByPlaceholder(/Senha \(12\+ caracteres\)/).fill("SYNTHETIC-passphrase");
+  await page.getByText(/minúscula, maiúscula, número e símbolo/).waitFor();
+  await page.getByPlaceholder(/Senha \(12\+ caracteres\)/).fill("synthetic-passphrase1!");
+  assert.equal(await page.getByRole("button", { name: "Entrar", exact: true }).isDisabled(), true, "Missing uppercase must keep sign-in disabled");
+  await page.getByPlaceholder(/Senha \(12\+ caracteres\)/).fill("SYNTHETIC-passphrase1!");
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.screenshot({ path: resolve(screenshotDir, "topic05-desktop-loading.png"), fullPage: true });
   await page.getByText(/SYNTHETIC invalid credentials/).waitFor();

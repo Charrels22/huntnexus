@@ -44,7 +44,22 @@ Referências oficiais:
 - encerrar a sessão local, outras sessões ou todas as sessões;
 - preservar o isolamento do perfil convidado anterior.
 
-A política do cliente exige pelo menos 12 caracteres. A mesma exigência precisa ser ativada no Supabase Auth antes da publicação para impedir contorno por chamada direta à API do provedor.
+A política do cliente exige pelo menos 12 caracteres. A mesma exigência precisa ser ativada no Supabase Auth antes da publicação para impedir contorno por chamada direta à API do provedor. A configuração preparada usa a opção mais forte oferecida pelo provedor — minúscula, maiúscula, dígito e símbolo — e deve ser refletida no cliente antes da publicação.
+
+### Linha de base real do Auth em 2026-10-14
+
+A inspeção somente leitura do Dashboard confirmou:
+
+- plano `FREE`, provedor de e-mail habilitado e confirmação de e-mail mantida;
+- senha mínima de 6 caracteres, sem composição obrigatória;
+- `Secure password change` desabilitado e senha atual não exigida na troca;
+- bloqueio de senhas vazadas indisponível no plano atual (`Pro` ou superior);
+- TOTP habilitado, limite de 10 fatores e sessão `aal1` limitada a 15 minutos;
+- refresh tokens comprometidos são detectados/revogados e o access token expira em 3600 segundos;
+- limite de 2 e-mails de autenticação por hora;
+- time-box, inatividade e sessão única indisponíveis no plano `FREE` e atualmente definidos como ilimitados/desabilitados.
+
+O endurecimento preparado para ativação é: mínimo de 12 caracteres, composição forte, `Secure password change` e exigência da senha atual. O Auth oficial isenta sessões de recuperação da exigência da senha atual, portanto o fluxo `PASSWORD_RECOVERY` continua apto a definir uma nova senha. A proteção contra senhas vazadas e os limites avançados de sessão permanecem pendentes de decisão de plano/custo e não fazem parte desta ativação.
 
 ### API
 
@@ -96,10 +111,10 @@ Nenhuma migration altera linhas de `auth.users`, senhas ou fatores. Não existe 
 A ativação real é uma operação conjunta e controlada:
 
 1. aplicar `0164_topic05_auth_session_gate`;
-2. configurar comprimento mínimo de senha de 12 no Auth e habilitar proteção contra senhas vazadas se o plano atual oferecer o recurso;
+2. configurar comprimento mínimo de senha de 12, composição forte, `Secure password change` e exigência da senha atual no Auth;
 3. confirmar TOTP habilitado e manter confirmação de e-mail;
 4. testar localmente contra produção com as duas contas consentidas;
 5. publicar o Worker apenas após autorização de deploy e verificar a versão;
 6. executar novamente os casos A/B, dois dispositivos, recuperação, sessão revogada e logout por escopo.
 
-Rollback antes do deploy: remover a função pela migration de rollback. Rollback depois do deploy: restaurar a versão anterior do Worker antes de remover a função. Desabilitar MFA ou apagar fatores de usuários não faz parte do rollback.
+Rollback antes do deploy: remover a função pela migration de rollback. Rollback depois do deploy: restaurar a versão anterior do Worker antes de remover a função. Desabilitar MFA ou apagar fatores de usuários não faz parte do rollback. A proteção contra senhas vazadas e limites avançados de sessão não podem ser ativados no plano `FREE`; qualquer upgrade tem custo e exige decisão separada.

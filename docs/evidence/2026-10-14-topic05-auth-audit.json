@@ -13,6 +13,31 @@
       "passkeys_enabled": false,
       "oauth_providers_enabled": []
     },
+    "auth_dashboard_read_only_audit": {
+      "plan": "FREE",
+      "email_provider_enabled": true,
+      "secure_email_change": true,
+      "secure_password_change": false,
+      "require_current_password_when_updating": false,
+      "prevent_leaked_passwords": false,
+      "prevent_leaked_passwords_availability": "PRO_PLAN_OR_ABOVE",
+      "minimum_password_length": 6,
+      "password_required_characters": "NO_REQUIRED_CHARS",
+      "email_otp_expiration_seconds": 3600,
+      "email_otp_length_digits": 8,
+      "email_rate_limit_per_hour": 2,
+      "totp": "ENABLED",
+      "maximum_mfa_factors_per_user": 10,
+      "sms_mfa": "DISABLED_PRO_ONLY",
+      "limit_aal1_session_to_15_minutes": true,
+      "single_session_per_user": false,
+      "time_box_user_sessions_hours": 0,
+      "inactivity_timeout_hours": 0,
+      "configurable_user_session_limits": "PRO_PLAN_OR_ABOVE",
+      "access_token_expiry_seconds": 3600,
+      "detect_and_revoke_compromised_refresh_tokens": true,
+      "captcha": false
+    },
     "topic05_gate_exists": false,
     "migration_0164_applied": false,
     "accounts_rls": true,
@@ -56,8 +81,10 @@
   },
   "pending_authorization": [
     "apply_migration_0164",
-    "change_supabase_auth_password_policy_and_verify_totp",
+    "set_minimum_password_length_12_and_strongest_character_policy",
+    "enable_secure_password_change_and_require_current_password",
     "run_real_auth_and_recovery_tests_with_consented_accounts",
     "deploy_web_worker"
-  ]
+  ],
+  "authorization_note": "The authorization received on 2026-10-14 named migration 0162, which was already applied. It does not authorize the pending migration 0164."
 }

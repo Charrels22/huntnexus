@@ -14,6 +14,7 @@ export type AuthGateState =
   | "mfa_challenge_required";
 
 export const minimumPasswordLength = 12;
+export const strongPasswordSymbols = "!@#$%^&*()_+-=[]{};'\\:\"|<>?,./`~";
 
 export function evaluateAuthGate(input: AuthGateInput): AuthGateState {
   if (!input.activeSession) return "invalid_session";
@@ -25,7 +26,11 @@ export function evaluateAuthGate(input: AuthGateInput): AuthGateState {
 }
 
 export function passwordMeetsPolicy(password: string): boolean {
-  return password.length >= minimumPasswordLength;
+  return password.length >= minimumPasswordLength
+    && /[a-z]/.test(password)
+    && /[A-Z]/.test(password)
+    && /[0-9]/.test(password)
+    && Array.from(strongPasswordSymbols).some((character) => password.includes(character));
 }
 
 export function jwtSessionId(accessToken: string): string | null {

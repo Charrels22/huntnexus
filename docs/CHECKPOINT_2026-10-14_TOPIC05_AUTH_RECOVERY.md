@@ -13,6 +13,16 @@ Baseline de implementação: commit `51d0cbd` (`feat(auth): require password and
 - RLS está habilitada em contas/personagens e `anon`/`authenticated` não possuem leitura direta das tabelas de conta/binding;
 - migration `0164` não existe em produção e nenhuma configuração real de Auth foi alterada.
 
+Auditoria somente leitura do Dashboard em 2026-10-14:
+
+- `0162_account_character_domain` e `0163_topic04_scope_fk_indexes` estão aplicadas; `0164` não está;
+- TOTP já está habilitado, com até 10 fatores por usuário e limite de 15 minutos para elevar sessões `aal1`;
+- senha mínima está em 6, sem composição obrigatória;
+- `Secure password change` e exigência da senha atual estão desabilitados;
+- proteção contra senhas vazadas e controles avançados de duração de sessão exigem plano Pro; o projeto está no plano Free;
+- o limite atual de envio é 2 e-mails de autenticação por hora;
+- a autorização recebida citou `0162`, já aplicada, e por isso não cobre a migration pendente `0164`.
+
 Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-14-topic05-auth-audit.json). Modelo e plano: [`AUTHENTICATION_RECOVERY_MODEL.md`](AUTHENTICATION_RECOVERY_MODEL.md).
 
 ## Implementação preparada
@@ -51,7 +61,7 @@ Screenshots locais são gerados em `web/app/topic05-browser-qa/` e ficam fora do
 ## Gate para concluir
 
 1. autorização explícita para aplicar `0164` e alterar a configuração real do Supabase Auth;
-2. política mínima de 12 caracteres no provedor e TOTP verificado;
+2. política mínima de 12 caracteres com composição forte, troca segura, senha atual obrigatória e TOTP verificado;
 3. migração controlada das duas contas consentidas de Magic Link para senha + TOTP;
 4. casos positivos e negativos A/B, segundo dispositivo, recuperação, sessão revogada e logout por escopo;
 5. autorização de deploy, versão publicada e rollback verificado.

@@ -8,7 +8,12 @@ assert.equal(evaluateAuthGate({ currentLevel: "aal2", nextLevel: "aal2", verifie
 
 assert.equal(minimumPasswordLength, 12);
 assert.equal(passwordMeetsPolicy("short"), false);
-assert.equal(passwordMeetsPolicy("twelve-chars"), true);
+assert.equal(passwordMeetsPolicy("twelve-chars"), false);
+assert.equal(passwordMeetsPolicy("TwelveChars1!"), true);
+assert.equal(passwordMeetsPolicy("twelvechars1!"), false);
+assert.equal(passwordMeetsPolicy("TWELVECHARS1!"), false);
+assert.equal(passwordMeetsPolicy("TwelveChars!!"), false);
+assert.equal(passwordMeetsPolicy("TwelveChars12"), false);
 
 const sessionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -17,4 +22,4 @@ assert.equal(jwtSessionId(token), sessionId);
 assert.equal(jwtSessionId(`${encode({})}.${encode({ session_id: "not-a-uuid" })}.signature`), null);
 assert.equal(jwtSessionId("broken"), null);
 
-console.log("PASS topic 5 auth assurance: AAL2 gate, active session, 12-character client policy, JWT session_id");
+console.log("PASS topic 5 auth assurance: AAL2 gate, active session, strong 12-character client policy, JWT session_id");

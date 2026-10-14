@@ -462,6 +462,7 @@ function AccountPage() {
             <PasswordInput value={password} placeholder={`Nova senha (${minimumPasswordLength}+ caracteres)`} autoComplete="new-password" onChange={setPassword} />
             <PasswordInput value={passwordConfirmation} placeholder="Confirmar nova senha" autoComplete="new-password" onChange={setPasswordConfirmation} onEnter={() => void updateRecoveredPassword()} />
           </div>
+          <PasswordPolicyHint />
           <button className="hn-primary-button mt-3" disabled={sending || !passwordMeetsPolicy(password) || password !== passwordConfirmation} onClick={() => void updateRecoveredPassword()}>
             {sending ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}Salvar nova senha
           </button>
@@ -476,6 +477,7 @@ function AccountPage() {
             <input type="email" autoComplete="email" aria-label="E-mail" className="hn-control" placeholder="seu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} />
             {authMode !== "recover-request" && <PasswordInput value={password} placeholder={`Senha (${minimumPasswordLength}+ caracteres)`} autoComplete={authMode === "signup" ? "new-password" : "current-password"} onChange={setPassword} onEnter={() => void submitCredentials()} />}
             {authMode === "signup" && <PasswordInput value={passwordConfirmation} placeholder="Confirmar senha" autoComplete="new-password" onChange={setPasswordConfirmation} onEnter={() => void submitCredentials()} />}
+            {authMode !== "recover-request" && <PasswordPolicyHint />}
             <button className="hn-primary-button" disabled={sending || !email.trim() || (authMode !== "recover-request" && !passwordMeetsPolicy(password)) || (authMode === "signup" && password !== passwordConfirmation)} onClick={() => void (authMode === "recover-request" ? requestPasswordRecovery() : submitCredentials())}>
               {sending ? <Loader2 className="size-4 animate-spin" /> : authMode === "recover-request" ? <Mail className="size-4" /> : <LockKeyhole className="size-4" />}
               {authMode === "signup" ? "Criar conta" : authMode === "recover-request" ? "Enviar recuperação" : "Entrar"}
@@ -564,6 +566,10 @@ function InfoCard({ title, text }: { title:string; text:string }) {
 
 function PasswordInput({ value, placeholder, autoComplete, onChange, onEnter }: { value:string; placeholder:string; autoComplete:"current-password"|"new-password"; onChange:(value:string)=>void; onEnter?:()=>void }) {
   return <input type="password" autoComplete={autoComplete} aria-label={placeholder} className="hn-control" placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onEnter?.(); }} />;
+}
+
+function PasswordPolicyHint() {
+  return <p className="text-xs leading-5 text-slate-500">Use {minimumPasswordLength} ou mais caracteres, com minúscula, maiúscula, número e símbolo.</p>;
 }
 
 function OtpInput({ value, onChange, onEnter }: { value:string; onChange:(value:string)=>void; onEnter:()=>void }) {
