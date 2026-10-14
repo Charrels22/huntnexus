@@ -10,6 +10,7 @@ on:
       - "web/app/src/routes/account.tsx"
       - "web/app/src/components/shell/app-shell.tsx"
       - "web/app/tests/fe30-auth-scope-preview-smoke.mjs"
+      - "web/app/tests/topic05-auth-preview-smoke.mjs"
       - ".github/workflows/huntnexus-fe30-auth-browser-preview.yml"
 
 permissions:
@@ -47,8 +48,10 @@ jobs:
           done
           cat /tmp/huntnexus-fe30-preview.log
           exit 1
-      - name: Browser regression without account or Magic Link
+      - name: Browser regression without a real account or email
         run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/fe30-auth-scope-preview-smoke.mjs
+      - name: Topic 5 password and recovery responsive states (synthetic)
+        run: HUNTNEXUS_BASE_URL=http://127.0.0.1:4173 node tests/topic05-auth-preview-smoke.mjs
       - name: Published frontend signed-out identity boundary (synthetic only)
         run: HUNTNEXUS_BASE_URL=https://huntnexus.charr3ls22.workers.dev node tests/fe30-auth-scope-preview-smoke.mjs
       - name: Preserve browser evidence
@@ -56,7 +59,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: huntnexus-fe30-auth-browser-preview
-          path: web/app/fe30-browser-qa/
+          path: |
+            web/app/fe30-browser-qa/
+            web/app/topic05-browser-qa/
           retention-days: 14
           if-no-files-found: warn
       - name: Preview diagnostics on failure

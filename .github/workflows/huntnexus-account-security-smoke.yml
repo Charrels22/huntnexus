@@ -9,7 +9,11 @@ on:
       - "web/app/src/routes/account.tsx"
       - "web/app/src/components/shell/app-shell.tsx"
       - "web/app/src/lib/account-session-guard.ts"
+      - "web/app/src/lib/auth-security.ts"
+      - "db/migrations/0164_topic05_auth_session_gate.sql"
       - "tests/fe30-auth-isolation-regression.mjs"
+      - "tests/topic05-auth-assurance-regression.mjs"
+      - "tests/topic05-auth-contract.mjs"
       - "web/app/src/routes/api/huntnexus.ts"
       - "web/app/src/integrations/supabase/client.browser.ts"
       - "web/app/src/lib/api/huntnexus.ts"
@@ -32,3 +36,7 @@ jobs:
           node-version: "22"
       - name: Unauthenticated account actions must reject
         run: node tests/account-security-smoke.mjs
+      - name: Topic 5 strong-auth contract
+        run: |
+          node --experimental-strip-types tests/topic05-auth-assurance-regression.mjs
+          node tests/topic05-auth-contract.mjs
