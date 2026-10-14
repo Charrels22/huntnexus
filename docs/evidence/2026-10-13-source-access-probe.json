@@ -1,0 +1,206 @@
+{
+  "observed_at": "2026-10-13T22:22:11.191655+00:00",
+  "method": "One sequential bounded GET per catalog entry; response body discarded after 4096 bytes.",
+  "interpretation": "A failed automated HTTP probe does not prove that a source is unavailable to a normal browser. Reachability does not grant collection permission.",
+  "source_count": 18,
+  "results": [
+    {
+      "name": "RubinOT Changelog",
+      "url": "https://rubinot.com.br/changelog",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://rubinot.com.br/changelog",
+      "content_type": "text/html",
+      "elapsed_ms": 203,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "RubinOT News",
+      "url": "https://rubinot.com.br/news",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://rubinot.com.br/news",
+      "content_type": "text/html",
+      "elapsed_ms": 102,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "RubinOT Wiki",
+      "url": "https://wiki.rubinot.com/pt-BR",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://wiki.rubinot.com/pt-BR",
+      "content_type": "text/html",
+      "elapsed_ms": 139,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "RubinOT Tools",
+      "url": "https://www.rubinottools.com",
+      "http_status": 206,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://www.rubinottools.com",
+      "content_type": "text/html",
+      "elapsed_ms": 116,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "TibiaWiki BR",
+      "url": "https://www.tibiawiki.com.br",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://www.tibiawiki.com.br",
+      "content_type": "text/html",
+      "elapsed_ms": 305,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "TibiaWikiApi",
+      "url": "https://github.com/benjaminkomen/TibiaWikiApi",
+      "http_status": 206,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://github.com/benjaminkomen/TibiaWikiApi",
+      "content_type": "text/html",
+      "elapsed_ms": 861,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "ByteWizards TibiaData",
+      "url": "https://github.com/ByteWizards-de/tibiadata",
+      "http_status": 206,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://github.com/ByteWizards-de/tibiadata",
+      "content_type": "text/html",
+      "elapsed_ms": 751,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "TibiaMaps",
+      "url": "https://github.com/tibiamaps/tibia-map-data",
+      "http_status": 206,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://github.com/tibiamaps/tibia-map-data",
+      "content_type": "text/html",
+      "elapsed_ms": 492,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "PT Finder",
+      "url": "https://pt-finder.com.br/",
+      "http_status": null,
+      "reachable_by_bounded_http_probe": false,
+      "final_url": null,
+      "content_type": null,
+      "elapsed_ms": 9,
+      "error_type": "URLError",
+      "error": "[Errno 11001] getaddrinfo failed"
+    },
+    {
+      "name": "OberonGG",
+      "url": "https://oberongg.com/",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://oberongg.com/",
+      "content_type": "text/html",
+      "elapsed_ms": 117,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "Hunts.RubinOT",
+      "url": "https://hunts.rubinot.app/",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://hunts.rubinot.app/",
+      "content_type": "text/html",
+      "elapsed_ms": 1606,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "HuntAnalyser",
+      "url": "https://www.hunt-analyser.com/",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://www.hunt-analyser.com/home/index",
+      "content_type": "text/html",
+      "elapsed_ms": 81068,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "Hunt Tracker RubinOT Community",
+      "url": "https://hunt-tracker-rubinot.lovable.app/community",
+      "http_status": 404,
+      "reachable_by_bounded_http_probe": false,
+      "final_url": "https://hunt-tracker-rubinot.lovable.app/community",
+      "content_type": "text/html",
+      "elapsed_ms": 1750,
+      "error_type": "HTTPError",
+      "error": "Not Found"
+    },
+    {
+      "name": "Tibia Watch",
+      "url": "https://tibiawatch.com/respawns",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://tibiawatch.com/respawns",
+      "content_type": "text/html",
+      "elapsed_ms": 40739,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "Tibialytics",
+      "url": "https://tibialytics.com.br/hunt",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://tibialytics.com.br/hunt",
+      "content_type": "text/html",
+      "elapsed_ms": 161,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "Vigia das Estatísticas",
+      "url": "https://www.vigiadasestatisticas.com/",
+      "http_status": 530,
+      "reachable_by_bounded_http_probe": false,
+      "final_url": "https://www.vigiadasestatisticas.com/",
+      "content_type": "text/html",
+      "elapsed_ms": 20123,
+      "error_type": "HTTPError",
+      "error": "<none>"
+    },
+    {
+      "name": "Keke de Patinete",
+      "url": "https://kekedepatinete.com.br/",
+      "http_status": 206,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://kekedepatinete.com.br/",
+      "content_type": "text/html",
+      "elapsed_ms": 20193,
+      "error_type": null,
+      "error": null
+    },
+    {
+      "name": "Vatoz Lokoz",
+      "url": "https://vatozlokoz.com/ferramentas/hunts",
+      "http_status": 200,
+      "reachable_by_bounded_http_probe": true,
+      "final_url": "https://vatozlokoz.com/ferramentas/hunts",
+      "content_type": "text/html",
+      "elapsed_ms": 1857,
+      "error_type": null,
+      "error": null
+    }
+  ]
+}

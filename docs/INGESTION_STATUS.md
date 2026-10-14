@@ -1,5 +1,7 @@
 # Ingestion status
 
+> **Registro histórico:** as seções abaixo preservam a evolução por data e podem conter “ativo”, bloqueios e próximos passos que já mudaram. O estado mensurável atual por fonte está em [BRAIN_SOURCE_AUDIT.md](BRAIN_SOURCE_AUDIT.md), gerado do snapshot versionado de 2026-10-14.
+
 ## 2026-10-01
 
 ### Ativo

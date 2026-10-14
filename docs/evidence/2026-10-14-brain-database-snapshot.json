@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-10-14T00:18:00-03:00",
+  "project_ref": "urbncbjapasnjqjqicjv",
+  "read_only": true,
+  "source_registry": [
+    {
+      "name": "RubinOT Changelog",
+      "tier": "A",
+      "status": "active",
+      "method": "browser/web fetch",
+      "checked": "2026-10-07",
+      "terms": "pending",
+      "counts": {
+        "game_versions": 2,
+        "rubinot_system_facts": 2,
+        "rubinot_change_candidates": 14
+      }
+    },
+    {
+      "name": "RubinOT News",
+      "tier": "A",
+      "status": "active",
+      "method": "browser/web fetch",
+      "checked": "2026-10-07",
+      "terms": "pending",
+      "counts": {}
+    },
+    {
+      "name": "RubinOT Wiki",
+      "tier": "A",
+      "status": "active",
+      "method": "browser/web fetch",
+      "checked": "2026-10-07",
+      "terms": "pending",
+      "counts": {
+        "rubinot_modifier_definitions": 13,
+        "rubinot_system_facts": 5
+      }
+    },
+    {
+      "name": "RubinOT Tools",
+      "tier": "C",
+      "status": "review",
+      "method": "browser/web fetch",
+      "checked": "2026-10-07",
+      "terms": "pending",
+      "counts": {}
+    },
+    {
+      "name": "TibiaWiki BR",
+      "tier": "B",
+      "status": "active",
+      "method": "curated SQL",
+      "checked": "2026-10-07",
+      "terms": "pending",
+      "counts": {
+        "spell_definitions": 60,
+        "imbuement_definitions": 24,
+        "weapon_proficiency_trees": 34
+      }
+    },
+    {
+      "name": "ByteWizards TibiaData",
+      "tier": "B",
+      "status": "active",
+      "method": "structured API",
+      "checked": "2026-10-07",
+      "terms": "pending",
+      "counts": {
+        "raw_snapshots": 4340,
+        "tibia_entities": 2193,
+        "tibia_items": 6470,
+        "tibia_hunting_places": 459,
+        "monster_vulnerability": 21831,
+        "creature_abilities": 2193,
+        "creature_loot": 18675,
+        "item_effects": 1658,
+        "boss_profiles": 548
+      }
+    },
+    {
+      "name": "TibiaMaps",
+      "tier": "B",
+      "status": "active",
+      "method": "repository/export",
+      "checked": "2026-10-07",
+      "terms": "pending",
+      "counts": {}
+    },
+    {
+      "name": "HuntAnalyser Public Hunts",
+      "tier": "C",
+      "status": "review",
+      "method": "bounded public-page smoke",
+      "checked": "2026-10-07",
+      "terms": "pending",
+      "counts": {
+        "raw_snapshots": 105,
+        "community_sessions": 100,
+        "community_detail_states": 100
+      }
+    },
+    {
+      "name": "RubinOT Website",
+      "tier": "A",
+      "status": "active",
+      "method": "browser/web fetch",
+      "checked": "2026-10-07T17:30:34Z",
+      "terms": "pending",
+      "counts": {
+        "rubinot_modifier_definitions": 1,
+        "rubinot_system_facts": 5
+      }
+    }
+  ],
+  "brain_totals": {
+    "sources": 9,
+    "raw_snapshots": 4445,
+    "creatures": 2193,
+    "items": 6470,
+    "hunts": 459,
+    "bosses": 548,
+    "spells": 60,
+    "community_sessions": 100,
+    "private_sessions": 0,
+    "recommendation_evidence": 0,
+    "editorial_notes": 0,
+    "rubinot_system_facts": 12,
+    "rubinot_modifier_definitions": 14,
+    "rubinot_wiki_pages": 0,
+    "changelog_entries": 0,
+    "rubinot_change_candidates": 14,
+    "active_rubinot_overrides": 0
+  },
+  "hunt_readiness": {
+    "catalog": 459,
+    "fixed_spawn": 455,
+    "planner_eligible": 454,
+    "source_core_complete": 454,
+    "source_core_incomplete": 1,
+    "nonfixed": 4,
+    "with_observed_sessions": 26,
+    "with_incoming_damage": 22
+  },
+  "automation": {
+    "pg_cron_installed": false,
+    "scheduled_collectors": 0,
+    "github_daily_smoke": ".github/workflows/huntnexus-public-smoke.yml runs API smoke only; it does not refresh sources.",
+    "callable_ingestion_functions": 11
+  },
+  "product_readiness_interpretation": {
+    "backend_contracts_reported_ready": "9/9",
+    "backend_contracts_only": true,
+    "external_pilot_included": false,
+    "real_class_playtest_included": false,
+    "frontend_visual_validation_included": false
+  }
+}

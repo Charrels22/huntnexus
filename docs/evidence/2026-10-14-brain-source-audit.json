@@ -1,0 +1,799 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-10-14T00:18:00-03:00",
+  "scope": "Point-in-time, read-only audit of the informed source catalog, live Supabase registry/evidence and repository collectors/jobs.",
+  "rules": [
+    "Reachability is not connection, permission, ingestion or current coverage.",
+    "A callable collector/function is not an automated update without a proven schedule.",
+    "Counts measure presence, not correctness or completeness."
+  ],
+  "summary": {
+    "catalog_sources": 18,
+    "database_sources": 9,
+    "catalog_registered": 8,
+    "catalog_unregistered": 10,
+    "database_only": 1,
+    "probe_reachable": 15,
+    "probe_failed": 3,
+    "collectors_implemented": 3,
+    "catalog_sources_with_domain_rows": 5,
+    "catalog_sources_with_raw_snapshots": 2,
+    "scheduled_source_refreshes": 0,
+    "terms_reviewed_or_approved": 0
+  },
+  "brain_totals": {
+    "sources": 9,
+    "raw_snapshots": 4445,
+    "creatures": 2193,
+    "items": 6470,
+    "hunts": 459,
+    "bosses": 548,
+    "spells": 60,
+    "community_sessions": 100,
+    "private_sessions": 0,
+    "recommendation_evidence": 0,
+    "editorial_notes": 0,
+    "rubinot_system_facts": 12,
+    "rubinot_modifier_definitions": 14,
+    "rubinot_wiki_pages": 0,
+    "changelog_entries": 0,
+    "rubinot_change_candidates": 14,
+    "active_rubinot_overrides": 0
+  },
+  "hunt_readiness": {
+    "catalog": 459,
+    "fixed_spawn": 455,
+    "planner_eligible": 454,
+    "source_core_complete": 454,
+    "source_core_incomplete": 1,
+    "nonfixed": 4,
+    "with_observed_sessions": 26,
+    "with_incoming_damage": 22
+  },
+  "automation": {
+    "pg_cron_installed": false,
+    "scheduled_collectors": 0,
+    "github_daily_smoke": ".github/workflows/huntnexus-public-smoke.yml runs API smoke only; it does not refresh sources.",
+    "callable_ingestion_functions": 11
+  },
+  "conclusion": "O núcleo factual TibiaData é amplo, porém o Brain completo não está montado: 10/18 fontes não estão registradas, 13/18 não têm dado de domínio, nenhuma atualização de fonte está agendada e nenhum termo está aprovado/revisado.",
+  "sources": [
+    {
+      "name": "RubinOT Changelog",
+      "tier": "A",
+      "url": "https://rubinot.com.br/changelog",
+      "cataloged": true,
+      "database_registered": true,
+      "db_source_name": "RubinOT Changelog",
+      "registry_status": "active",
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://rubinot.com.br/changelog",
+        "error": null
+      },
+      "collector": {
+        "implemented": true,
+        "paths": [
+          "collectors/rubinot_changelog.py"
+        ]
+      },
+      "ingestion": {
+        "has_domain_rows": true,
+        "counts": {
+          "game_versions": 2,
+          "rubinot_system_facts": 2,
+          "rubinot_change_candidates": 14
+        }
+      },
+      "normalization": "partial",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 0,
+        "assessment": "partial_without_raw_snapshot"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "pending",
+      "audit_status": "partial_verified",
+      "coverage_and_gaps": "Versões, fatos e 14 candidatos de mudança; faltam snapshot bruto no banco, reconciliação e agenda."
+    },
+    {
+      "name": "RubinOT News",
+      "tier": "A",
+      "url": "https://rubinot.com.br/news",
+      "cataloged": true,
+      "database_registered": true,
+      "db_source_name": "RubinOT News",
+      "registry_status": "active",
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://rubinot.com.br/news",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "pending",
+      "audit_status": "registered_empty",
+      "coverage_and_gaps": "Registrada e acessível, sem coletor, snapshot ou linha de domínio comprovada."
+    },
+    {
+      "name": "RubinOT Wiki",
+      "tier": "A",
+      "url": "https://wiki.rubinot.com/pt-BR",
+      "cataloged": true,
+      "database_registered": true,
+      "db_source_name": "RubinOT Wiki",
+      "registry_status": "active",
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://wiki.rubinot.com/pt-BR",
+        "error": null
+      },
+      "collector": {
+        "implemented": true,
+        "paths": [
+          "collectors/rubinot_wiki.py"
+        ]
+      },
+      "ingestion": {
+        "has_domain_rows": true,
+        "counts": {
+          "rubinot_modifier_definitions": 13,
+          "rubinot_system_facts": 5
+        }
+      },
+      "normalization": "partial",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 0,
+        "assessment": "partial_without_raw_snapshot"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "pending",
+      "audit_status": "partial_verified",
+      "coverage_and_gaps": "Fatos e modificadores curados; zero páginas/snapshots persistidos e sem agenda."
+    },
+    {
+      "name": "RubinOT Tools",
+      "tier": "C",
+      "url": "https://www.rubinottools.com",
+      "cataloged": true,
+      "database_registered": true,
+      "db_source_name": "RubinOT Tools",
+      "registry_status": "review",
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 206,
+        "final_url": "https://www.rubinottools.com",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "pending",
+      "audit_status": "registered_empty",
+      "coverage_and_gaps": "Registrada como Tier C em revisão, sem dado ingerido comprovado."
+    },
+    {
+      "name": "TibiaWiki BR",
+      "tier": "B",
+      "url": "https://www.tibiawiki.com.br",
+      "cataloged": true,
+      "database_registered": true,
+      "db_source_name": "TibiaWiki BR",
+      "registry_status": "active",
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://www.tibiawiki.com.br",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": true,
+        "counts": {
+          "spell_definitions": 60,
+          "imbuement_definitions": 24,
+          "weapon_proficiency_trees": 34
+        }
+      },
+      "normalization": "partial",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 0,
+        "assessment": "partial_without_raw_snapshot"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "pending",
+      "audit_status": "curated_partial",
+      "coverage_and_gaps": "Spells, imbuements e árvores de proficiência curados; sem coletor ou snapshot bruto."
+    },
+    {
+      "name": "TibiaWikiApi",
+      "tier": "B",
+      "url": "https://github.com/benjaminkomen/TibiaWikiApi",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 206,
+        "final_url": "https://github.com/benjaminkomen/TibiaWikiApi",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Somente catálogo; nenhuma configuração, coleta ou ingestão comprovada."
+    },
+    {
+      "name": "ByteWizards TibiaData",
+      "tier": "B",
+      "url": "https://github.com/ByteWizards-de/tibiadata",
+      "cataloged": true,
+      "database_registered": true,
+      "db_source_name": "ByteWizards TibiaData",
+      "registry_status": "active",
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 206,
+        "final_url": "https://github.com/ByteWizards-de/tibiadata",
+        "error": null
+      },
+      "collector": {
+        "implemented": true,
+        "paths": [
+          "collectors/tibiadata_sync.py"
+        ]
+      },
+      "ingestion": {
+        "has_domain_rows": true,
+        "counts": {
+          "raw_snapshots": 4340,
+          "tibia_entities": 2193,
+          "tibia_items": 6470,
+          "tibia_hunting_places": 459,
+          "monster_vulnerability": 21831,
+          "creature_abilities": 2193,
+          "creature_loot": 18675,
+          "item_effects": 1658,
+          "boss_profiles": 548
+        }
+      },
+      "normalization": "strong_core",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 4340,
+        "assessment": "strong"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "pending",
+      "audit_status": "connected_manual",
+      "coverage_and_gaps": "Núcleo factual amplo e snapshots presentes; última coleta observada em 2026-10-07 e sem agenda."
+    },
+    {
+      "name": "TibiaMaps",
+      "tier": "B",
+      "url": "https://github.com/tibiamaps/tibia-map-data",
+      "cataloged": true,
+      "database_registered": true,
+      "db_source_name": "TibiaMaps",
+      "registry_status": "active",
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 206,
+        "final_url": "https://github.com/tibiamaps/tibia-map-data",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "pending",
+      "audit_status": "registered_empty",
+      "coverage_and_gaps": "Registrada, sem mapas/markers ingeridos ou snapshot comprovado."
+    },
+    {
+      "name": "PT Finder",
+      "tier": "C",
+      "url": "https://pt-finder.com.br/",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": false,
+        "http_status": null,
+        "final_url": null,
+        "error": "[Errno 11001] getaddrinfo failed"
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Somente catálogo; probe DNS falhou nesta observação."
+    },
+    {
+      "name": "OberonGG",
+      "tier": "C",
+      "url": "https://oberongg.com/",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://oberongg.com/",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Acessível no probe, sem registro, coletor ou ingestão."
+    },
+    {
+      "name": "Hunts.RubinOT",
+      "tier": "C",
+      "url": "https://hunts.rubinot.app/",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://hunts.rubinot.app/",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Acessível no probe, sem registro, coletor ou ingestão comprovada."
+    },
+    {
+      "name": "HuntAnalyser",
+      "tier": "C",
+      "url": "https://www.hunt-analyser.com/",
+      "cataloged": true,
+      "database_registered": true,
+      "db_source_name": "HuntAnalyser Public Hunts",
+      "registry_status": "review",
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://www.hunt-analyser.com/home/index",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": true,
+        "counts": {
+          "raw_snapshots": 105,
+          "community_sessions": 100,
+          "community_detail_states": 100
+        }
+      },
+      "normalization": "partial",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 105,
+        "assessment": "strong"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "pending",
+      "audit_status": "connected_sample_manual",
+      "coverage_and_gaps": "Amostra limitada de 100 sessões/100 detalhes e 105 snapshots; sem agenda e termos pendentes."
+    },
+    {
+      "name": "Hunt Tracker RubinOT Community",
+      "tier": "C",
+      "url": "https://hunt-tracker-rubinot.lovable.app/community",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": false,
+        "http_status": 404,
+        "final_url": "https://hunt-tracker-rubinot.lovable.app/community",
+        "error": "Not Found"
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Somente catálogo; endpoint observado respondeu 404."
+    },
+    {
+      "name": "Tibia Watch",
+      "tier": "C",
+      "url": "https://tibiawatch.com/respawns",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://tibiawatch.com/respawns",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Acessível no probe, sem registro, coletor ou ingestão."
+    },
+    {
+      "name": "Tibialytics",
+      "tier": "C",
+      "url": "https://tibialytics.com.br/hunt",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://tibialytics.com.br/hunt",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Acessível no probe, sem registro, coletor ou ingestão."
+    },
+    {
+      "name": "Vigia das Estatísticas",
+      "tier": "C",
+      "url": "https://www.vigiadasestatisticas.com/",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": false,
+        "http_status": 530,
+        "final_url": "https://www.vigiadasestatisticas.com/",
+        "error": "<none>"
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Somente catálogo; endpoint observado respondeu 530."
+    },
+    {
+      "name": "Keke de Patinete",
+      "tier": "D",
+      "url": "https://kekedepatinete.com.br/",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 206,
+        "final_url": "https://kekedepatinete.com.br/",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Acessível no probe, mas sem notas editoriais ingeridas."
+    },
+    {
+      "name": "Vatoz Lokoz",
+      "tier": "D",
+      "url": "https://vatozlokoz.com/ferramentas/hunts",
+      "cataloged": true,
+      "database_registered": false,
+      "db_source_name": null,
+      "registry_status": null,
+      "access": {
+        "observed_at": "2026-10-13T22:22:11.191655+00:00",
+        "reachable_by_bounded_http_probe": true,
+        "http_status": 200,
+        "final_url": "https://vatozlokoz.com/ferramentas/hunts",
+        "error": null
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": false,
+        "counts": {}
+      },
+      "normalization": "none",
+      "provenance": {
+        "source_registry": false,
+        "raw_snapshot_count": 0,
+        "assessment": "none"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta; funções/coletores são acionáveis manualmente."
+      },
+      "terms": "not_tracked",
+      "audit_status": "catalog_only",
+      "coverage_and_gaps": "Acessível no probe, mas sem notas editoriais ingeridas."
+    },
+    {
+      "name": "RubinOT Website",
+      "tier": "A",
+      "url": "https://rubinot.com.br",
+      "cataloged": false,
+      "database_registered": true,
+      "db_source_name": "RubinOT Website",
+      "registry_status": "active",
+      "access": {
+        "observed_at": null,
+        "reachable_by_bounded_http_probe": null,
+        "http_status": null,
+        "final_url": null,
+        "error": "Não incluída no probe do catálogo."
+      },
+      "collector": {
+        "implemented": false,
+        "paths": []
+      },
+      "ingestion": {
+        "has_domain_rows": true,
+        "counts": {
+          "rubinot_modifier_definitions": 1,
+          "rubinot_system_facts": 5
+        }
+      },
+      "normalization": "partial",
+      "provenance": {
+        "source_registry": true,
+        "raw_snapshot_count": 0,
+        "assessment": "partial_without_raw_snapshot"
+      },
+      "automated_update": {
+        "scheduled": false,
+        "evidence": "Nenhum pg_cron/job ou workflow de coleta comprovado."
+      },
+      "terms": "pending",
+      "audit_status": "database_only_curated_partial",
+      "coverage_and_gaps": "Fonte extra do banco com fatos/modificador curados; não está no catálogo e não possui snapshot bruto."
+    }
+  ]
+}
