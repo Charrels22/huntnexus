@@ -16,7 +16,8 @@
 
 - [Tópico 1 — congelamento de release](CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md)
 - [Tópico 2 — definição oficial do produto](CHECKPOINT_2026-10-13_TOPIC02_PRODUCT_CONTRACT.md)
-- Próximo: Tópico 3 — auditoria completa do Brain.
+- [Tópico 3 — auditoria completa do Brain](CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md)
+- Próximo: Tópico 4 — conta 1:N personagens e migração aditiva de `client_id`.
 
 ## Primeiras fases: base e infraestrutura
 

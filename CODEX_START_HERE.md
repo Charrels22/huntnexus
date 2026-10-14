@@ -6,9 +6,9 @@
 
 - A promoção está congelada. PRs #3/#4 estão Draft e o gatilho de produção Cloudflare está bloqueado por filtro reversível.
 - FE-40–48 permanecem como histórico técnico reutilizável; não são a ordem corrente.
-- Tópicos 1 e 2 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
-- A próxima etapa é o **Tópico 3: auditoria completa e mensurável do HuntNexus Brain**.
-- Não executar merge, deploy, migration, mudança de autenticação ou escrita privada durante essa auditoria.
+- Tópicos 1, 2 e 3 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
+- A próxima etapa é o **Tópico 4: conta 1:N personagens e migração aditiva do legado `client_id`**.
+- Não executar merge/deploy, alterar autenticação ou aplicar migration no banco sem fechar primeiro o inventário de dependências e a verificação/rollback do Tópico 4.
 
 ## Ordem de leitura
 
@@ -28,7 +28,7 @@
 >
 > Preserve a fundação existente e obedeça ao ADR-0001: experiência pública para descoberta; conta para personalização; uma conta com vários personagens; Brain versionado; recomendações explicáveis; aprendizado por candidatos e promoção controlada.
 >
-> No Tópico 3, produza uma matriz auditável para todas as fontes informadas e registradas. Para cada fonte, prove ou negue cadastro, acesso, coletor, ingestão, normalização, proveniência, atualização, termos, cobertura e lacunas. Gere a visualização a partir do mesmo snapshot versionado. Não invente conexão nem confunda cadastro com ingestão.
+> No Tópico 4, modele conta 1:N personagens, personagem ativo e ownership. Antes da migration, inventarie toda PK/FK, RLS, RPC, API e estado local presos a `client_id`. Faça a mudança aditiva, preserve compatibilidade e prepare rollback/verificação sem misturar autenticação.
 >
 > Execute validações proporcionais, registre checkpoint e atualize `CURRENT_STATUS.md`. Publique branch/PR para revisão, mantendo merge e deploy congelados.
 

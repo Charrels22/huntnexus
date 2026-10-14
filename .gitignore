@@ -12,3 +12,5 @@ Thumbs.db
 *.sqlite3
 raw/
 cache/
+__pycache__/
+*.pyc

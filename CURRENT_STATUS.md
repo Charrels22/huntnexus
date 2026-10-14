@@ -1,14 +1,16 @@
 # HuntNexus — status e ponto exato da transferência
 
-**Data da fotografia:** 2026-10-13. **Última etapa publicada e evidenciada:** **FE-39**. **Release congelado para realinhamento:** PRs #3 e #4 em Draft; filtro de build de produção Cloudflare alterado de `web/app/**` para o caminho reservado inexistente `.__huntnexus_release_freeze__/**`; Worker ativo preservado na versão 250 (`143d8692-b52c-4c0b-bd0e-af6cf980341e`). Merge/publicação não executados. [Checkpoint do Tópico 1](docs/CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md). Consultar `git log`, GitHub e Cloudflare antes de executar, pois este arquivo pode ficar desatualizado.
+**Data da fotografia:** 2026-10-14. **Última etapa publicada e evidenciada:** **FE-39**. **Release congelado para realinhamento:** PRs #3 e #4 em Draft; filtro de build de produção Cloudflare alterado de `web/app/**` para o caminho reservado inexistente `.__huntnexus_release_freeze__/**`; Worker ativo preservado na versão 250 (`143d8692-b52c-4c0b-bd0e-af6cf980341e`) na última verificação. Merge/publicação não executados. [Checkpoint do Tópico 1](docs/CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md). Consultar `git log`, GitHub e Cloudflare antes de executar, pois este arquivo pode ficar desatualizado.
 
-## Realinhamento — Tópicos 1 e 2 concluídos
+## Realinhamento — Tópicos 1, 2 e 3 concluídos
 
 GitHub `main` está em `f87893888d58dc8ccf589bd3294646a2cb8cc328`; PR #3 está no head `102513f8874bf26e86ab707861fc112a4dd9734b`; a baseline de código do PR #4 antes do checkpoint documental é `373990fee73c837597b9c49975a8637c92b6aa89`. Os dois permanecem abertos, agora como Draft. Supabase `urbncbjapasnjqjqicjv` está `ACTIVE_HEALTHY`, com 167 migrations e última `0161_fe39_hunt_evidence_context`; nenhuma escrita foi feita.
 
 O deployment ativo foi criado por Wrangler e não contém SHA Git atribuível. A identidade comprovada de produção é Cloudflare deployment `4df50565-35a8-4d58-9103-b406d920b059`, versão 250. Não executar merge, `wrangler deploy` nem restaurar `web/app/**` até o descongelamento explícito após o realinhamento.
 
-[ADR-0001](docs/ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) agora fixa: HuntNexus como produto; Brain como conhecimento versionado; descoberta pública; conta para personalização; uma conta com vários personagens; `client_id` como legado; recomendações explicáveis; aprendizado por candidatos e promoção controlada. [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md) substitui a sequência FE-40–48 como ordem corrente. **Próximo: Tópico 3, auditoria completa e mensurável do Brain.**
+[ADR-0001](docs/ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) agora fixa: HuntNexus como produto; Brain como conhecimento versionado; descoberta pública; conta para personalização; uma conta com vários personagens; `client_id` como legado; recomendações explicáveis; aprendizado por candidatos e promoção controlada. [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md) substitui a sequência FE-40–48 como ordem corrente.
+
+[A auditoria do Brain](docs/BRAIN_SOURCE_AUDIT.md) mede as 18 fontes informadas e uma fonte adicional do banco. Das 18, 8 estão registradas, 5 têm alguma linha de domínio, 2 preservam snapshots brutos, 3 têm coletor no repositório e 0 têm atualização de fonte agendada; 0 termos estão revisados/aprovados. A conclusão vinculada à evidência é que o núcleo TibiaData é amplo, mas o Brain completo não está montado. Artefato principal: commit `706d03b` e [checkpoint do Tópico 3](docs/CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md). **Próximo: Tópico 4, corrigir conta e personagens sem alterar autenticação.**
 
 ## Entregas que devem permanecer funcionais
 
@@ -59,4 +61,4 @@ Não incrementar automaticamente por ter criado documentação, fixtures ou test
 
 ## Próxima ação sem intervenção manual obrigatória
 
-**Executar o Tópico 3 de [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md): auditar o Brain completo**. Produzir uma matriz única por fonte com evidência de cadastro, acesso, coletor, ingestão, normalização, proveniência, automação, termos, cobertura e lacunas; atualizar a visualização a partir do mesmo snapshot. Não modificar fontes, banco ou autenticação durante a auditoria.
+**Executar o Tópico 4 de [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md): corrigir conta e personagens**. Inventariar dependências de `client_id`, modelar `huntnexus_accounts` 1:N `player_characters`, ownership e personagem ativo; preparar migration aditiva, compatibilidade, verificação e rollback. Não alterar autenticação nesse tópico.
