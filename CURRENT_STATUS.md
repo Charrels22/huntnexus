@@ -12,6 +12,8 @@ O deployment ativo foi criado por Wrangler e não contém SHA Git atribuível. A
 
 [A auditoria do Brain](docs/BRAIN_SOURCE_AUDIT.md) mede as 18 fontes informadas e uma fonte adicional do banco. Das 18, 8 estão registradas, 5 têm alguma linha de domínio, 2 preservam snapshots brutos, 3 têm coletor no repositório e 0 têm atualização de fonte agendada; 0 termos estão revisados/aprovados. A conclusão vinculada à evidência é que o núcleo TibiaData é amplo, mas o Brain completo não está montado. Artefato principal: commit `706d03b` e [checkpoint do Tópico 3](docs/CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md). **Próximo: Tópico 4, corrigir conta e personagens sem alterar autenticação.**
 
+O Tópico 4 está implementado e testado localmente no commit `2ba2482` / [PR Draft #7](https://github.com/Charrels22/huntnexus/pull/7): `huntnexus_accounts`, `player_characters` 1:N, personagem ativo, `character_id` aditivo em cinco tabelas, compatibilidade `client_id`, FK composta contra mistura, provisionamento e unbind multi-personagem. PGlite aplicou a migration duas vezes e a regressão `SYNTHETIC` passou com limpeza total. A migration **não foi aplicada no Supabase**: ela fará backfill de 2 perfis e 20 itens privados reais e aguarda autorização explícita. [Checkpoint do Tópico 4](docs/CHECKPOINT_2026-10-14_TOPIC04_ACCOUNT_CHARACTERS.md).
+
 ## Entregas que devem permanecer funcionais
 
 | Área | Estado em 2026-10-13 | Implementação/evidência |
@@ -61,4 +63,4 @@ Não incrementar automaticamente por ter criado documentação, fixtures ou test
 
 ## Próxima ação sem intervenção manual obrigatória
 
-**Executar o Tópico 4 de [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md): corrigir conta e personagens**. Inventariar dependências de `client_id`, modelar `huntnexus_accounts` 1:N `player_characters`, ownership e personagem ativo; preparar migration aditiva, compatibilidade, verificação e rollback. Não alterar autenticação nesse tópico.
+**Concluir o Tópico 4 de [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**. Após autorização explícita para backfill privado, aplicar `0162_account_character_domain`, executar a verificação pós-migration e `tests/sql/topic04_account_character_model.sql`, atualizar a evidência e confirmar que produção Web/Worker permaneceu intacta. Não avançar ao Tópico 5 antes disso.

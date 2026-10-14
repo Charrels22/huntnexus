@@ -7,8 +7,8 @@
 - A promoção está congelada. PRs #3/#4 estão Draft e o gatilho de produção Cloudflare está bloqueado por filtro reversível.
 - FE-40–48 permanecem como histórico técnico reutilizável; não são a ordem corrente.
 - Tópicos 1, 2 e 3 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
-- A próxima etapa é o **Tópico 4: conta 1:N personagens e migração aditiva do legado `client_id`**.
-- Não executar merge/deploy, alterar autenticação ou aplicar migration no banco sem fechar primeiro o inventário de dependências e a verificação/rollback do Tópico 4.
+- O código do **Tópico 4** está na PR Draft #7; a migration `0162` não foi aplicada porque fará backfill de dados privados reais e exige autorização explícita.
+- A próxima ação é aplicar `0162` somente após essa autorização, executar verificação/regressão `SYNTHETIC`, atualizar evidências e fechar o Tópico 4. Não avançar ao Tópico 5 antes disso.
 
 ## Ordem de leitura
 
@@ -28,7 +28,7 @@
 >
 > Preserve a fundação existente e obedeça ao ADR-0001: experiência pública para descoberta; conta para personalização; uma conta com vários personagens; Brain versionado; recomendações explicáveis; aprendizado por candidatos e promoção controlada.
 >
-> No Tópico 4, modele conta 1:N personagens, personagem ativo e ownership. Antes da migration, inventarie toda PK/FK, RLS, RPC, API e estado local presos a `client_id`. Faça a mudança aditiva, preserve compatibilidade e prepare rollback/verificação sem misturar autenticação.
+> Conclua o Tópico 4 na PR Draft #7. Com autorização explícita para o backfill privado, aplique a migration `0162_account_character_domain`, execute a verificação pós-migration e a regressão SQL `SYNTHETIC`, atualize o checkpoint e preserve autenticação, merge e deploy.
 >
 > Execute validações proporcionais, registre checkpoint e atualize `CURRENT_STATUS.md`. Publique branch/PR para revisão, mantendo merge e deploy congelados.
 

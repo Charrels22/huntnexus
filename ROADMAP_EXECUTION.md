@@ -19,7 +19,7 @@
 | 1 | Congelar merge e deploy | **PASS** | branch, produção, banco, PRs, SHAs/versões e rollback registrados; promoção automática bloqueada |
 | 2 | Registrar definição oficial do produto | **PASS** | ADR, contexto, arquitetura, instruções e roadmap usam os mesmos conceitos e critérios |
 | 3 | Auditar o Brain completo | **PASS** | cada fonte tem estado mensurável de cadastro, acesso, coletor, ingestão, normalização, proveniência, atualização, termos, cobertura e lacunas |
-| 4 | Corrigir modelo de conta e personagens | Próximo | uma conta gerencia vários personagens sem mistura, com migração aditiva dos dados existentes |
+| 4 | Corrigir modelo de conta e personagens | **Aguardando aplicação aprovada** | uma conta gerencia vários personagens sem mistura, com migração aditiva dos dados existentes |
 | 5 | Reconstruir autenticação e recuperação | Pendente | entrada forte, MFA/recuperação/sessões e isolamento A/B comprovados na API e RLS |
 | 6 | Fechar segurança do Supabase e API | Pendente | matriz de acesso, funções/grants/RLS auditados, testes negativos/positivos, backup e restauração comprovados |
 | 7 | Completar fontes Tier A e B | Pendente | fatos usados em cálculos têm fonte, URL, data, versão, validade e confiança |

@@ -17,7 +17,8 @@
 - [Tópico 1 — congelamento de release](CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md)
 - [Tópico 2 — definição oficial do produto](CHECKPOINT_2026-10-13_TOPIC02_PRODUCT_CONTRACT.md)
 - [Tópico 3 — auditoria completa do Brain](CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md)
-- Próximo: Tópico 4 — conta 1:N personagens e migração aditiva de `client_id`.
+- [Tópico 4 — conta 1:N personagens](CHECKPOINT_2026-10-14_TOPIC04_ACCOUNT_CHARACTERS.md) — código/testes PASS; aplicação no Supabase aguarda autorização para backfill privado.
+- Não avançar ao Tópico 5 até fechar a aplicação e verificação do Tópico 4.
 
 ## Primeiras fases: base e infraestrutura
 
