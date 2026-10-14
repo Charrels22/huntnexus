@@ -17,7 +17,8 @@
 - [Tópico 1 — congelamento de release](CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md)
 - [Tópico 2 — definição oficial do produto](CHECKPOINT_2026-10-13_TOPIC02_PRODUCT_CONTRACT.md)
 - [Tópico 3 — auditoria completa do Brain](CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md)
-- Próximo: Tópico 4 — conta 1:N personagens e migração aditiva de `client_id`.
+- [Tópico 4 — conta 1:N personagens](CHECKPOINT_2026-10-14_TOPIC04_ACCOUNT_CHARACTERS.md) — PASS; migrations `0162`/`0163`, backfill, ownership, permissões e regressão `SYNTHETIC` verificados no Supabase.
+- Próximo: Tópico 5 — autenticação e recuperação; mudanças reais no Auth exigem autorização explícita.
 
 ## Primeiras fases: base e infraestrutura
 

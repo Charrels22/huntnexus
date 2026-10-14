@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "captured_on": "2026-10-14",
+  "project_ref": "urbncbjapasnjqjqicjv",
+  "topic": 4,
+  "result": "PASS",
+  "migrations": [
+    {
+      "version": "20261014114545",
+      "name": "0162_account_character_domain",
+      "sha256": "417b3022ba8582ea2c66741dc035f98994c71a08d360803bb706aa2ff1782ff3"
+    },
+    {
+      "version": "20261014114749",
+      "name": "0163_topic04_scope_fk_indexes",
+      "sha256": "549928fc9ef1620b85d2fb909bed78aabd84a0121b5ed880fa15dda820cb7324"
+    }
+  ],
+  "before": {
+    "bindings": 2,
+    "profiles": 2,
+    "inventory": 20,
+    "orphan_private_clients": 0
+  },
+  "after": {
+    "accounts": 2,
+    "bindings": 2,
+    "characters": 2,
+    "profiles": 2,
+    "inventory": 20,
+    "choices": 0,
+    "sessions": 0,
+    "revisions": 0,
+    "accounts_without_active_character": 0,
+    "bindings_without_account": 0,
+    "scope_violations": 0
+  },
+  "database_contract": {
+    "new_tables_rls_enabled": true,
+    "new_table_access": {
+      "anon": false,
+      "authenticated": false,
+      "service_role": true
+    },
+    "new_rpc_count": 4,
+    "new_rpcs_service_role_only": true,
+    "scope_constraints": 5,
+    "topic04_foreign_keys_with_covering_index": 6,
+    "topic04_unindexed_foreign_keys_after_0163": 0
+  },
+  "synthetic_regression": {
+    "status": "ok",
+    "fixture": "SYNTHETIC",
+    "account_to_characters": "1:N",
+    "foreign_ownership_denied": true,
+    "scope_mismatch_blocked": true,
+    "active_character_switch": true,
+    "unbind_private_data_guard": true,
+    "residue": {
+      "characters": 0,
+      "profiles": 0,
+      "inventory": 0
+    }
+  },
+  "advisor_interpretation": {
+    "security": "INFO rls_enabled_no_policy is expected for server-only private tables; direct anon/authenticated table privileges are revoked.",
+    "performance": "Migration 0163 removed every unindexed FK introduced by Topic 4. Remaining session_id FK warning predates Topic 4; unused-index notices immediately after creation are informational."
+  },
+  "authentication_changed": false,
+  "web_merge_or_deploy": false,
+  "production_worker": {
+    "name": "huntnexus",
+    "deployment_id": "4df50565-35a8-4d58-9103-b406d920b059",
+    "version_id": "143d8692-b52c-4c0b-bd0e-af6cf980341e",
+    "traffic_percentage": 100,
+    "created_on": "2026-10-13T04:06:36.322914Z",
+    "unchanged_after_topic04": true
+  }
+}

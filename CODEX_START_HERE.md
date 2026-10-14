@@ -6,9 +6,9 @@
 
 - A promoção está congelada. PRs #3/#4 estão Draft e o gatilho de produção Cloudflare está bloqueado por filtro reversível.
 - FE-40–48 permanecem como histórico técnico reutilizável; não são a ordem corrente.
-- Tópicos 1, 2 e 3 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
-- A próxima etapa é o **Tópico 4: conta 1:N personagens e migração aditiva do legado `client_id`**.
-- Não executar merge/deploy, alterar autenticação ou aplicar migration no banco sem fechar primeiro o inventário de dependências e a verificação/rollback do Tópico 4.
+- Tópicos 1 a 4 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
+- O **Tópico 4** está na PR Draft #7; `0162` e o complemento de índices `0163` foram aplicados no Supabase após autorização explícita. Backfill, ownership, permissões, regressão `SYNTHETIC` e limpeza passaram.
+- A próxima ação é o Tópico 5: auditar e reconstruir autenticação/recuperação. Preparar toda mudança e evidência antes de pedir autorização para alterar a configuração real do Auth.
 
 ## Ordem de leitura
 
@@ -28,7 +28,7 @@
 >
 > Preserve a fundação existente e obedeça ao ADR-0001: experiência pública para descoberta; conta para personalização; uma conta com vários personagens; Brain versionado; recomendações explicáveis; aprendizado por candidatos e promoção controlada.
 >
-> No Tópico 4, modele conta 1:N personagens, personagem ativo e ownership. Antes da migration, inventarie toda PK/FK, RLS, RPC, API e estado local presos a `client_id`. Faça a mudança aditiva, preserve compatibilidade e prepare rollback/verificação sem misturar autenticação.
+> Execute o Tópico 5: audite Supabase Auth, API e sessões; defina entrada forte, MFA, recuperação, gestão de dispositivos e isolamento entre contas/personagens. Prepare código e regressões sem alterar o Auth real até autorização explícita.
 >
 > Execute validações proporcionais, registre checkpoint e atualize `CURRENT_STATUS.md`. Publique branch/PR para revisão, mantendo merge e deploy congelados.
 

@@ -1,6 +1,6 @@
 # HuntNexus — contexto técnico para continuidade no Codex
 
-**Última revisão:** 2026-10-13. **Fonte da verdade:** o código e as migrations neste repositório. Este documento é um mapa de navegação, não substitui inspeção da implementação atual.
+**Última revisão:** 2026-10-14. **Fonte da verdade:** o código e as migrations neste repositório. Este documento é um mapa de navegação, não substitui inspeção da implementação atual.
 
 ## Propósito
 
@@ -30,7 +30,7 @@ Confiança: A (RubinOT oficial), B (Tibia canônico/estruturado), C (comunidade)
 - Snapshot da build realmente escolhida no cadastro da sessão é **imutável**, independente de alterações futuras no Main/BP. FE-33 permite modos `auto/main/hunt/none`.
 - Session Analyzer diferencia `Hunt Analyzer`, `Damage Input`, `Miscellaneous`, `Party Hunt`, dano causado vs. recebido vs. vulnerabilidade do monstro. Input total sem breakdown continua parcial; valores não observados não são inventados.
 - FE-34/35 permitem comparação conservadora, reparse opt-in e restauração auditável de interpretação antiga **sem sobrescrever** `raw_blocks` ou `loadout_snapshot`.
-- Conta, `character_id`, `client_id` convidado/legado e identidade Supabase não são intercambiáveis. O modelo alvo é `auth.users → huntnexus_accounts → player_characters`; dados pessoais pertencem ao personagem correto. RLS e RPCs server-side devem proteger registros privados; nunca admitir IDs arbitrários como autorização. Testes com fixture sintética exigem limpeza.
+- Conta, `character_id`, `client_id` convidado/legado e identidade Supabase não são intercambiáveis. A migration aditiva `0162_account_character_domain.sql` implementa `huntnexus_accounts → player_characters`, personagem ativo, backfill e guardas compostos sem remover o legado; ela ainda não foi aplicada em produção. RLS e RPCs server-side devem proteger registros privados; nunca admitir IDs arbitrários como autorização. Testes com fixture sintética exigem limpeza.
 - Dashboard, catálogo, fatos, fontes e metodologia oferecem valor público. Login é necessário para salvar personagens, inventário, builds, sessões, preferências e sincronizar dispositivos.
 - Recomendações devem ser determinísticas na mesma versão e apontar entradas, regras, evidências, exclusões, limitações e cobertura. O Brain gera candidatos de ajuste; não promove regras nem sobrescreve fatos silenciosamente.
 - Weapon Proficiency: apenas marcar topologia `source_backed_level_position` quando posições e níveis estiverem comprovados por fonte; caso contrário mostrar `flattened_source_order` com aviso. Não inventar perks/ícones/posições.
