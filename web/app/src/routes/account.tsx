@@ -33,6 +33,12 @@ function AccountPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState("");
+  const [reauthenticationCode, setReauthenticationCode] = useState("");
+  const [reauthenticationRequired, setReauthenticationRequired] = useState(false);
+  const [passwordAction, setPasswordAction] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [authGate, setAuthGate] = useState<AuthGateState | "loading">("loading");
   const [verifiedFactors, setVerifiedFactors] = useState<Factor[]>([]);
@@ -85,6 +91,11 @@ function AccountPage() {
         setTotpEnrollment(null);
         setFactorToRemove(null);
         setRemovalCode("");
+        setCurrentPassword("");
+        setNewPassword("");
+        setNewPasswordConfirmation("");
+        setReauthenticationCode("");
+        setReauthenticationRequired(false);
         setAuthGate("loading");
         // SIGNED_OUT can arrive from another tab or an expired/revoked session,
         // not only our local button. A canonical ID must never remain as an
@@ -287,6 +298,74 @@ function AccountPage() {
       if (session) void refreshAuthSecurity(session);
     }
     setSending(false);
+  }
+
+  async function requestPasswordReauthentication() {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase || authGate !== "ready" || passwordAction) return;
+    setPasswordAction(true);
+    setError("");
+    setMessage("");
+    try {
+      const { error: reauthenticationError } = await supabase.auth.reauthenticate();
+      if (reauthenticationError) {
+        setError("Não foi possível enviar o código de reautenticação: " + reauthenticationError.message);
+      } else {
+        setReauthenticationRequired(true);
+        setMessage("Código de reautenticação enviado ao contato confirmado da conta.");
+      }
+    } catch {
+      setError("Não foi possível iniciar a reautenticação agora.");
+    } finally {
+      setPasswordAction(false);
+    }
+  }
+
+  async function changePassword() {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase || !session || authGate !== "ready" || passwordAction || !currentPassword || !passwordMeetsPolicy(newPassword)) return;
+    if (newPassword !== newPasswordConfirmation) {
+      setError("A confirmação da nova senha não confere.");
+      return;
+    }
+    setPasswordAction(true);
+    setError("");
+    setMessage("");
+    try {
+      const { error: passwordError } = await supabase.auth.updateUser({
+        password: newPassword,
+        current_password: currentPassword,
+        ...(reauthenticationCode.trim() ? { nonce: reauthenticationCode.trim() } : {}),
+      });
+      if (passwordError) {
+        const code = (passwordError as { code?: string }).code;
+        if (code === "reauthentication_needed") {
+          setReauthenticationRequired(true);
+          setError("Esta sessão precisa de um código de reautenticação antes de trocar a senha.");
+        } else {
+          setError("Não foi possível alterar a senha: " + passwordError.message);
+        }
+        return;
+      }
+      setCurrentPassword("");
+      setNewPassword("");
+      setNewPasswordConfirmation("");
+      setReauthenticationCode("");
+      setReauthenticationRequired(false);
+      setMessage("Senha alterada. As outras sessões foram revogadas pelo provedor.");
+      const { data, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !data.session) {
+        setError("A senha foi alterada, mas esta sessão precisa entrar novamente.");
+      } else {
+        accessTokenRef.current = data.session.access_token;
+        setSession(data.session);
+        await refreshAuthSecurity(data.session);
+      }
+    } catch {
+      setError("Não foi possível alterar a senha agora.");
+    } finally {
+      setPasswordAction(false);
+    }
   }
 
   async function beginTotpEnrollment() {
@@ -529,6 +608,23 @@ function AccountPage() {
                 <p className="mt-2 text-xs leading-5 text-slate-400">Digite um código atual de {removalAuthorizer.friendly_name || "outro autenticador"}. O fator preservado autoriza esta operação sensível.</p>
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row"><OtpInput value={removalCode} onChange={setRemovalCode} onEnter={() => void confirmFactorRemoval()} /><button className="hn-primary-button" disabled={factorAction || removalCode.length !== 6} onClick={() => void confirmFactorRemoval()}>{factorAction ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}Confirmar remoção</button><button className="hn-secondary-button" disabled={factorAction} onClick={() => { setFactorToRemove(null); setRemovalCode(""); }}>Cancelar</button></div>
               </div>}
+              <div className="mt-5 rounded-2xl border border-white/7 bg-white/[0.02] p-4 md:p-5">
+                <h2 className="font-semibold text-slate-200">Alterar senha</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">A sessão já está em AAL2. Informe a senha atual; sessões com mais de 24 horas também exigem um código enviado pelo provedor.</p>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <PasswordInput value={currentPassword} placeholder="Senha atual" autoComplete="current-password" onChange={setCurrentPassword} />
+                  <PasswordInput value={newPassword} placeholder={`Nova senha (${minimumPasswordLength}+ caracteres)`} autoComplete="new-password" onChange={setNewPassword} />
+                  <PasswordInput value={newPasswordConfirmation} placeholder="Confirmar nova senha" autoComplete="new-password" onChange={setNewPasswordConfirmation} onEnter={() => void changePassword()} />
+                </div>
+                <PasswordPolicyHint />
+                {reauthenticationRequired && <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+                  <input inputMode="numeric" autoComplete="one-time-code" aria-label="Código de reautenticação" className="hn-control" placeholder="Código de reautenticação" value={reauthenticationCode} onChange={(event) => setReauthenticationCode(event.target.value.replace(/\D/g, "").slice(0, 8))} />
+                  <button type="button" className="hn-secondary-button" disabled={passwordAction} onClick={() => void requestPasswordReauthentication()}>{passwordAction ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}Enviar novo código</button>
+                </div>}
+                <button type="button" className="hn-primary-button mt-3" disabled={passwordAction || !currentPassword || !passwordMeetsPolicy(newPassword) || newPassword !== newPasswordConfirmation || (reauthenticationRequired && !reauthenticationCode.trim())} onClick={() => void changePassword()}>
+                  {passwordAction ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}Alterar senha
+                </button>
+              </div>
             </>
           )}
           {authGate === "ready" && syncInfo?.client_id_changed && syncInfo?.guest_data_merge_applied === false && (

@@ -32,6 +32,7 @@ Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-
 - TOTP obrigatório antes de resolver ou acessar dados vinculados;
 - QR/chave manual, desafio AAL2 e segundo TOTP reserva;
 - remoção do último TOTP bloqueada; remover outro fator exige código atual do fator preservado e refresh imediato da sessão;
+- troca de senha exige sessão AAL2, senha atual e nonce de reautenticação quando o provedor considerar a sessão antiga;
 - logout local, das outras sessões e global;
 - API exige token validado, `session_id`, sessão viva, fator verificado, AAL2 e ownership;
 - `0164_topic05_auth_session_gate` é read-only sobre schema `auth` e executável apenas por `service_role`;
@@ -49,8 +50,8 @@ Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-
 | PGlite: execução somente `service_role` | PASS |
 | FE-28 guest identity | PASS; não é Auth real |
 | FE-30 scope isolation | PASS; não é Auth real |
-| Browser desktop empty/loading/error | PASS (`SYNTHETIC`) |
-| Browser mobile recovery e sem overflow | PASS (`SYNTHETIC`) |
+| Browser desktop empty/loading/error e troca de senha com reautenticação | PASS (`SYNTHETIC`) |
+| Browser mobile recovery/troca de senha e sem overflow | PASS (`SYNTHETIC`) |
 | E-mail ou autenticação real | NÃO EXECUTADO |
 | Teste A/B com contas reais | NÃO EXECUTADO |
 | Migration `0164` em produção | NÃO APLICADA |

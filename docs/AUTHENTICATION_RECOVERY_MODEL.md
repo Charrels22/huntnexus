@@ -41,6 +41,7 @@ Referências oficiais:
 - desafiar um TOTP já verificado para elevar a sessão a `aal2`;
 - cadastrar um segundo TOTP de reserva;
 - impedir pela interface a remoção do último fator verificado e exigir código atual de outro fator que permanecerá cadastrado;
+- trocar a senha somente em sessão `aal2`, informando a senha atual e, quando a sessão tiver mais de 24 horas, o nonce de reautenticação enviado pelo provedor;
 - encerrar a sessão local, outras sessões ou todas as sessões;
 - preservar o isolamento do perfil convidado anterior.
 

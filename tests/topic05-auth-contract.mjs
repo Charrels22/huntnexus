@@ -12,12 +12,16 @@ for (const required of [
   "signUp",
   "resetPasswordForEmail",
   "updateUser({ password",
+  "current_password: currentPassword",
+  "reauthenticate()",
+  "nonce: reauthenticationCode.trim()",
   "mfa.enroll",
   "mfa.challengeAndVerify",
   'scope: "local"',
   'scope: "others"',
 ]) assert.match(account, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 assert.match(account, /signOut\("global"\)/);
+assert.match(account, /authGate !== "ready"/);
 
 assert.doesNotMatch(account, /signInWithOtp|sendMagicLink|shouldCreateUser/);
 assert.match(account, /verifiedFactors\.length < 2/);
