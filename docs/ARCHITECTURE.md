@@ -1,6 +1,6 @@
 # Arquitetura atual e domínio alvo
 
-[ADR-0001](ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) define o contrato de produto. A infraestrutura abaixo é atual; o domínio privado `account → characters` é o alvo obrigatório da migração aditiva do Tópico 4.
+[ADR-0001](ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) define o contrato de produto. A infraestrutura abaixo é atual. O domínio privado `account → characters` está implementado na migration aditiva `0162_account_character_domain.sql`, ainda não aplicada em produção enquanto o release permanece congelado.
 
 ```text
                          ┌────────────────────────┐
@@ -40,7 +40,7 @@ Privado
                                       └─ sessões/snapshots
 ```
 
-O catálogo global e o Brain não pertencem a uma conta ou personagem. `client_id` permanece como compatibilidade legada até a migração; novos contratos não podem tratá-lo como identidade final.
+O catálogo global e o Brain não pertencem a uma conta ou personagem. `client_id` permanece como compatibilidade legada durante a transição; `character_id` é o ownership alvo. A FK composta `(client_id, character_id)` impede misturar a compatibilidade de um personagem com os dados de outro. Ver [desenho e rollback](ACCOUNT_CHARACTER_MIGRATION.md).
 
 ## Runtime
 

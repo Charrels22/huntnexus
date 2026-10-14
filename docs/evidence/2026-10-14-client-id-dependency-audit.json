@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-10-14T01:18:00-03:00",
+  "project_ref": "urbncbjapasnjqjqicjv",
+  "read_only": true,
+  "live_database": {
+    "tables_with_client_id": [
+      "player_account_bindings",
+      "player_character_inventory",
+      "player_character_profiles",
+      "player_hunt_build_choices",
+      "player_hunt_sessions",
+      "player_session_parse_revisions"
+    ],
+    "table_policy_counts": {
+      "player_account_bindings": 0,
+      "player_character_inventory": 0,
+      "player_character_profiles": 0,
+      "player_hunt_build_choices": 0,
+      "player_hunt_sessions": 0,
+      "player_session_parse_revisions": 0
+    },
+    "private_rows": {
+      "player_account_bindings": 2,
+      "player_character_profiles": 2,
+      "player_character_inventory": 20,
+      "player_hunt_build_choices": 0,
+      "player_hunt_sessions": 0,
+      "player_session_parse_revisions": 0
+    },
+    "private_client_count": 2,
+    "bound_private_clients": 2,
+    "orphan_private_clients": 0,
+    "indexes_with_client_id": 10,
+    "routines_with_client_id": [
+      "huntnexus_account_binding_status",
+      "huntnexus_account_resolve",
+      "huntnexus_account_unbind",
+      "huntnexus_optimizer_final_personalized",
+      "huntnexus_player_hunt_build_choice_delete",
+      "huntnexus_player_hunt_build_choice_get",
+      "huntnexus_player_hunt_build_choice_save",
+      "huntnexus_player_inventory_get",
+      "huntnexus_player_inventory_hunt_review",
+      "huntnexus_player_inventory_put",
+      "huntnexus_player_inventory_remove",
+      "huntnexus_player_owned_build_options",
+      "huntnexus_player_owned_build_options_v2",
+      "huntnexus_player_profile_delete",
+      "huntnexus_player_profile_get",
+      "huntnexus_player_profile_save",
+      "huntnexus_player_session_build_performance",
+      "huntnexus_player_session_delete",
+      "huntnexus_player_session_detail",
+      "huntnexus_player_session_list",
+      "huntnexus_player_session_loadout_snapshot",
+      "huntnexus_player_session_loadout_snapshot_selected",
+      "huntnexus_player_session_reparse_apply",
+      "huntnexus_player_session_reparse_source",
+      "huntnexus_player_session_revision_list",
+      "huntnexus_player_session_revision_restore",
+      "huntnexus_player_session_revision_restore_source",
+      "huntnexus_player_session_save"
+    ]
+  },
+  "repository": {
+    "historical_migrations_with_client_id": 24,
+    "web_source_files_with_client_id": 10,
+    "test_files_with_client_id": 33,
+    "workflow_files_with_client_id": 1,
+    "api_boundary": "web/app/src/routes/api/huntnexus.ts validates client_id and protects bound scopes by verified Supabase access token before service-role RPCs",
+    "browser_boundary": "routes persist the canonical legacy client_id in localStorage and pass it to private API actions"
+  },
+  "target": {
+    "account_table": "huntnexus_accounts",
+    "character_table": "player_characters",
+    "relationship": "one account to many characters",
+    "active_character_owner_constraint": true,
+    "private_tables_receiving_character_id": 5,
+    "legacy_client_id_preserved": true,
+    "legacy_guest_rows_allowed_unmapped": true,
+    "scope_pair_foreign_key": "(client_id, character_id) -> player_characters(legacy_client_id, id)",
+    "authentication_changed": false,
+    "production_migration_applied": false
+  },
+  "risks_and_controls": [
+    {
+      "risk": "Replacing client_id would break existing guest and frontend flows.",
+      "control": "Add character_id, backfill bound scopes and preserve client_id compatibility."
+    },
+    {
+      "risk": "A row could pair one client's UUID with another character.",
+      "control": "Composite foreign keys validate the client_id/character_id pair."
+    },
+    {
+      "risk": "Existing RPCs only write client_id.",
+      "control": "A trigger maps legacy writes to character_id when the client scope belongs to a character."
+    },
+    {
+      "risk": "Unlink could inspect only the former canonical client.",
+      "control": "The unbind guard checks private data across every character in the account."
+    }
+  ]
+}
