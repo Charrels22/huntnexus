@@ -67,5 +67,13 @@
     "performance": "Migration 0163 removed every unindexed FK introduced by Topic 4. Remaining session_id FK warning predates Topic 4; unused-index notices immediately after creation are informational."
   },
   "authentication_changed": false,
-  "web_merge_or_deploy": false
+  "web_merge_or_deploy": false,
+  "production_worker": {
+    "name": "huntnexus",
+    "deployment_id": "4df50565-35a8-4d58-9103-b406d920b059",
+    "version_id": "143d8692-b52c-4c0b-bd0e-af6cf980341e",
+    "traffic_percentage": 100,
+    "created_on": "2026-10-13T04:06:36.322914Z",
+    "unchanged_after_topic04": true
+  }
 }

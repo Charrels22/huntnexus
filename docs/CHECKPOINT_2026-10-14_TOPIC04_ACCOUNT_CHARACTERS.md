@@ -75,6 +75,8 @@ Evidência estruturada: [`2026-10-14-topic04-production-verification.json`](evid
 
 O advisor de segurança mantém `rls_enabled_no_policy` como INFO nas tabelas privadas. Isso é esperado no desenho server-only: elas não possuem policy permissiva e os privilégios diretos de `anon`/`authenticated` estão revogados. O advisor de desempenho mantém um FK antigo de `session_id` sem índice e avisos de índices recém-criados ainda não usados; nenhum deles invalida o modelo ou foi introduzido sem controle pelo Tópico 4.
 
+Após o push da branch, o Worker `huntnexus` continuava no deployment `4df50565-35a8-4d58-9103-b406d920b059`, versão `143d8692-b52c-4c0b-bd0e-af6cf980341e`, com 100% do tráfego. Nenhum deploy Web foi provocado.
+
 ## Estado
 
 | Item | Resultado |
