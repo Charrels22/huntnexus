@@ -8,7 +8,7 @@
 - FE-40–48 permanecem como histórico técnico reutilizável; não são a ordem corrente.
 - Tópicos 1 a 4 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
 - O **Tópico 4** está na PR Draft #7; `0162` e o complemento de índices `0163` foram aplicados no Supabase após autorização explícita. Backfill, ownership, permissões, regressão `SYNTHETIC` e limpeza passaram.
-- A próxima ação é o Tópico 5: auditar e reconstruir autenticação/recuperação. Preparar toda mudança e evidência antes de pedir autorização para alterar a configuração real do Auth.
+- O Tópico 5 está em execução: implementação, migration e QA sintética estão preparadas no commit `51d0cbd`; aplicar `0164`, alterar Auth real, testar contas consentidas e publicar continuam sujeitos a autorização explícita.
 
 ## Ordem de leitura
 
@@ -28,7 +28,7 @@
 >
 > Preserve a fundação existente e obedeça ao ADR-0001: experiência pública para descoberta; conta para personalização; uma conta com vários personagens; Brain versionado; recomendações explicáveis; aprendizado por candidatos e promoção controlada.
 >
-> Execute o Tópico 5: audite Supabase Auth, API e sessões; defina entrada forte, MFA, recuperação, gestão de dispositivos e isolamento entre contas/personagens. Prepare código e regressões sem alterar o Auth real até autorização explícita.
+> Conclua o Tópico 5 a partir do checkpoint `docs/CHECKPOINT_2026-10-14_TOPIC05_AUTH_RECOVERY.md`. Confirme a autorização específica antes de aplicar `0164`, alterar a configuração real do Auth, usar contas consentidas ou publicar o Worker.
 >
 > Execute validações proporcionais, registre checkpoint e atualize `CURRENT_STATUS.md`. Publique branch/PR para revisão, mantendo merge e deploy congelados.
 

@@ -1,0 +1,63 @@
+{
+  "captured_at": "2026-10-14",
+  "project_id": "urbncbjapasnjqjqicjv",
+  "production": {
+    "project_status": "ACTIVE_HEALTHY",
+    "region": "sa-east-1",
+    "auth_public_settings": {
+      "email_provider": true,
+      "signup_disabled": false,
+      "email_autoconfirm": false,
+      "phone_provider": false,
+      "saml_enabled": false,
+      "passkeys_enabled": false,
+      "oauth_providers_enabled": []
+    },
+    "topic05_gate_exists": false,
+    "migration_0164_applied": false,
+    "accounts_rls": true,
+    "characters_rls": true,
+    "anon_binding_select": false,
+    "authenticated_binding_select": false,
+    "anon_accounts_select": false,
+    "authenticated_accounts_select": false,
+    "web_deployed": false,
+    "auth_configuration_changed": false
+  },
+  "prepared_change": {
+    "implementation_commit": "51d0cbd",
+    "migration_0164_sha256": "514f06f2f4c74b7ae72f33ce3feb8a9b4330cf97d87a0df6f9a91b2f80ccb49b",
+    "entry": "email_password",
+    "second_factor": "totp_required_for_private_data",
+    "minimum_password_length_client": 12,
+    "recovery": "email_resets_first_factor_only; verified TOTP remains required",
+    "backup": "second verified TOTP recommended",
+    "session_controls": ["local", "others", "global"],
+    "api_checks": ["validated_user", "jwt_session_id", "live_auth_session", "verified_factor", "aal2", "binding_owner"],
+    "magic_link_in_ui": false,
+    "auth_rows_mutated_by_migration": false
+  },
+  "verification": {
+    "web_build_and_typecheck": "PASS",
+    "auth_assurance_regression": "PASS",
+    "auth_contract": "PASS",
+    "pglite_migration_twice": "PASS",
+    "pglite_active_expired_foreign_sessions": "PASS",
+    "pglite_service_role_only": "PASS",
+    "fe28_guest_identity_regression": "PASS",
+    "fe30_scope_isolation_regression": "PASS",
+    "browser_fixture": "SYNTHETIC",
+    "browser_desktop_states": ["empty", "loading", "error"],
+    "browser_mobile_states": ["recovery"],
+    "real_auth_attempted": false,
+    "real_email_sent": false,
+    "real_two_account_tested": false,
+    "real_two_device_tested": false
+  },
+  "pending_authorization": [
+    "apply_migration_0164",
+    "change_supabase_auth_password_policy_and_verify_totp",
+    "run_real_auth_and_recovery_tests_with_consented_accounts",
+    "deploy_web_worker"
+  ]
+}

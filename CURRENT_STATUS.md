@@ -2,7 +2,7 @@
 
 **Data da fotografia:** 2026-10-14. **Última etapa publicada e evidenciada:** **FE-39**. **Release congelado para realinhamento:** PRs #3 e #4 em Draft; filtro de build de produção Cloudflare alterado de `web/app/**` para o caminho reservado inexistente `.__huntnexus_release_freeze__/**`; Worker ativo preservado na versão 250 (`143d8692-b52c-4c0b-bd0e-af6cf980341e`) na última verificação. Merge/publicação não executados. [Checkpoint do Tópico 1](docs/CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md). Consultar `git log`, GitHub e Cloudflare antes de executar, pois este arquivo pode ficar desatualizado.
 
-## Realinhamento — Tópicos 1 a 4 concluídos
+## Realinhamento — Tópicos 1 a 4 concluídos; Tópico 5 em execução
 
 GitHub `main` está em `f87893888d58dc8ccf589bd3294646a2cb8cc328`; PR #3 está no head `102513f8874bf26e86ab707861fc112a4dd9734b`; a baseline de código do PR #4 antes do checkpoint documental é `373990fee73c837597b9c49975a8637c92b6aa89`. Os dois permanecem abertos, agora como Draft. Supabase `urbncbjapasnjqjqicjv` recebeu as migrations `0162_account_character_domain` (`20261014114545`) e `0163_topic04_scope_fk_indexes` (`20261014114749`) após autorização explícita.
 
@@ -12,7 +12,9 @@ O deployment ativo foi criado por Wrangler e não contém SHA Git atribuível. A
 
 [A auditoria do Brain](docs/BRAIN_SOURCE_AUDIT.md) mede as 18 fontes informadas e uma fonte adicional do banco. Das 18, 8 estão registradas, 5 têm alguma linha de domínio, 2 preservam snapshots brutos, 3 têm coletor no repositório e 0 têm atualização de fonte agendada; 0 termos estão revisados/aprovados. A conclusão vinculada à evidência é que o núcleo TibiaData é amplo, mas o Brain completo não está montado. Artefato principal: commit `706d03b` e [checkpoint do Tópico 3](docs/CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md).
 
-O Tópico 4 está concluído na [PR Draft #7](https://github.com/Charrels22/huntnexus/pull/7): `huntnexus_accounts`, `player_characters` 1:N, personagem ativo, `character_id` aditivo em cinco tabelas, compatibilidade `client_id`, FK composta contra mistura, provisionamento e unbind multi-personagem. O banco preservou 2 bindings, 2 perfis e 20 itens; criou 2 contas e 2 personagens; apresentou 0 violações de escopo. A regressão `SYNTHETIC` no Supabase passou e deixou 0 resíduos. `0163` adicionou os seis índices de cobertura exigidos pelo advisor. Autenticação, merge e deploy Web não mudaram. [Checkpoint do Tópico 4](docs/CHECKPOINT_2026-10-14_TOPIC04_ACCOUNT_CHARACTERS.md). **Próximo: Tópico 5, autenticação e recuperação.**
+O Tópico 4 está concluído na [PR Draft #7](https://github.com/Charrels22/huntnexus/pull/7): `huntnexus_accounts`, `player_characters` 1:N, personagem ativo, `character_id` aditivo em cinco tabelas, compatibilidade `client_id`, FK composta contra mistura, provisionamento e unbind multi-personagem. O banco preservou 2 bindings, 2 perfis e 20 itens; criou 2 contas e 2 personagens; apresentou 0 violações de escopo. A regressão `SYNTHETIC` no Supabase passou e deixou 0 resíduos. `0163` adicionou os seis índices de cobertura exigidos pelo advisor. Autenticação, merge e deploy Web não mudaram. [Checkpoint do Tópico 4](docs/CHECKPOINT_2026-10-14_TOPIC04_ACCOUNT_CHARACTERS.md).
+
+O Tópico 5 está em execução: o código substitui Magic Link por senha + TOTP obrigatório, recuperação preserva o segundo fator, a API exige AAL2 e sessão viva, e há controles de logout local/outras/global. Build, PGlite, contratos, regressões FE-28/30 e Browser QA `SYNTHETIC` desktop/mobile passaram. Em produção, `0164` ainda não existe, Auth não foi reconfigurado, autenticação A/B real e deploy não foram executados. [Checkpoint intermediário do Tópico 5](docs/CHECKPOINT_2026-10-14_TOPIC05_AUTH_RECOVERY.md).
 
 ## Entregas que devem permanecer funcionais
 
@@ -41,7 +43,7 @@ As etapas FE-32–39 estão nos respectivos `docs/CHECKPOINT_*`; **não reimplem
 
 - [Issue #1](https://github.com/Charrels22/huntnexus/issues/1): aceite com exports originais e consentidos de sessão de jogador, incluindo MS/The Void (Zao), Damage Input, Misc, Combat Stats, localização, sprites e setup. Já foram corrigidas várias falhas técnicas; **não** usar o issue como motivo para interromper outras frentes a cada sprint. Não reprocessar dados do usuário sem aprovação.
 - Validação externa com representantes **EK/RP/ED/MS/EM** e dados reais; testes sintéticos e reconstruções Tier C não substituem esse aceite.
-- Magic Link real, sessões autenticadas em mais de um dispositivo, RLS/privacidade, monitoração e hardening de produção: critérios finais; não declarar homologado sem teste correspondente.
+- Senha + TOTP real, recuperação, sessões autenticadas em mais de um dispositivo, RLS/privacidade, monitoração e hardening de produção: critérios finais; não declarar homologado sem teste correspondente.
 - Fontes oficiais RubinOT, overlays de patch/versionamento, casos de mecânica sem evidência e três árvores de weapon proficiency com topologia insuficientemente comprovada (`gnome-sword`, `moonsilver-katar`, `pair-of-monk-fists` no último levantamento). Verificar DB antes de afirmar que lacuna persiste.
 - Conteúdo observacional ralo: a maior parte das hunts catalogadas não tem sessões públicas. Não inventar XP/profit para suprir lacunas.
 - Acessibilidade, usabilidade desktop/mobile, busca/navegação de hunts, cache/performance e operação de release continuam backlog.
@@ -63,4 +65,4 @@ Não incrementar automaticamente por ter criado documentação, fixtures ou test
 
 ## Próxima ação
 
-**Executar o Tópico 5 de [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**: auditar o estado real do Supabase Auth e da API, definir entrada forte, MFA, recuperação e gestão de sessões, preparar código/regressões e checkpoint. Qualquer alteração real de autenticação ou configuração do provedor exige autorização explícita antes da aplicação.
+**Concluir o Tópico 5 de [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**: após autorização explícita, aplicar `0164`, configurar a política real de senha/TOTP, migrar as duas contas consentidas, executar isolamento A/B e dois dispositivos e, somente com autorização de deploy, publicar e verificar a versão. Não iniciar o Tópico 6 antes desse gate.
