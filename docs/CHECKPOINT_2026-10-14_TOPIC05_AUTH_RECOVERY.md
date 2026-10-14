@@ -24,6 +24,7 @@ Auditoria somente leitura do Dashboard em 2026-10-14:
 - a autorização recebida citou `0162`, já aplicada, e por isso não cobre a migration pendente `0164`.
 
 Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-14-topic05-auth-audit.json). Modelo e plano: [`AUTHENTICATION_RECOVERY_MODEL.md`](AUTHENTICATION_RECOVERY_MODEL.md).
+Verificação pós-migration preparada: [`2026-10-14-topic05-post-migration-verification.sql`](evidence/2026-10-14-topic05-post-migration-verification.sql).
 
 ## Implementação preparada
 

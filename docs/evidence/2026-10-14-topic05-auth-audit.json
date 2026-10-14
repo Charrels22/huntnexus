@@ -40,6 +40,13 @@
     },
     "topic05_gate_exists": false,
     "migration_0164_applied": false,
+    "topic05_gate_preflight": {
+      "auth_sessions_table": true,
+      "auth_sessions_not_after_column": true,
+      "auth_mfa_factors_table": true,
+      "auth_mfa_factors_status_column": true,
+      "auth_mfa_factors_factor_type_column": true
+    },
     "accounts_rls": true,
     "characters_rls": true,
     "anon_binding_select": false,
