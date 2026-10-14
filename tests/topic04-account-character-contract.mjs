@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const migration = readFileSync(resolve(root, "db/migrations/0162_account_character_domain.sql"), "utf8");
+const indexMigration = readFileSync(resolve(root, "db/migrations/0163_topic04_scope_fk_indexes.sql"), "utf8");
 const regression = readFileSync(resolve(root, "tests/sql/topic04_account_character_model.sql"), "utf8");
 const evidence = JSON.parse(readFileSync(resolve(root, "docs/evidence/2026-10-14-client-id-dependency-audit.json"), "utf8"));
 
@@ -34,6 +35,19 @@ assert.equal((migration.match(/execute function public\.huntnexus_private_charac
 assert.match(migration, /NULL character_id remains valid only for legacy guest data/i);
 assert.match(migration, /client_id remains a compatibility scope/i);
 assert.doesNotMatch(migration, /alter table auth\.|update auth\.|insert into auth\.|delete from auth\./i);
+
+for (const index of [
+  "huntnexus_accounts_active_character_owner_idx",
+  "player_character_profiles_scope_idx",
+  "player_character_inventory_scope_idx",
+  "player_hunt_build_choices_scope_idx",
+  "player_hunt_sessions_scope_idx",
+  "player_session_parse_revisions_scope_idx",
+]) assert.match(indexMigration, new RegExp(`create index if not exists ${index}`));
+
+assert.equal((indexMigration.match(/\(client_id,character_id\)/g) ?? []).length, 5);
+assert.match(indexMigration, /huntnexus_accounts\(id,active_character_id\)/);
+assert.doesNotMatch(indexMigration, /\b(insert|update|delete|alter table auth\.)\b/i);
 assert.match(regression, /SYNTHETIC/g);
 assert.match(regression, /foreign_key_violation/);
 assert.match(regression, /character_not_found_or_not_owned/);
@@ -43,6 +57,20 @@ assert.equal(evidence.live_database.orphan_private_clients, 0);
 assert.equal(evidence.live_database.tables_with_client_id.length, 6);
 assert.equal(evidence.live_database.routines_with_client_id.length, 28);
 assert.equal(evidence.target.authentication_changed, false);
-assert.equal(evidence.target.production_migration_applied, false);
+assert.equal(evidence.target.production_migration_applied, true);
+assert.deepEqual(evidence.production_application.post_migration, {
+  accounts: 2,
+  bindings: 2,
+  characters: 2,
+  profiles: 2,
+  inventory: 20,
+  accounts_without_active_character: 0,
+  bindings_without_account: 0,
+  scope_violations: 0,
+  covered_topic04_foreign_keys: 6,
+});
+assert.equal(evidence.production_application.synthetic_regression.fixture, "SYNTHETIC");
+assert.equal(evidence.production_application.synthetic_regression.synthetic_residue, 0);
+assert.equal(evidence.production_application.authentication_changed, false);
 
 console.log("PASS topic 4 contract: additive 1:N model, five scoped private tables, auth unchanged");

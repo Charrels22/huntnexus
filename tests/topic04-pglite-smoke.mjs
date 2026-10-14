@@ -8,6 +8,7 @@ assert.ok(moduleRoot, "PGLITE_MODULE must point to an installed @electric-sql/pg
 const { PGlite } = await import(pathToFileURL(resolve(moduleRoot, "dist/index.js")).href);
 const root = resolve(import.meta.dirname, "..");
 const migration = readFileSync(resolve(root, "db/migrations/0162_account_character_domain.sql"), "utf8");
+const indexMigration = readFileSync(resolve(root, "db/migrations/0163_topic04_scope_fk_indexes.sql"), "utf8");
 const regression = readFileSync(resolve(root, "tests/sql/topic04_account_character_model.sql"), "utf8");
 
 const base = String.raw`
@@ -81,11 +82,27 @@ const db = new PGlite();
 await db.exec(base);
 await db.exec(migration);
 await db.exec(migration); // retry safety: no duplicate constraint/trigger failure
+await db.exec(indexMigration);
+await db.exec(indexMigration); // retry safety: all follow-up indexes are idempotent
 const result = await db.exec(regression);
 const summary = result.at(-1)?.rows?.[0]?.regression_summary;
 assert.equal(summary?.status, "ok");
 assert.equal(summary?.fixture, "SYNTHETIC");
 assert.equal(summary?.scope_mismatch_blocked, true);
+
+const indexes = await db.query(`
+  select count(*)::int as count
+  from pg_indexes
+  where schemaname='public' and indexname in(
+    'huntnexus_accounts_active_character_owner_idx',
+    'player_character_profiles_scope_idx',
+    'player_character_inventory_scope_idx',
+    'player_hunt_build_choices_scope_idx',
+    'player_hunt_sessions_scope_idx',
+    'player_session_parse_revisions_scope_idx'
+  )
+`);
+assert.equal(indexes.rows[0].count, 6);
 
 const post = await db.query(`
   select
@@ -95,4 +112,4 @@ const post = await db.query(`
 `);
 assert.deepEqual(post.rows[0], { accounts: 0, characters: 0, bindings: 0 });
 await db.close();
-console.log("PASS topic 4 PGlite: migration applied twice, 1:N isolation exercised, fixture cleaned");
+console.log("PASS topic 4 PGlite: migrations applied twice, six FK indexes present, 1:N isolation exercised, fixture cleaned");

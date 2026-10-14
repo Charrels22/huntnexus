@@ -2,17 +2,17 @@
 
 **Data da fotografia:** 2026-10-14. **Última etapa publicada e evidenciada:** **FE-39**. **Release congelado para realinhamento:** PRs #3 e #4 em Draft; filtro de build de produção Cloudflare alterado de `web/app/**` para o caminho reservado inexistente `.__huntnexus_release_freeze__/**`; Worker ativo preservado na versão 250 (`143d8692-b52c-4c0b-bd0e-af6cf980341e`) na última verificação. Merge/publicação não executados. [Checkpoint do Tópico 1](docs/CHECKPOINT_2026-10-13_TOPIC01_RELEASE_FREEZE.md). Consultar `git log`, GitHub e Cloudflare antes de executar, pois este arquivo pode ficar desatualizado.
 
-## Realinhamento — Tópicos 1, 2 e 3 concluídos
+## Realinhamento — Tópicos 1 a 4 concluídos
 
-GitHub `main` está em `f87893888d58dc8ccf589bd3294646a2cb8cc328`; PR #3 está no head `102513f8874bf26e86ab707861fc112a4dd9734b`; a baseline de código do PR #4 antes do checkpoint documental é `373990fee73c837597b9c49975a8637c92b6aa89`. Os dois permanecem abertos, agora como Draft. Supabase `urbncbjapasnjqjqicjv` está `ACTIVE_HEALTHY`, com 167 migrations e última `0161_fe39_hunt_evidence_context`; nenhuma escrita foi feita.
+GitHub `main` está em `f87893888d58dc8ccf589bd3294646a2cb8cc328`; PR #3 está no head `102513f8874bf26e86ab707861fc112a4dd9734b`; a baseline de código do PR #4 antes do checkpoint documental é `373990fee73c837597b9c49975a8637c92b6aa89`. Os dois permanecem abertos, agora como Draft. Supabase `urbncbjapasnjqjqicjv` recebeu as migrations `0162_account_character_domain` (`20261014114545`) e `0163_topic04_scope_fk_indexes` (`20261014114749`) após autorização explícita.
 
 O deployment ativo foi criado por Wrangler e não contém SHA Git atribuível. A identidade comprovada de produção é Cloudflare deployment `4df50565-35a8-4d58-9103-b406d920b059`, versão 250. Não executar merge, `wrangler deploy` nem restaurar `web/app/**` até o descongelamento explícito após o realinhamento.
 
 [ADR-0001](docs/ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) agora fixa: HuntNexus como produto; Brain como conhecimento versionado; descoberta pública; conta para personalização; uma conta com vários personagens; `client_id` como legado; recomendações explicáveis; aprendizado por candidatos e promoção controlada. [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md) substitui a sequência FE-40–48 como ordem corrente.
 
-[A auditoria do Brain](docs/BRAIN_SOURCE_AUDIT.md) mede as 18 fontes informadas e uma fonte adicional do banco. Das 18, 8 estão registradas, 5 têm alguma linha de domínio, 2 preservam snapshots brutos, 3 têm coletor no repositório e 0 têm atualização de fonte agendada; 0 termos estão revisados/aprovados. A conclusão vinculada à evidência é que o núcleo TibiaData é amplo, mas o Brain completo não está montado. Artefato principal: commit `706d03b` e [checkpoint do Tópico 3](docs/CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md). **Próximo: Tópico 4, corrigir conta e personagens sem alterar autenticação.**
+[A auditoria do Brain](docs/BRAIN_SOURCE_AUDIT.md) mede as 18 fontes informadas e uma fonte adicional do banco. Das 18, 8 estão registradas, 5 têm alguma linha de domínio, 2 preservam snapshots brutos, 3 têm coletor no repositório e 0 têm atualização de fonte agendada; 0 termos estão revisados/aprovados. A conclusão vinculada à evidência é que o núcleo TibiaData é amplo, mas o Brain completo não está montado. Artefato principal: commit `706d03b` e [checkpoint do Tópico 3](docs/CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md).
 
-O Tópico 4 está implementado e testado localmente no commit `2ba2482` / [PR Draft #7](https://github.com/Charrels22/huntnexus/pull/7): `huntnexus_accounts`, `player_characters` 1:N, personagem ativo, `character_id` aditivo em cinco tabelas, compatibilidade `client_id`, FK composta contra mistura, provisionamento e unbind multi-personagem. PGlite aplicou a migration duas vezes e a regressão `SYNTHETIC` passou com limpeza total. A migration **não foi aplicada no Supabase**: ela fará backfill de 2 perfis e 20 itens privados reais e aguarda autorização explícita. [Checkpoint do Tópico 4](docs/CHECKPOINT_2026-10-14_TOPIC04_ACCOUNT_CHARACTERS.md).
+O Tópico 4 está concluído na [PR Draft #7](https://github.com/Charrels22/huntnexus/pull/7): `huntnexus_accounts`, `player_characters` 1:N, personagem ativo, `character_id` aditivo em cinco tabelas, compatibilidade `client_id`, FK composta contra mistura, provisionamento e unbind multi-personagem. O banco preservou 2 bindings, 2 perfis e 20 itens; criou 2 contas e 2 personagens; apresentou 0 violações de escopo. A regressão `SYNTHETIC` no Supabase passou e deixou 0 resíduos. `0163` adicionou os seis índices de cobertura exigidos pelo advisor. Autenticação, merge e deploy Web não mudaram. [Checkpoint do Tópico 4](docs/CHECKPOINT_2026-10-14_TOPIC04_ACCOUNT_CHARACTERS.md). **Próximo: Tópico 5, autenticação e recuperação.**
 
 ## Entregas que devem permanecer funcionais
 
@@ -61,6 +61,6 @@ As etapas FE-32–39 estão nos respectivos `docs/CHECKPOINT_*`; **não reimplem
 
 Não incrementar automaticamente por ter criado documentação, fixtures ou testes novos. Priorizar critérios de aceite verificáveis.
 
-## Próxima ação sem intervenção manual obrigatória
+## Próxima ação
 
-**Concluir o Tópico 4 de [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**. Após autorização explícita para backfill privado, aplicar `0162_account_character_domain`, executar a verificação pós-migration e `tests/sql/topic04_account_character_model.sql`, atualizar a evidência e confirmar que produção Web/Worker permaneceu intacta. Não avançar ao Tópico 5 antes disso.
+**Executar o Tópico 5 de [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**: auditar o estado real do Supabase Auth e da API, definir entrada forte, MFA, recuperação e gestão de sessões, preparar código/regressões e checkpoint. Qualquer alteração real de autenticação ou configuração do provedor exige autorização explícita antes da aplicação.

@@ -1,71 +1,92 @@
 # Tópico 4 — conta 1:N personagens
 
-Checkpoint parcial de 2026-10-14. Objetivo: substituir `client_id` como identidade acumulada de conta/personagem por ownership explícito, sem quebrar compatibilidade e sem alterar autenticação.
+Checkpoint concluído em 2026-10-14. Objetivo: substituir `client_id` como identidade acumulada de conta/personagem por ownership explícito, preservar compatibilidade e migrar os dados existentes sem alterar autenticação.
 
 ## Inventário anterior à mudança
 
-- seis tabelas públicas contêm `client_id`;
-- cinco tabelas privadas precisam receber `character_id`;
-- 10 índices e 28 RPCs usam `client_id` no banco vivo;
-- 24 migrations históricas, 10 arquivos Web, 33 testes e um workflow referenciam `client_id`;
+- seis tabelas públicas continham `client_id`;
+- cinco tabelas privadas precisavam receber `character_id`;
+- 10 índices e 28 RPCs usavam `client_id` no banco vivo;
 - banco vivo: 2 bindings, 2 perfis, 20 itens, 0 escolhas, 0 sessões e 0 revisões;
-- os dois escopos privados estão vinculados; não há `client_id` privado órfão.
+- os dois escopos privados estavam vinculados; não havia `client_id` privado órfão.
 
 Consultas e snapshot: [`2026-10-14-client-id-dependency-audit.sql`](evidence/2026-10-14-client-id-dependency-audit.sql) e [`2026-10-14-client-id-dependency-audit.json`](evidence/2026-10-14-client-id-dependency-audit.json).
 
-## Implementação preparada
+## Implementação versionada
 
-Commit `2ba2482` (`feat(account): add multi-character ownership model`), [PR Draft #7](https://github.com/Charrels22/huntnexus/pull/7), base PR #6.
+Baseline no commit `2ba2482` (`feat(account): add multi-character ownership model`), gate documental em `f1cd23e` e [PR Draft #7](https://github.com/Charrels22/huntnexus/pull/7), com base na PR #6.
 
-- `db/migrations/0162_account_character_domain.sql`: `huntnexus_accounts`, `player_characters`, personagem ativo e backfill aditivo;
+- `0162_account_character_domain`: cria `huntnexus_accounts`, `player_characters`, personagem ativo e backfill aditivo;
 - Profile, inventário, escolhas, sessões e revisões recebem `character_id`;
 - FK composta `(client_id, character_id)` impede cruzar legado e personagem;
 - triggers mantêm RPCs legados funcionais e mapeiam guest ao vincular a conta;
 - RPCs de listar/criar/ativar/resolver personagem são executáveis apenas por `service_role`;
 - unbind protege dados de todos os personagens;
-- autenticação, token, Magic Link, MFA e recuperação não mudam;
-- rollback recusa execução quando já existir multi-personagem real.
+- `0163_topic04_scope_fk_indexes` cobre as seis FKs introduzidas no tópico;
+- autenticação, token, Magic Link, MFA e recuperação não mudaram;
+- os rollbacks de `0162` e `0163` estão versionados; `0162` recusa colapsar multi-personagem real.
 
 Detalhes: [`ACCOUNT_CHARACTER_MIGRATION.md`](ACCOUNT_CHARACTER_MIGRATION.md).
 
-## Validação executada
+## Aplicação no Supabase
+
+Após autorização explícita do usuário, as migrations foram aplicadas em `urbncbjapasnjqjqicjv`:
+
+| Versão Supabase | Migration | SHA-256 do arquivo aplicado |
+| --- | --- | --- |
+| `20261014114545` | `0162_account_character_domain` | `417b3022ba8582ea2c66741dc035f98994c71a08d360803bb706aa2ff1782ff3` |
+| `20261014114749` | `0163_topic04_scope_fk_indexes` | `549928fc9ef1620b85d2fb909bed78aabd84a0121b5ed880fa15dda820cb7324` |
+
+O segundo passo foi necessário porque o advisor detectou seis FKs novas sem índice de cobertura. Após `0163`, todas as seis ficaram cobertas e nenhum aviso `unindexed_foreign_keys` introduzido pelo Tópico 4 permaneceu.
+
+## Evidência pós-migration
+
+| Invariante | Antes | Depois | Resultado |
+| --- | ---: | ---: | --- |
+| Bindings | 2 | 2 | PASS |
+| Perfis privados | 2 | 2 | PASS |
+| Itens privados | 20 | 20 | PASS |
+| Contas explícitas | inexistente | 2 | PASS |
+| Personagens explícitos | inexistente | 2 | PASS |
+| Contas sem personagem ativo | n/a | 0 | PASS |
+| Bindings sem conta | n/a | 0 | PASS |
+| Violações `client_id` + `character_id` | n/a | 0 | PASS |
+
+As duas novas tabelas têm RLS habilitada. `anon` e `authenticated` não possuem SELECT ou escrita direta; `service_role` possui acesso. As quatro RPCs novas também são exclusivas de `service_role`.
+
+Evidência estruturada: [`2026-10-14-topic04-production-verification.json`](evidence/2026-10-14-topic04-production-verification.json). SQL read-only: [`2026-10-14-topic04-post-migration-verification.sql`](evidence/2026-10-14-topic04-post-migration-verification.sql).
+
+## Regressões
 
 | Evidência | Resultado |
 | --- | --- |
-| Parser PostgreSQL `pglast` nos cinco arquivos SQL | PASS |
-| PGlite 0.3.10: aplicar migration duas vezes | PASS |
+| PGlite 0.3.10: aplicar `0162` e `0163` duas vezes | PASS |
+| PGlite: seis índices de FK presentes | PASS |
 | PGlite: conta com dois personagens e scopes distintos | PASS |
 | PGlite: FK bloqueia `client_id` A + `character_id` B | PASS |
 | PGlite: troca de personagem ativo e ownership estrangeiro negado | PASS |
 | PGlite: unbind bloqueado com dados e limpeza final 0/0/0 | PASS |
+| Supabase: regressão `topic04_account_character_model.sql` | PASS (`SYNTHETIC`) |
+| Supabase: resíduo sintético de personagem/perfil/inventário | 0/0/0 |
 | `node tests/topic04-account-character-contract.mjs` | PASS |
 | `node tests/fe28-client-id-regression.mjs` | PASS; não é auth real |
-| `node tests/account-security-smoke.mjs` | PASS; 9 tokens falsos negados, não é login real |
-| links Markdown e `git diff --check` | PASS |
+| `node tests/account-security-smoke.mjs` | PASS; tokens falsos, não é login real |
+| `git diff --check` | PASS |
 
-O teste PGlite usa somente fixture marcada `SYNTHETIC`; não leu nem escreveu dados reais.
-
-## Gate pendente
-
-A migration ainda não foi aplicada em `urbncbjapasnjqjqicjv`. Ela criará tabelas/constraints/triggers e fará backfill das linhas privadas existentes. A regra 3 de `AGENTS.md` exige autorização explícita para dados reais privados; por isso a execução no Supabase é o único gate restante deste tópico.
-
-Após autorização:
-
-1. confirmar novamente 0 escopos privados órfãos;
-2. aplicar migration `0162_account_character_domain`;
-3. executar [`2026-10-14-topic04-post-migration-verification.sql`](evidence/2026-10-14-topic04-post-migration-verification.sql);
-4. executar `tests/sql/topic04_account_character_model.sql` (`SYNTHETIC`, autocontido e limpo);
-5. consultar advisors Supabase e registrar resultados;
-6. atualizar `production_migration_applied`, checkpoint, `CURRENT_STATUS.md` e SHA.
+O advisor de segurança mantém `rls_enabled_no_policy` como INFO nas tabelas privadas. Isso é esperado no desenho server-only: elas não possuem policy permissiva e os privilégios diretos de `anon`/`authenticated` estão revogados. O advisor de desempenho mantém um FK antigo de `session_id` sem índice e avisos de índices recém-criados ainda não usados; nenhum deles invalida o modelo ou foi introduzido sem controle pelo Tópico 4.
 
 ## Estado
 
 | Item | Resultado |
 | --- | --- |
 | Inventário PK/FK/RPC/API/client storage | PASS |
-| Modelo 1:N aditivo | PASS em código |
-| Compatibilidade e rollback | PASS em código/PGlite |
+| Modelo conta 1:N personagens | PASS |
+| Migração aditiva de dados existentes | PASS |
+| Isolamento por ownership e FK composta | PASS |
+| Compatibilidade, verificação e rollback | PASS |
+| Regressão `SYNTHETIC` e limpeza | PASS |
 | Autenticação alterada | NÃO |
-| Migration no Supabase | **PENDENTE — autorização explícita** |
 | Merge/deploy Web | NÃO EXECUTADO; congelado |
-| Avançar ao Tópico 5 | BLOQUEADO até concluir este gate |
+| Tópico 4 | **PASS** |
+
+Próximo: Tópico 5 — reconstruir autenticação e recuperação. Mudanças reais de autenticação continuam sujeitas à autorização explícita prevista em `AGENTS.md`.

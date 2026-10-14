@@ -6,9 +6,9 @@
 
 - A promoção está congelada. PRs #3/#4 estão Draft e o gatilho de produção Cloudflare está bloqueado por filtro reversível.
 - FE-40–48 permanecem como histórico técnico reutilizável; não são a ordem corrente.
-- Tópicos 1, 2 e 3 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
-- O código do **Tópico 4** está na PR Draft #7; a migration `0162` não foi aplicada porque fará backfill de dados privados reais e exige autorização explícita.
-- A próxima ação é aplicar `0162` somente após essa autorização, executar verificação/regressão `SYNTHETIC`, atualizar evidências e fechar o Tópico 4. Não avançar ao Tópico 5 antes disso.
+- Tópicos 1 a 4 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
+- O **Tópico 4** está na PR Draft #7; `0162` e o complemento de índices `0163` foram aplicados no Supabase após autorização explícita. Backfill, ownership, permissões, regressão `SYNTHETIC` e limpeza passaram.
+- A próxima ação é o Tópico 5: auditar e reconstruir autenticação/recuperação. Preparar toda mudança e evidência antes de pedir autorização para alterar a configuração real do Auth.
 
 ## Ordem de leitura
 
@@ -28,7 +28,7 @@
 >
 > Preserve a fundação existente e obedeça ao ADR-0001: experiência pública para descoberta; conta para personalização; uma conta com vários personagens; Brain versionado; recomendações explicáveis; aprendizado por candidatos e promoção controlada.
 >
-> Conclua o Tópico 4 na PR Draft #7. Com autorização explícita para o backfill privado, aplique a migration `0162_account_character_domain`, execute a verificação pós-migration e a regressão SQL `SYNTHETIC`, atualize o checkpoint e preserve autenticação, merge e deploy.
+> Execute o Tópico 5: audite Supabase Auth, API e sessões; defina entrada forte, MFA, recuperação, gestão de dispositivos e isolamento entre contas/personagens. Prepare código e regressões sem alterar o Auth real até autorização explícita.
 >
 > Execute validações proporcionais, registre checkpoint e atualize `CURRENT_STATUS.md`. Publique branch/PR para revisão, mantendo merge e deploy congelados.
 

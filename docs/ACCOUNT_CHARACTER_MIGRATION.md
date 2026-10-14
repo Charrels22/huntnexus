@@ -16,7 +16,7 @@ auth user verificado pelo Worker
             └─ parse revisions
 ```
 
-A migration [`0162_account_character_domain.sql`](../db/migrations/0162_account_character_domain.sql) é aditiva. Ela não muda Magic Link, token, sessão, recuperação ou MFA.
+As migrations [`0162_account_character_domain.sql`](../db/migrations/0162_account_character_domain.sql) e [`0163_topic04_scope_fk_indexes.sql`](../db/migrations/0163_topic04_scope_fk_indexes.sql) são aditivas. A primeira cria e migra o domínio; a segunda cobre as seis FKs novas após inspeção do advisor. Elas não mudam Magic Link, token, sessão, recuperação ou MFA.
 
 ## Dependências encontradas antes da migration
 
@@ -46,20 +46,23 @@ Snapshot: [`evidence/2026-10-14-client-id-dependency-audit.json`](evidence/2026-
 - mudança de personagem ativo exige ownership e personagem não arquivado;
 - unbind passa a inspecionar dados de todos os personagens da conta.
 
-## Ordem de promoção
+## Ordem executada
 
-1. Confirmar novamente que não há `client_id` privado órfão.
-2. Criar backup e testar restauração segundo o Tópico 6 antes da produção.
-3. Aplicar `0162_account_character_domain.sql` em ambiente aprovado.
-4. Executar [`2026-10-14-topic04-post-migration-verification.sql`](evidence/2026-10-14-topic04-post-migration-verification.sql).
-5. Executar [`topic04_account_character_model.sql`](../tests/sql/topic04_account_character_model.sql); todos os dados são `SYNTHETIC` e removidos.
-6. Somente depois expor seleção de personagem no Worker/Web, durante a experiência pessoal.
+1. O preflight confirmou 0 `client_id` privado órfão e preservou as contagens iniciais.
+2. Após autorização explícita, `0162_account_character_domain.sql` foi aplicada em `urbncbjapasnjqjqicjv`.
+3. A verificação read-only confirmou 2 contas, 2 bindings, 2 personagens, 2 perfis, 20 itens e 0 violações.
+4. [`topic04_account_character_model.sql`](../tests/sql/topic04_account_character_model.sql) passou no Supabase; todos os dados eram `SYNTHETIC` e o resíduo final foi zero.
+5. O advisor identificou seis FKs do tópico sem índice; `0163_topic04_scope_fk_indexes.sql` foi testada e aplicada.
+6. A verificação final confirmou cobertura dos seis FKs, RLS ativa, acesso direto negado a `anon`/`authenticated` e RPCs novas exclusivas de `service_role`.
+7. Seleção de personagem no Worker/Web continua reservada ao Tópico 11.
+
+Evidência: [`2026-10-14-topic04-production-verification.json`](evidence/2026-10-14-topic04-production-verification.json). Backup/restauração completo continua como portão próprio do Tópico 6; não foi apresentado como realizado neste tópico.
 
 ## Rollback
 
-[`0162_account_character_domain_rollback.sql`](../db/rollback/0162_account_character_domain_rollback.sql) é destrutivo e exige aprovação e backup. Ele recusa execução se já existir conta com múltiplos personagens ou qualquer pareamento incompatível, porque nesse ponto voltar a um único `client_id` perderia a separação de propriedade.
+[`0162_account_character_domain_rollback.sql`](../db/rollback/0162_account_character_domain_rollback.sql) é destrutivo e exige aprovação e backup. Ele recusa execução se já existir conta com múltiplos personagens ou qualquer pareamento incompatível, porque nesse ponto voltar a um único `client_id` perderia a separação de propriedade. [`0163_topic04_scope_fk_indexes_rollback.sql`](../db/rollback/0163_topic04_scope_fk_indexes_rollback.sql) apenas remove os seis índices de cobertura e não apaga dados.
 
-Enquanto a migration não é aplicada, rollback significa simplesmente remover/reverter a branch. Depois da aplicação, o rollback seguro preferido é restaurar backup ou corrigir aditivamente; o script existe apenas para a janela anterior ao primeiro dado multi-personagem real.
+Como as migrations já foram aplicadas, o rollback seguro preferido é uma correção aditiva. O rollback de `0162` existe apenas para a janela anterior ao primeiro dado multi-personagem real e deve ser precedido por backup verificado.
 
 ## Limite deste tópico
 

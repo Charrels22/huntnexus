@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "captured_at": "2026-10-14T01:18:00-03:00",
   "project_ref": "urbncbjapasnjqjqicjv",
   "read_only": true,
@@ -81,7 +81,55 @@
     "legacy_guest_rows_allowed_unmapped": true,
     "scope_pair_foreign_key": "(client_id, character_id) -> player_characters(legacy_client_id, id)",
     "authentication_changed": false,
-    "production_migration_applied": false
+    "production_migration_applied": true
+  },
+  "production_application": {
+    "authorized_on": "2026-10-14",
+    "project_ref": "urbncbjapasnjqjqicjv",
+    "migrations": [
+      {
+        "version": "20261014114545",
+        "name": "0162_account_character_domain",
+        "sha256": "417b3022ba8582ea2c66741dc035f98994c71a08d360803bb706aa2ff1782ff3"
+      },
+      {
+        "version": "20261014114749",
+        "name": "0163_topic04_scope_fk_indexes",
+        "sha256": "549928fc9ef1620b85d2fb909bed78aabd84a0121b5ed880fa15dda820cb7324"
+      }
+    ],
+    "preflight": {
+      "bindings": 2,
+      "profiles": 2,
+      "inventory": 20,
+      "orphan_private_clients": 0
+    },
+    "post_migration": {
+      "accounts": 2,
+      "bindings": 2,
+      "characters": 2,
+      "profiles": 2,
+      "inventory": 20,
+      "accounts_without_active_character": 0,
+      "bindings_without_account": 0,
+      "scope_violations": 0,
+      "covered_topic04_foreign_keys": 6
+    },
+    "synthetic_regression": {
+      "status": "ok",
+      "fixture": "SYNTHETIC",
+      "account_to_characters": "1:N",
+      "scope_mismatch_blocked": true,
+      "synthetic_residue": 0
+    },
+    "access_verification": {
+      "new_tables_rls_enabled": true,
+      "anon_table_access": false,
+      "authenticated_table_access": false,
+      "new_rpcs_service_role_only": true
+    },
+    "authentication_changed": false,
+    "web_deploy_changed": false
   },
   "risks_and_controls": [
     {
