@@ -58,9 +58,13 @@ A inspeção somente leitura do Dashboard confirmou:
 - TOTP habilitado, limite de 10 fatores e sessão `aal1` limitada a 15 minutos;
 - refresh tokens comprometidos são detectados/revogados e o access token expira em 3600 segundos;
 - limite de 2 e-mails de autenticação por hora;
+- `Site URL` configurada em `https://huntnexus.charr3ls22.workers.dev` e única URL permitida de retorno em `https://huntnexus.charr3ls22.workers.dev/account`, sem `localhost` na allow list;
+- modelo padrão de recuperação usa `{{ .ConfirmationURL }}` e o assunto `Reset your password`;
+- SMTP personalizado desabilitado, portanto os modelos permanecem os padrões não editáveis do Supabase;
+- notificações de troca de senha/e-mail/telefone, vínculo/remoção de método de login e inclusão/remoção de MFA estão todas desabilitadas;
 - time-box, inatividade e sessão única indisponíveis no plano `FREE` e atualmente definidos como ilimitados/desabilitados.
 
-O endurecimento preparado para ativação é: mínimo de 12 caracteres, composição forte, `Secure password change` e exigência da senha atual. O Auth oficial isenta sessões de recuperação da exigência da senha atual, portanto o fluxo `PASSWORD_RECOVERY` continua apto a definir uma nova senha. A proteção contra senhas vazadas e os limites avançados de sessão permanecem pendentes de decisão de plano/custo e não fazem parte desta ativação.
+O endurecimento preparado para ativação é: mínimo de 12 caracteres, composição forte, `Secure password change`, exigência da senha atual e notificações de segurança para senha, e-mail, métodos de login e MFA. O Auth oficial isenta sessões de recuperação da exigência da senha atual, portanto o fluxo `PASSWORD_RECOVERY` continua apto a definir uma nova senha. A proteção contra senhas vazadas e os limites avançados de sessão permanecem pendentes de decisão de plano/custo e não fazem parte desta ativação. SMTP personalizado também exige decisão operacional separada; o limite padrão de 2 e-mails por hora restringe a homologação e não é adequado como configuração final de produção.
 
 ### API
 
@@ -113,9 +117,11 @@ A ativação real é uma operação conjunta e controlada:
 
 1. aplicar `0164_topic05_auth_session_gate`;
 2. configurar comprimento mínimo de senha de 12, composição forte, `Secure password change` e exigência da senha atual no Auth;
-3. confirmar TOTP habilitado e manter confirmação de e-mail;
-4. testar localmente contra produção com as duas contas consentidas;
-5. publicar o Worker apenas após autorização de deploy e verificar a versão;
-6. executar novamente os casos A/B, dois dispositivos, recuperação, sessão revogada e logout por escopo.
+3. habilitar notificações de segurança para troca de senha/e-mail, métodos de login e MFA;
+4. confirmar TOTP habilitado, manter confirmação de e-mail e revalidar `Site URL`/allow list;
+5. decidir e configurar um SMTP operacional antes do release, sem incorporar credenciais ao repositório;
+6. testar localmente contra produção com as duas contas consentidas;
+7. publicar o Worker apenas após autorização de deploy e verificar a versão;
+8. executar novamente os casos A/B, dois dispositivos, recuperação, sessão revogada e logout por escopo.
 
 Rollback antes do deploy: remover a função pela migration de rollback. Rollback depois do deploy: restaurar a versão anterior do Worker antes de remover a função. Desabilitar MFA ou apagar fatores de usuários não faz parte do rollback. A proteção contra senhas vazadas e limites avançados de sessão não podem ser ativados no plano `FREE`; qualquer upgrade tem custo e exige decisão separada.

@@ -36,7 +36,29 @@
       "configurable_user_session_limits": "PRO_PLAN_OR_ABOVE",
       "access_token_expiry_seconds": 3600,
       "detect_and_revoke_compromised_refresh_tokens": true,
-      "captcha": false
+      "captcha": false,
+      "url_configuration": {
+        "site_url": "https://huntnexus.charr3ls22.workers.dev",
+        "redirect_urls": [
+          "https://huntnexus.charr3ls22.workers.dev/account"
+        ],
+        "localhost_redirect_allowed": false
+      },
+      "email_delivery": {
+        "custom_smtp": false,
+        "templates": "SUPABASE_DEFAULT_READ_ONLY",
+        "reset_password_subject": "Reset your password",
+        "reset_password_action": "{{ .ConfirmationURL }}"
+      },
+      "security_notifications": {
+        "password_changed": false,
+        "email_address_changed": false,
+        "phone_number_changed": false,
+        "sign_in_method_linked": false,
+        "sign_in_method_removed": false,
+        "mfa_method_added": false,
+        "mfa_method_removed": false
+      }
     },
     "topic05_gate_exists": false,
     "migration_0164_applied": false,
@@ -91,6 +113,8 @@
     "apply_migration_0164",
     "set_minimum_password_length_12_and_strongest_character_policy",
     "enable_secure_password_change_and_require_current_password",
+    "enable_security_notifications_for_password_email_sign_in_and_mfa_changes",
+    "decide_custom_smtp_before_release",
     "run_real_auth_and_recovery_tests_with_consented_accounts",
     "deploy_web_worker"
   ],
