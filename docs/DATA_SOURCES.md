@@ -1,5 +1,7 @@
 # Fontes de Dados
 
+**Estado corrente:** consultar a [auditoria versionada do Brain](BRAIN_SOURCE_AUDIT.md). Esta lista registra a intenção de uso; ela não prova conexão, ingestão, automação ou permissão.
+
 ## Tier A — RubinOT oficial
 
 | Fonte | URL | Uso |
@@ -7,7 +9,6 @@
 | RubinOT Changelog | https://rubinot.com.br/changelog | patches, balanceamentos, alterações |
 | RubinOT News | https://rubinot.com.br/news | anúncios e alterações futuras |
 | RubinOT Wiki | https://wiki.rubinot.com/pt-BR | sistemas e conteúdo custom |
-| RubinOT Tools | https://www.rubinottools.com | ferramentas e dados específicos |
 
 ## Tier B — Tibia factual/estruturado
 
@@ -22,6 +23,7 @@
 
 | Fonte | URL | Uso |
 |---|---|---|
+| RubinOT Tools | https://www.rubinottools.com | ferramentas de terceiros para RubinOT; classificação oficial não comprovada |
 | PT Finder | https://pt-finder.com.br/ | Party Hunt e Session Tracker |
 | OberonGG | https://oberongg.com/ | sessões, XP, profit, dano, cura, bônus |
 | Hunts.RubinOT | https://hunts.rubinot.app/ | rankings e sessões RubinOT |
@@ -40,4 +42,4 @@
 
 ## Regra
 
-Tier C/D pode sugerir hipóteses ou fornecer amostras, mas não substitui automaticamente Tier A/B.
+Tier C/D pode sugerir hipóteses ou fornecer amostras, mas não substitui automaticamente Tier A/B. RubinOT Tools permanece Tier C até que propriedade oficial seja comprovada.
