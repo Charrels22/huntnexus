@@ -26,7 +26,7 @@ Auditoria somente leitura do Dashboard em 2026-10-14:
 - SMTP personalizado está desabilitado e os sete alertas de segurança do Auth estão desligados;
 - a autorização recebida citou `0162`, já aplicada, e por isso não cobre a migration pendente `0164`.
 
-Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-14-topic05-auth-audit.json). Modelo e plano: [`AUTHENTICATION_RECOVERY_MODEL.md`](AUTHENTICATION_RECOVERY_MODEL.md).
+Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-14-topic05-auth-audit.json). Modelo: [`AUTHENTICATION_RECOVERY_MODEL.md`](AUTHENTICATION_RECOVERY_MODEL.md). Execução real preparada: [`2026-10-14-topic05-production-activation-runbook.md`](evidence/2026-10-14-topic05-production-activation-runbook.md).
 Verificação pós-migration preparada: [`2026-10-14-topic05-post-migration-verification.sql`](evidence/2026-10-14-topic05-post-migration-verification.sql).
 
 ## Implementação preparada
@@ -67,7 +67,7 @@ Screenshots locais são gerados em `web/app/topic05-browser-qa/` e ficam fora do
 
 1. autorização explícita para aplicar `0164` e alterar a configuração real do Supabase Auth;
 2. política mínima de 12 caracteres com composição forte, troca segura, senha atual obrigatória, TOTP verificado e alertas de segurança habilitados;
-3. decisão/configuração de SMTP operacional para não depender do limite padrão de 2 e-mails por hora no release;
+3. decisão/configuração de SMTP operacional: o serviço padrão é best-effort, sem SLA e oficialmente restrito a destinatários autorizados da equipe; as duas contas piloto não são membros da organização;
 4. migração controlada das duas contas consentidas de Magic Link para senha + TOTP;
 5. casos positivos e negativos A/B, segundo dispositivo, recuperação, sessão revogada e logout por escopo;
 6. autorização de deploy, versão publicada e rollback verificado.

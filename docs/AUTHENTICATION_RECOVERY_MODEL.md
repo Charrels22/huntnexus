@@ -64,7 +64,9 @@ A inspeção somente leitura do Dashboard confirmou:
 - notificações de troca de senha/e-mail/telefone, vínculo/remoção de método de login e inclusão/remoção de MFA estão todas desabilitadas;
 - time-box, inatividade e sessão única indisponíveis no plano `FREE` e atualmente definidos como ilimitados/desabilitados.
 
-O endurecimento preparado para ativação é: mínimo de 12 caracteres, composição forte, `Secure password change`, exigência da senha atual e notificações de segurança para senha, e-mail, métodos de login e MFA. O Auth oficial isenta sessões de recuperação da exigência da senha atual, portanto o fluxo `PASSWORD_RECOVERY` continua apto a definir uma nova senha. A proteção contra senhas vazadas e os limites avançados de sessão permanecem pendentes de decisão de plano/custo e não fazem parte desta ativação. SMTP personalizado também exige decisão operacional separada; o limite padrão de 2 e-mails por hora restringe a homologação e não é adequado como configuração final de produção.
+O endurecimento preparado para ativação é: mínimo de 12 caracteres, composição forte, `Secure password change`, exigência da senha atual e notificações de segurança para senha, e-mail, métodos de login e MFA. O Auth oficial isenta sessões de recuperação da exigência da senha atual, portanto o fluxo `PASSWORD_RECOVERY` continua apto a definir uma nova senha. A proteção contra senhas vazadas e os limites avançados de sessão permanecem pendentes de decisão de plano/custo e não fazem parte desta ativação.
+
+O SMTP padrão não é um transporte de produção: a documentação oficial o classifica como best-effort sem SLA e afirma que destinatários fora da equipe podem ser recusados. A organização possui um membro e as duas contas piloto não são membros. Embora o piloto anterior tenha registrado entrega, isso é evidência daquele envio, não garantia operacional. SMTP personalizado, domínio/remetente e limites devem ser decididos antes do release; credenciais nunca entram no repositório. O roteiro completo está em [`2026-10-14-topic05-production-activation-runbook.md`](evidence/2026-10-14-topic05-production-activation-runbook.md).
 
 ### API
 
