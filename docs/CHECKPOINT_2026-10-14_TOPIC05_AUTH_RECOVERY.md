@@ -2,7 +2,7 @@
 
 Checkpoint intermediário em 2026-10-14. O código, migration, regressões e QA sintética estão preparados. O tópico permanece **PENDENTE** porque autenticação real e deploy exigem autorização explícita e ainda não foram executados.
 
-Baseline de implementação: commit `51d0cbd` (`feat(auth): require password and TOTP for private data`). SHA-256 do arquivo `0164` preparado: `514f06f2f4c74b7ae72f33ce3feb8a9b4330cf97d87a0df6f9a91b2f80ccb49b`.
+Baseline de implementação: commit `51d0cbd` (`feat(auth): require password and TOTP for private data`), documentada no commit `5e7d3a1` e publicada na [PR Draft #8](https://github.com/Charrels22/huntnexus/pull/8), com base na branch do Tópico 4. SHA-256 do arquivo `0164` preparado: `514f06f2f4c74b7ae72f33ce3feb8a9b4330cf97d87a0df6f9a91b2f80ccb49b`.
 
 ## Estado encontrado
 
