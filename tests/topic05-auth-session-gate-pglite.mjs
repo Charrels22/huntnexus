@@ -11,6 +11,10 @@ const migration = readFileSync(resolve(root, "db/migrations/0164_topic05_auth_se
 const rollback = readFileSync(resolve(root, "db/rollback/0164_topic05_auth_session_gate_rollback.sql"), "utf8");
 const verification = readFileSync(resolve(root, "docs/evidence/2026-10-14-topic05-post-migration-verification.sql"), "utf8");
 const rollbackVerification = readFileSync(resolve(root, "docs/evidence/2026-10-28-topic05-post-rollback-verification.sql"), "utf8");
+const userId = "11111111-1111-4111-8111-111111111111";
+const otherUserId = "22222222-2222-4222-8222-222222222222";
+const activeSessionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const expiredSessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 const db = new PGlite();
 await db.exec(`
@@ -34,8 +38,22 @@ await db.exec(`
     status text not null
   );
 `);
+await db.query("insert into auth.users(id) values($1),($2)", [userId, otherUserId]);
+await db.query("insert into auth.sessions(id,user_id,not_after) values($1,$2,now()+interval '1 hour'),($3,$2,now()-interval '1 hour')", [activeSessionId, userId, expiredSessionId]);
+await db.query("insert into auth.mfa_factors(id,user_id,factor_type,status) values(gen_random_uuid(),$1,'totp','verified'),(gen_random_uuid(),$1,'totp','unverified'),(gen_random_uuid(),$2,'totp','verified')", [userId, otherUserId]);
+const baseline = await db.query(`select
+  (select count(*)::int from auth.users) user_rows,
+  (select count(*)::int from auth.sessions) session_rows,
+  (select count(*)::int from auth.mfa_factors) factor_rows`);
+assert.deepEqual(baseline.rows[0], { user_rows: 2, session_rows: 2, factor_rows: 3 });
+
 await db.exec(migration);
 await db.exec(migration);
+const afterMigration = await db.query(`select
+  (select count(*)::int from auth.users) user_rows,
+  (select count(*)::int from auth.sessions) session_rows,
+  (select count(*)::int from auth.mfa_factors) factor_rows`);
+assert.deepEqual(afterMigration.rows[0], baseline.rows[0]);
 
 const functionConfig = await db.query(`select p.proconfig
   from pg_proc p
@@ -44,13 +62,6 @@ const functionConfig = await db.query(`select p.proconfig
     and p.proname='huntnexus_auth_session_gate'
     and p.proargtypes='2950 2950'::oidvector`);
 assert.deepEqual(functionConfig.rows, [{ proconfig: ['search_path=""'] }]);
-
-const userId = "11111111-1111-4111-8111-111111111111";
-const otherUserId = "22222222-2222-4222-8222-222222222222";
-const activeSessionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const expiredSessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
-await db.query("insert into auth.sessions(id,user_id,not_after) values($1,$2,now()+interval '1 hour'),($3,$2,now()-interval '1 hour')", [activeSessionId, userId, expiredSessionId]);
-await db.query("insert into auth.mfa_factors(id,user_id,factor_type,status) values(gen_random_uuid(),$1,'totp','verified'),(gen_random_uuid(),$1,'totp','unverified'),(gen_random_uuid(),$2,'totp','verified')", [userId, otherUserId]);
 
 const active = await db.query("select public.huntnexus_auth_session_gate($1,$2) gate", [userId, activeSessionId]);
 assert.deepEqual(active.rows[0].gate, { active_session: true, verified_factor_count: 1, requires_aal2: true });
@@ -86,11 +97,11 @@ assert.deepEqual(rollbackVerificationResults[0].rows[0], {
   function_absent: true,
   sessions_table: "auth.sessions",
   factors_table: "auth.mfa_factors",
-  auth_user_rows: 0,
+  auth_user_rows: 2,
   auth_session_rows: 2,
   auth_factor_rows: 3,
   verification_pass: true,
 });
 
 await db.close();
-console.log("PASS topic 5 PGlite: idempotent migration, active/expired/foreign sessions, factor count, server-only grant, executable apply/rollback verification, idempotent rollback without Auth data loss");
+console.log("PASS topic 5 PGlite: idempotent migration, pre-existing Auth data preserved, active/expired/foreign sessions, factor count, server-only grant, executable apply/rollback verification, idempotent rollback");

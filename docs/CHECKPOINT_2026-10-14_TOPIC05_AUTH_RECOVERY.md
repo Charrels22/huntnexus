@@ -56,6 +56,7 @@ Revisão de transporte em 2026-10-28: novos clientes passaram a enviar o JWT no 
 | `topic05-auth-contract.mjs` | PASS |
 | `topic05-auth-transport-regression.mjs` | PASS; Bearer presente e JWT ausente do JSON |
 | PGlite: aplicar `0164` duas vezes | PASS |
+| PGlite: usuários, sessões e fatores existentes antes de `0164` preservados | PASS |
 | PGlite: sessão ativa, expirada e estrangeira | PASS |
 | PGlite: execução somente `service_role` | PASS |
 | PGlite: SQL pós-migration executável com três `verification_pass=true` | PASS |
@@ -102,6 +103,7 @@ Screenshots locais são gerados em `web/app/topic05-browser-qa/` e ficam fora do
 - hash de `0164` confirmado e rollback presente;
 - `npm run build`, assurance, transport, contract, PGlite e regressões FE-28/30: PASS;
 - rollback PGlite repetido duas vezes: função removida e linhas de sessões/fatores preservadas;
+- fixture PGlite criada antes da migration: 2 usuários, 2 sessões e 3 fatores permaneceram iguais depois de aplicar `0164` duas vezes e depois do rollback;
 - verificador pós-migration executado integralmente no PGlite: assinatura/configuração/grants, retorno nulo e schema produziram três checks positivos;
 - verificador pós-rollback executado no PGlite: função ausente, schema Auth preservado e contagens disponíveis para comparação com a baseline;
 - preflight Supabase read-only confirmou tabelas/colunas esperadas e a role `service_role`;

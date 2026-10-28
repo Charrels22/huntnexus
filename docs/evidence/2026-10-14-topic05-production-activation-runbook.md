@@ -49,7 +49,7 @@ O corpo SQL da função também foi executado em 2026-10-28 como consulta read-o
 6. Em falha antes do deploy, executar `0164_topic05_auth_session_gate_rollback.sql`.
 7. Executar [`2026-10-28-topic05-post-rollback-verification.sql`](2026-10-28-topic05-post-rollback-verification.sql), exigir `verification_pass=true` e comparar as três contagens com a baseline imediatamente anterior à migration.
 
-Regressão local: o rollback foi executado duas vezes no PGlite, removeu a função de forma idempotente e preservou integralmente as linhas sintéticas de `auth.sessions` e `auth.mfa_factors`.
+Regressão local: 2 usuários, 2 sessões e 3 fatores sintéticos foram criados antes de `0164`; as contagens permaneceram iguais depois de aplicar a migration duas vezes e depois de executar o rollback duas vezes. A função foi removida de forma idempotente.
 
 ## Fase 2 — Auth e e-mail
 
