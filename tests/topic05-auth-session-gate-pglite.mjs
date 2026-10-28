@@ -8,6 +8,7 @@ assert.ok(moduleRoot, "PGLITE_MODULE must point to an installed @electric-sql/pg
 const { PGlite } = await import(pathToFileURL(resolve(moduleRoot, "dist/index.js")).href);
 const root = resolve(import.meta.dirname, "..");
 const migration = readFileSync(resolve(root, "db/migrations/0164_topic05_auth_session_gate.sql"), "utf8");
+const rollback = readFileSync(resolve(root, "db/rollback/0164_topic05_auth_session_gate_rollback.sql"), "utf8");
 
 const db = new PGlite();
 await db.exec(`
@@ -60,5 +61,13 @@ const privileges = await db.query(`select
   has_function_privilege('service_role','public.huntnexus_auth_session_gate(uuid,uuid)','execute') service_role`);
 assert.deepEqual(privileges.rows[0], { anon: false, authenticated: false, service_role: true });
 
+await db.exec(rollback);
+await db.exec(rollback);
+const rolledBack = await db.query(`select
+  to_regprocedure('public.huntnexus_auth_session_gate(uuid,uuid)') is null function_absent,
+  (select count(*)::int from auth.sessions) session_rows,
+  (select count(*)::int from auth.mfa_factors) factor_rows`);
+assert.deepEqual(rolledBack.rows[0], { function_absent: true, session_rows: 2, factor_rows: 3 });
+
 await db.close();
-console.log("PASS topic 5 PGlite: idempotent migration, active/expired/foreign sessions, factor count, server-only grant");
+console.log("PASS topic 5 PGlite: idempotent migration, active/expired/foreign sessions, factor count, server-only grant, idempotent rollback without Auth data loss");

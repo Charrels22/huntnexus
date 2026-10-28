@@ -47,6 +47,8 @@ O corpo SQL da função também foi executado em 2026-10-28 como consulta read-o
 4. Confirmar que nenhuma linha de `auth.users`, `auth.sessions` ou `auth.mfa_factors` foi alterada pela migration.
 5. Em falha antes do deploy, executar `0164_topic05_auth_session_gate_rollback.sql` e repetir a verificação de ausência.
 
+Regressão local: o rollback foi executado duas vezes no PGlite, removeu a função de forma idempotente e preservou integralmente as linhas sintéticas de `auth.sessions` e `auth.mfa_factors`.
+
 ## Fase 2 — Auth e e-mail
 
 Executar em uma única janela controlada, antes de qualquer envio de teste:
