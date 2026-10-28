@@ -47,6 +47,7 @@ const syntheticUser = {
   updated_at: new Date(0).toISOString(),
   is_anonymous: false,
 };
+let authenticatedApiRequests = 0;
 
 async function configureSyntheticAuthenticatedContext(context) {
   await context.addInitScript(({ accessToken, user, clientId }) => {
@@ -71,11 +72,19 @@ async function interceptSyntheticAuthenticatedCalls(page) {
     }
   });
   await page.route("**/auth/v1/reauthenticate", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
-  await page.route("**/api/huntnexus", (route) => route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify({ data: { resolved: true, created: false, canonical_client_id: syntheticClientId, client_id_changed: false } }),
-  }));
+  await page.route("**/api/huntnexus", async (route) => {
+    const request = route.request();
+    const headers = await request.allHeaders();
+    const requestBody = request.postDataJSON();
+    assert.equal(headers.authorization, `Bearer ${syntheticAccessToken}`, "Authenticated API requests must use a Bearer header");
+    assert.equal(Object.hasOwn(requestBody, "access_token"), false, "Authenticated API requests must omit the JWT from JSON");
+    authenticatedApiRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: { resolved: true, created: false, canonical_client_id: syntheticClientId, client_id_changed: false } }),
+    });
+  });
 }
 
 try {
@@ -159,6 +168,7 @@ try {
   await authenticatedMobilePage.getByRole("heading", { name: "Alterar senha", exact: true }).scrollIntoViewIfNeeded();
   await authenticatedMobilePage.screenshot({ path: resolve(screenshotDir, "topic05-mobile-password-change.png"), fullPage: false });
   await authenticatedMobile.close();
+  assert.ok(authenticatedApiRequests >= 2, "Desktop and mobile authenticated flows must reach the API using Bearer transport");
 
   console.log(JSON.stringify({
     status: "ok",
@@ -166,6 +176,8 @@ try {
     fixture: "SYNTHETIC",
     desktop_states: ["empty", "loading", "error", "authenticated_password_reauthentication"],
     mobile_states: ["recovery", "authenticated_password_change"],
+    bearer_transport_requests_observed: authenticatedApiRequests,
+    jwt_in_json_body_observed: false,
     real_auth_attempted: false,
     real_email_sent: false,
   }, null, 2));

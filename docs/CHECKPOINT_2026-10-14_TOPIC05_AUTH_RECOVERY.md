@@ -62,6 +62,7 @@ Revisão de transporte em 2026-10-28: novos clientes passaram a enviar o JWT no 
 | FE-30 scope isolation | PASS; não é Auth real |
 | Browser desktop empty/loading/error e troca de senha com reautenticação | PASS (`SYNTHETIC`) |
 | Browser mobile recovery/troca de senha e sem overflow | PASS (`SYNTHETIC`) |
+| Browser autenticado: Bearer presente e JWT ausente do JSON | PASS (`SYNTHETIC`, 4 requisições observadas) |
 | E-mail ou autenticação real | NÃO EXECUTADO |
 | Teste A/B com contas reais | NÃO EXECUTADO |
 | Migration `0164` em produção | NÃO APLICADA |
