@@ -60,6 +60,7 @@ Revisão de transporte em 2026-10-28: novos clientes passaram a enviar o JWT no 
 | PGlite: execução somente `service_role` | PASS |
 | PGlite: SQL pós-migration executável com três `verification_pass=true` | PASS |
 | PGlite: rollback duas vezes e preservação das linhas Auth | PASS |
+| PGlite: SQL pós-rollback executável, função ausente e contagens preservadas | PASS |
 | FE-28 guest identity | PASS; não é Auth real |
 | FE-30 scope isolation | PASS; não é Auth real |
 | Browser desktop empty/loading/error e troca de senha com reautenticação | PASS (`SYNTHETIC`) |
@@ -102,6 +103,7 @@ Screenshots locais são gerados em `web/app/topic05-browser-qa/` e ficam fora do
 - `npm run build`, assurance, transport, contract, PGlite e regressões FE-28/30: PASS;
 - rollback PGlite repetido duas vezes: função removida e linhas de sessões/fatores preservadas;
 - verificador pós-migration executado integralmente no PGlite: assinatura/configuração/grants, retorno nulo e schema produziram três checks positivos;
+- verificador pós-rollback executado no PGlite: função ausente, schema Auth preservado e contagens disponíveis para comparação com a baseline;
 - preflight Supabase read-only confirmou tabelas/colunas esperadas e a role `service_role`;
 - o corpo lógico de `0164` foi executado como consulta read-only no PostgreSQL de produção, sem criar função, e retornou `active_session=false`, `verified_factor_count=0` e `requires_aal2=true` para entradas nulas;
 - baseline anterior à migration: 4 usuários Auth, 2 sessões, 0 fatores MFA, 2 contas HuntNexus e 2 personagens;

@@ -8,6 +8,7 @@ const api = readFileSync(resolve(root, "web/app/src/routes/api/huntnexus.ts"), "
 const apiClient = readFileSync(resolve(root, "web/app/src/lib/api/huntnexus.ts"), "utf8");
 const migration = readFileSync(resolve(root, "db/migrations/0164_topic05_auth_session_gate.sql"), "utf8");
 const verification = readFileSync(resolve(root, "docs/evidence/2026-10-14-topic05-post-migration-verification.sql"), "utf8");
+const rollbackVerification = readFileSync(resolve(root, "docs/evidence/2026-10-28-topic05-post-rollback-verification.sql"), "utf8");
 
 for (const required of [
   "signInWithPassword",
@@ -66,5 +67,12 @@ for (const required of [
   "factors_has_type",
 ]) assert.match(verification, new RegExp(`\\b${required}\\b`));
 assert.equal((verification.match(/\bverification_pass\b/g) || []).length, 4);
+for (const required of [
+  "function_absent",
+  "auth_user_rows",
+  "auth_session_rows",
+  "auth_factor_rows",
+  "verification_pass",
+]) assert.match(rollbackVerification, new RegExp(`\\b${required}\\b`));
 
 console.log("PASS topic 5 contract: password + TOTP UI, scoped sign-out, AAL2 and live-session API gate");

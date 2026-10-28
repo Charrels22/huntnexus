@@ -10,6 +10,7 @@ const root = resolve(import.meta.dirname, "..");
 const migration = readFileSync(resolve(root, "db/migrations/0164_topic05_auth_session_gate.sql"), "utf8");
 const rollback = readFileSync(resolve(root, "db/rollback/0164_topic05_auth_session_gate_rollback.sql"), "utf8");
 const verification = readFileSync(resolve(root, "docs/evidence/2026-10-14-topic05-post-migration-verification.sql"), "utf8");
+const rollbackVerification = readFileSync(resolve(root, "docs/evidence/2026-10-28-topic05-post-rollback-verification.sql"), "utf8");
 
 const db = new PGlite();
 await db.exec(`
@@ -18,6 +19,9 @@ await db.exec(`
   create role service_role nologin;
   create schema auth;
   create schema extensions;
+  create table auth.users(
+    id uuid primary key
+  );
   create table auth.sessions(
     id uuid primary key,
     user_id uuid not null,
@@ -76,6 +80,17 @@ const rolledBack = await db.query(`select
   (select count(*)::int from auth.sessions) session_rows,
   (select count(*)::int from auth.mfa_factors) factor_rows`);
 assert.deepEqual(rolledBack.rows[0], { function_absent: true, session_rows: 2, factor_rows: 3 });
+const rollbackVerificationResults = await db.exec(rollbackVerification);
+assert.equal(rollbackVerificationResults.length, 1);
+assert.deepEqual(rollbackVerificationResults[0].rows[0], {
+  function_absent: true,
+  sessions_table: "auth.sessions",
+  factors_table: "auth.mfa_factors",
+  auth_user_rows: 0,
+  auth_session_rows: 2,
+  auth_factor_rows: 3,
+  verification_pass: true,
+});
 
 await db.close();
-console.log("PASS topic 5 PGlite: idempotent migration, active/expired/foreign sessions, factor count, server-only grant, executable verification, idempotent rollback without Auth data loss");
+console.log("PASS topic 5 PGlite: idempotent migration, active/expired/foreign sessions, factor count, server-only grant, executable apply/rollback verification, idempotent rollback without Auth data loss");
