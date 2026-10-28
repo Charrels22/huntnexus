@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -9,6 +10,7 @@ const apiClient = readFileSync(resolve(root, "web/app/src/lib/api/huntnexus.ts")
 const migration = readFileSync(resolve(root, "db/migrations/0164_topic05_auth_session_gate.sql"), "utf8");
 const verification = readFileSync(resolve(root, "docs/evidence/2026-10-14-topic05-post-migration-verification.sql"), "utf8");
 const rollbackVerification = readFileSync(resolve(root, "docs/evidence/2026-10-28-topic05-post-rollback-verification.sql"), "utf8");
+const artifactManifest = JSON.parse(readFileSync(resolve(root, "docs/evidence/2026-10-28-topic05-artifact-manifest.json"), "utf8"));
 
 for (const required of [
   "signInWithPassword",
@@ -74,5 +76,13 @@ for (const required of [
   "auth_factor_rows",
   "verification_pass",
 ]) assert.match(rollbackVerification, new RegExp(`\\b${required}\\b`));
+
+assert.equal(artifactManifest.algorithm, "sha256");
+assert.equal(artifactManifest.artifacts.length, 4);
+for (const artifact of artifactManifest.artifacts) {
+  const content = readFileSync(resolve(root, artifact.path));
+  const actual = createHash("sha256").update(content).digest("hex");
+  assert.equal(actual, artifact.sha256, `${artifact.path} does not match the production-gate manifest`);
+}
 
 console.log("PASS topic 5 contract: password + TOTP UI, scoped sign-out, AAL2 and live-session API gate");

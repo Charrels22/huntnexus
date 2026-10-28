@@ -1,6 +1,6 @@
 # Tópico 5 — runbook de ativação e aceite real
 
-**Estado:** preparado; nenhuma etapa mutável executada. **Ambiente alvo:** Supabase `urbncbjapasnjqjqicjv`. **PR:** [#8](https://github.com/Charrels22/huntnexus/pull/8). **Migration:** `0164_topic05_auth_session_gate.sql`, SHA-256 `829b33132b0e9b10893a0ab9a28583a4ad7fba91d1dde602f2ec99f307090b16`.
+**Estado:** preparado; nenhuma etapa mutável executada. **Ambiente alvo:** Supabase `urbncbjapasnjqjqicjv`. **PR:** [#8](https://github.com/Charrels22/huntnexus/pull/8). **Artefatos e hashes:** [`2026-10-28-topic05-artifact-manifest.json`](2026-10-28-topic05-artifact-manifest.json).
 
 Este roteiro evita gastar o limite de e-mail antes de a infraestrutura estar pronta e separa mudança de banco, configuração Auth, teste privado e deploy. Nenhuma senha, segredo TOTP, nonce ou token deve ser copiado para este arquivo, issue, PR ou log.
 
@@ -19,8 +19,9 @@ Este roteiro evita gastar o limite de e-mail antes de a infraestrutura estar pro
 1. Registrar HEAD da PR, migration remota mais recente e deployment/version ativos.
 2. Confirmar que a produção ainda termina em `0163` e que `huntnexus_auth_session_gate` não existe.
 3. Confirmar o SHA-256 de `0164` e a presença do rollback.
-4. Exportar apenas metadados/configuração necessários; não exportar senhas, tokens ou segredos TOTP.
-5. Não alterar o Worker enquanto o release estiver congelado.
+4. Confirmar os quatro SHA-256 do manifesto antes de executar migration, rollback ou verificadores.
+5. Exportar apenas metadados/configuração necessários; não exportar senhas, tokens ou segredos TOTP.
+6. Não alterar o Worker enquanto o release estiver congelado.
 
 Baseline read-only capturada em 2026-10-28, antes de qualquer aplicação de `0164`:
 

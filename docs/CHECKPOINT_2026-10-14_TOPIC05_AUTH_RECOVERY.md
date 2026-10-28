@@ -28,6 +28,7 @@ Auditoria somente leitura do Dashboard em 2026-10-14:
 
 Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-14-topic05-auth-audit.json). Modelo: [`AUTHENTICATION_RECOVERY_MODEL.md`](AUTHENTICATION_RECOVERY_MODEL.md). Execução real preparada: [`2026-10-14-topic05-production-activation-runbook.md`](evidence/2026-10-14-topic05-production-activation-runbook.md).
 Verificação pós-migration preparada: [`2026-10-14-topic05-post-migration-verification.sql`](evidence/2026-10-14-topic05-post-migration-verification.sql).
+Manifesto de integridade da migration, rollback e verificadores: [`2026-10-28-topic05-artifact-manifest.json`](evidence/2026-10-28-topic05-artifact-manifest.json).
 
 Revisão de segurança em 2026-10-27: a migration ainda não aplicada foi endurecida conforme o Advisor oficial do Supabase. A função `security definer` passou de um `search_path` fixo contendo `public` para `search_path = ''`, com funções e tabelas qualificadas. Contrato e PGlite agora verificam essa propriedade; o hash acima substitui o anterior.
 
@@ -62,6 +63,7 @@ Revisão de transporte em 2026-10-28: novos clientes passaram a enviar o JWT no 
 | PGlite: SQL pós-migration executável com três `verification_pass=true` | PASS |
 | PGlite: rollback duas vezes e preservação das linhas Auth | PASS |
 | PGlite: SQL pós-rollback executável, função ausente e contagens preservadas | PASS |
+| SHA-256 de migration, rollback e verificadores | PASS; quatro artefatos validados pelo contrato |
 | FE-28 guest identity | PASS; não é Auth real |
 | FE-30 scope isolation | PASS; não é Auth real |
 | Browser desktop empty/loading/error e troca de senha com reautenticação | PASS (`SYNTHETIC`) |
