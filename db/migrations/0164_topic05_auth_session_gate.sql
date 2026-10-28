@@ -13,9 +13,9 @@ returns jsonb
 language sql
 stable
 security definer
-set search_path to 'public','auth','extensions'
+set search_path = ''
 as $function$
-  select jsonb_build_object(
+  select pg_catalog.jsonb_build_object(
     'active_session',
       p_auth_user_id is not null
       and p_session_id is not null
@@ -24,10 +24,10 @@ as $function$
         from auth.sessions s
         where s.id=p_session_id
           and s.user_id=p_auth_user_id
-          and (s.not_after is null or s.not_after>now())
+          and (s.not_after is null or s.not_after>pg_catalog.now())
       ),
     'verified_factor_count',(
-      select count(*)
+      select pg_catalog.count(*)
       from auth.mfa_factors f
       where f.user_id=p_auth_user_id
         and f.status::text='verified'

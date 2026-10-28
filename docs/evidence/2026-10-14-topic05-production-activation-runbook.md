@@ -1,6 +1,6 @@
 # Tópico 5 — runbook de ativação e aceite real
 
-**Estado:** preparado; nenhuma etapa mutável executada. **Ambiente alvo:** Supabase `urbncbjapasnjqjqicjv`. **PR:** [#8](https://github.com/Charrels22/huntnexus/pull/8). **Migration:** `0164_topic05_auth_session_gate.sql`, SHA-256 `514f06f2f4c74b7ae72f33ce3feb8a9b4330cf97d87a0df6f9a91b2f80ccb49b`.
+**Estado:** preparado; nenhuma etapa mutável executada. **Ambiente alvo:** Supabase `urbncbjapasnjqjqicjv`. **PR:** [#8](https://github.com/Charrels22/huntnexus/pull/8). **Migration:** `0164_topic05_auth_session_gate.sql`, SHA-256 `829b33132b0e9b10893a0ab9a28583a4ad7fba91d1dde602f2ec99f307090b16`.
 
 Este roteiro evita gastar o limite de e-mail antes de a infraestrutura estar pronta e separa mudança de banco, configuração Auth, teste privado e deploy. Nenhuma senha, segredo TOTP, nonce ou token deve ser copiado para este arquivo, issue, PR ou log.
 
@@ -26,7 +26,7 @@ Este roteiro evita gastar o limite de e-mail antes de a infraestrutura estar pro
 
 1. Aplicar somente `0164_topic05_auth_session_gate.sql`.
 2. Executar [`2026-10-14-topic05-post-migration-verification.sql`](2026-10-14-topic05-post-migration-verification.sql).
-3. Exigir `security definer`, `stable`, `search_path` fixo, execução apenas por `service_role` e retorno nulo para entradas nulas.
+3. Exigir `security definer`, `stable`, `search_path = ''`, referências qualificadas, execução apenas por `service_role` e retorno nulo para entradas nulas.
 4. Confirmar que nenhuma linha de `auth.users`, `auth.sessions` ou `auth.mfa_factors` foi alterada pela migration.
 5. Em falha antes do deploy, executar `0164_topic05_auth_session_gate_rollback.sql` e repetir a verificação de ausência.
 

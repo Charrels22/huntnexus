@@ -84,7 +84,7 @@ Os erros são distintos: token inválido ou sessão inativa retorna 401; MFA nã
 
 ### Banco e RLS
 
-`0164_topic05_auth_session_gate.sql` cria uma função `security definer` de leitura sobre `auth.sessions` e `auth.mfa_factors`. Apenas `service_role` pode executá-la. `anon` e `authenticated` não recebem acesso direto.
+`0164_topic05_auth_session_gate.sql` cria uma função `security definer` de leitura sobre `auth.sessions` e `auth.mfa_factors`. A função usa `search_path = ''` e qualifica tabelas e funções para evitar resolução por schemas controláveis. Apenas `service_role` pode executá-la. `anon` e `authenticated` não recebem acesso direto.
 
 As tabelas `huntnexus_accounts` e `player_characters` continuam com RLS habilitada. `anon` e `authenticated` não possuem `SELECT` direto em contas ou bindings. O Worker é a fronteira de autorização e não confia em um `client_id` apresentado isoladamente quando esse escopo já está vinculado.
 

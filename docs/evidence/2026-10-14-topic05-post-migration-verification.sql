@@ -4,7 +4,7 @@ select
   p.oid::regprocedure::text as function_signature,
   p.prosecdef as security_definer,
   p.provolatile = 's' as stable,
-  p.proconfig @> array['search_path=public, auth, extensions'] as fixed_search_path,
+  p.proconfig @> array['search_path=""'] as empty_search_path,
   exists (
     select 1
     from aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) acl
@@ -39,7 +39,7 @@ select
 
 -- Expected:
 -- exactly one function row;
--- security_definer, stable and fixed_search_path = true;
+-- security_definer, stable and empty_search_path = true;
 -- public/anon/authenticated execute = false; service_role execute = true;
 -- null_input_result = {"active_session":false,"verified_factor_count":0,"requires_aal2":true};
 -- both tables and all three expected columns present.

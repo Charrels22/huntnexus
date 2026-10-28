@@ -2,7 +2,7 @@
 
 Checkpoint intermediário em 2026-10-14. O código, migration, regressões e QA sintética estão preparados. O tópico permanece **PENDENTE** porque autenticação real e deploy exigem autorização explícita e ainda não foram executados.
 
-Baseline de implementação: commit `51d0cbd` (`feat(auth): require password and TOTP for private data`), documentada no commit `5e7d3a1` e publicada na [PR Draft #8](https://github.com/Charrels22/huntnexus/pull/8), com base na branch do Tópico 4. SHA-256 do arquivo `0164` preparado: `514f06f2f4c74b7ae72f33ce3feb8a9b4330cf97d87a0df6f9a91b2f80ccb49b`.
+Baseline de implementação: commit `51d0cbd` (`feat(auth): require password and TOTP for private data`), documentada no commit `5e7d3a1` e publicada na [PR Draft #8](https://github.com/Charrels22/huntnexus/pull/8), com base na branch do Tópico 4. SHA-256 atual do arquivo `0164` preparado: `829b33132b0e9b10893a0ab9a28583a4ad7fba91d1dde602f2ec99f307090b16`.
 
 ## Estado encontrado
 
@@ -29,6 +29,8 @@ Auditoria somente leitura do Dashboard em 2026-10-14:
 Evidência estruturada: [`2026-10-14-topic05-auth-audit.json`](evidence/2026-10-14-topic05-auth-audit.json). Modelo: [`AUTHENTICATION_RECOVERY_MODEL.md`](AUTHENTICATION_RECOVERY_MODEL.md). Execução real preparada: [`2026-10-14-topic05-production-activation-runbook.md`](evidence/2026-10-14-topic05-production-activation-runbook.md).
 Verificação pós-migration preparada: [`2026-10-14-topic05-post-migration-verification.sql`](evidence/2026-10-14-topic05-post-migration-verification.sql).
 
+Revisão de segurança em 2026-10-27: a migration ainda não aplicada foi endurecida conforme o Advisor oficial do Supabase. A função `security definer` passou de um `search_path` fixo contendo `public` para `search_path = ''`, com funções e tabelas qualificadas. Contrato e PGlite agora verificam essa propriedade; o hash acima substitui o anterior.
+
 ## Implementação preparada
 
 - entrada por e-mail + senha e cadastro com confirmação de e-mail;
@@ -39,7 +41,7 @@ Verificação pós-migration preparada: [`2026-10-14-topic05-post-migration-veri
 - troca de senha exige sessão AAL2, senha atual e nonce de reautenticação quando o provedor considerar a sessão antiga;
 - logout local, das outras sessões e global;
 - API exige token validado, `session_id`, sessão viva, fator verificado, AAL2 e ownership;
-- `0164_topic05_auth_session_gate` é read-only sobre schema `auth` e executável apenas por `service_role`;
+- `0164_topic05_auth_session_gate` é read-only sobre schema `auth`, usa `search_path = ''` com referências qualificadas e é executável apenas por `service_role`;
 - rollback específico para `0164`.
 
 ## Evidências locais

@@ -85,7 +85,8 @@
   },
   "prepared_change": {
     "implementation_commit": "51d0cbd",
-    "migration_0164_sha256": "514f06f2f4c74b7ae72f33ce3feb8a9b4330cf97d87a0df6f9a91b2f80ccb49b",
+    "migration_0164_sha256": "829b33132b0e9b10893a0ab9a28583a4ad7fba91d1dde602f2ec99f307090b16",
+    "migration_0164_search_path": "EMPTY_WITH_QUALIFIED_REFERENCES",
     "entry": "email_password",
     "second_factor": "totp_required_for_private_data",
     "minimum_password_length_client": 12,

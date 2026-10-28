@@ -38,6 +38,10 @@ assert.match(api, /auth\.state !== "ready"/);
 
 assert.match(migration, /from auth\.sessions/);
 assert.match(migration, /from auth\.mfa_factors/);
+assert.match(migration, /set search_path\s*=\s*''/i);
+assert.match(migration, /pg_catalog\.jsonb_build_object/);
+assert.match(migration, /pg_catalog\.count/);
+assert.match(migration, /pg_catalog\.now/);
 assert.match(migration, /grant execute[\s\S]*to service_role/i);
 assert.match(migration, /revoke all[\s\S]*from public,anon,authenticated/i);
 assert.doesNotMatch(migration, /\b(insert|update|delete)\s+(into|from)?\s*auth\./i);

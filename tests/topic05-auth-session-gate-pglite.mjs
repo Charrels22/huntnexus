@@ -31,6 +31,14 @@ await db.exec(`
 await db.exec(migration);
 await db.exec(migration);
 
+const functionConfig = await db.query(`select p.proconfig
+  from pg_proc p
+  join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public'
+    and p.proname='huntnexus_auth_session_gate'
+    and p.proargtypes='2950 2950'::oidvector`);
+assert.deepEqual(functionConfig.rows, [{ proconfig: ['search_path=""'] }]);
+
 const userId = "11111111-1111-4111-8111-111111111111";
 const otherUserId = "22222222-2222-4222-8222-222222222222";
 const activeSessionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
