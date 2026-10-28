@@ -2,7 +2,7 @@
 
 Checkpoint intermediário em 2026-10-14. O código, migration, regressões e QA sintética estão preparados. O tópico permanece **PENDENTE** porque autenticação real e deploy exigem autorização explícita e ainda não foram executados.
 
-Baseline de implementação: commit `51d0cbd` (`feat(auth): require password and TOTP for private data`), documentada no commit `5e7d3a1` e publicada na [PR Draft #8](https://github.com/Charrels22/huntnexus/pull/8), com base na branch do Tópico 4. SHA-256 atual do arquivo `0164` preparado: `829b33132b0e9b10893a0ab9a28583a4ad7fba91d1dde602f2ec99f307090b16`.
+Baseline inicial de implementação: commit `51d0cbd` (`feat(auth): require password and TOTP for private data`), documentada no commit `5e7d3a1` e publicada na [PR Draft #8](https://github.com/Charrels22/huntnexus/pull/8), com base na branch do Tópico 4. Head revalidado em 2026-10-28: `48b7a88`. SHA-256 atual do arquivo `0164` preparado: `829b33132b0e9b10893a0ab9a28583a4ad7fba91d1dde602f2ec99f307090b16`.
 
 ## Estado encontrado
 
@@ -91,3 +91,12 @@ Screenshots locais são gerados em `web/app/topic05-browser-qa/` e ficam fora do
 | Isolamento A/B real | PENDENTE |
 | Deploy | PENDENTE; congelado |
 | Tópico 5 | **PENDENTE** |
+
+## Revalidação antes do gate real — 2026-10-28
+
+- branch `codex/authentication-recovery`, head `48b7a88` e PR #8 Draft/mergeável;
+- hash de `0164` confirmado e rollback presente;
+- `npm run build`, assurance, transport, contract, PGlite e regressões FE-28/30: PASS;
+- preflight Supabase read-only confirmou tabelas/colunas esperadas e a role `service_role`;
+- baseline anterior à migration: 4 usuários Auth, 2 sessões, 0 fatores MFA, 2 contas HuntNexus e 2 personagens;
+- `huntnexus_auth_session_gate(uuid,uuid)` ausente; nenhuma migration, configuração Auth, conta, e-mail ou deployment foi alterado.

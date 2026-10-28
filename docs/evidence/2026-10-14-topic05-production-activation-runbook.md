@@ -22,6 +22,21 @@ Este roteiro evita gastar o limite de e-mail antes de a infraestrutura estar pro
 4. Exportar apenas metadados/configuração necessários; não exportar senhas, tokens ou segredos TOTP.
 5. Não alterar o Worker enquanto o release estiver congelado.
 
+Baseline read-only capturada em 2026-10-28, antes de qualquer aplicação de `0164`:
+
+| Item | Valor |
+| --- | ---: |
+| Head validado da PR #8 | `48b7a88` |
+| Migration remota mais recente | `0163_topic04_scope_fk_indexes` |
+| `huntnexus_auth_session_gate(uuid,uuid)` | ausente |
+| Usuários em `auth.users` | 4 |
+| Sessões em `auth.sessions` | 2 |
+| Fatores em `auth.mfa_factors` | 0 |
+| Contas HuntNexus | 2 |
+| Personagens | 2 |
+
+Essas contagens são apenas invariantes de verificação da migration read-only; não autorizam listar ou registrar identidades privadas.
+
 ## Fase 1 — banco
 
 1. Aplicar somente `0164_topic05_auth_session_gate.sql`.

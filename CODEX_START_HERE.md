@@ -8,7 +8,7 @@
 - FE-40–48 permanecem como histórico técnico reutilizável; não são a ordem corrente.
 - Tópicos 1 a 4 do [roadmap](ROADMAP_EXECUTION.md) estão concluídos.
 - O **Tópico 4** está na PR Draft #7; `0162` e o complemento de índices `0163` foram aplicados no Supabase após autorização explícita. Backfill, ownership, permissões, regressão `SYNTHETIC` e limpeza passaram.
-- O Tópico 5 está em execução: implementação, migration e QA sintética estão preparadas no commit `51d0cbd`; aplicar `0164`, alterar Auth real, testar contas consentidas e publicar continuam sujeitos a autorização explícita.
+- O Tópico 5 está em execução: a implementação começou em `51d0cbd` e o head validado da PR #8 é `48b7a88`; migration, build, contratos, PGlite e QA sintética estão preparados. Aplicar `0164`, alterar Auth real, testar contas consentidas e publicar continuam sujeitos a autorizações explícitas e separadas.
 
 ## Ordem de leitura
 
