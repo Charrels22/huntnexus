@@ -63,6 +63,7 @@ Revisão de transporte em 2026-10-28: novos clientes passaram a enviar o JWT no 
 | Browser desktop empty/loading/error e troca de senha com reautenticação | PASS (`SYNTHETIC`) |
 | Browser mobile recovery/troca de senha e sem overflow | PASS (`SYNTHETIC`) |
 | Browser autenticado: Bearer presente e JWT ausente do JSON | PASS (`SYNTHETIC`, 4 requisições observadas) |
+| Cloudflare build `9ca032b0-39da-4444-939d-275b317ca2c6` no commit `13312ee` | BUILD PASS; `wrangler preview` FAIL por ausência do bloco `previews`; nenhum deploy |
 | E-mail ou autenticação real | NÃO EXECUTADO |
 | Teste A/B com contas reais | NÃO EXECUTADO |
 | Migration `0164` em produção | NÃO APLICADA |
