@@ -43,9 +43,10 @@ O corpo SQL da função também foi executado em 2026-10-28 como consulta read-o
 
 1. Aplicar somente `0164_topic05_auth_session_gate.sql`.
 2. Executar [`2026-10-14-topic05-post-migration-verification.sql`](2026-10-14-topic05-post-migration-verification.sql).
-3. Exigir `security definer`, `stable`, `search_path = ''`, referências qualificadas, execução apenas por `service_role` e retorno nulo para entradas nulas.
-4. Confirmar que nenhuma linha de `auth.users`, `auth.sessions` ou `auth.mfa_factors` foi alterada pela migration.
-5. Em falha antes do deploy, executar `0164_topic05_auth_session_gate_rollback.sql` e repetir a verificação de ausência.
+3. Exigir que os três resultados do verificador retornem `verification_pass=true`: configuração/grants, retorno nulo e compatibilidade do schema.
+4. Exigir `security definer`, `stable`, `search_path = ''`, referências qualificadas, execução apenas por `service_role` e retorno nulo para entradas nulas.
+5. Confirmar que nenhuma linha de `auth.users`, `auth.sessions` ou `auth.mfa_factors` foi alterada pela migration.
+6. Em falha antes do deploy, executar `0164_topic05_auth_session_gate_rollback.sql` e repetir a verificação de ausência.
 
 Regressão local: o rollback foi executado duas vezes no PGlite, removeu a função de forma idempotente e preservou integralmente as linhas sintéticas de `auth.sessions` e `auth.mfa_factors`.
 
