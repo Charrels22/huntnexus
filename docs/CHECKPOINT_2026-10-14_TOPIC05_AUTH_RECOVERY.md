@@ -42,6 +42,7 @@ Revisão de transporte em 2026-10-28: novos clientes passaram a enviar o JWT no 
 - remoção do último TOTP bloqueada; remover outro fator exige código atual do fator preservado e refresh imediato da sessão;
 - troca de senha exige sessão AAL2, senha atual e nonce de reautenticação quando o provedor considerar a sessão antiga;
 - logout local, das outras sessões e global;
+- novos clientes enviam JWT por `Authorization: Bearer`; o corpo legado permanece apenas como compatibilidade temporária e conflito entre transportes é rejeitado;
 - API exige token validado, `session_id`, sessão viva, fator verificado, AAL2 e ownership;
 - `0164_topic05_auth_session_gate` é read-only sobre schema `auth`, usa `search_path = ''` com referências qualificadas e é executável apenas por `service_role`;
 - rollback específico para `0164`.
@@ -53,6 +54,7 @@ Revisão de transporte em 2026-10-28: novos clientes passaram a enviar o JWT no 
 | `npm run build` | PASS |
 | `topic05-auth-assurance-regression.mjs` | PASS |
 | `topic05-auth-contract.mjs` | PASS |
+| `topic05-auth-transport-regression.mjs` | PASS; Bearer presente e JWT ausente do JSON |
 | PGlite: aplicar `0164` duas vezes | PASS |
 | PGlite: sessão ativa, expirada e estrangeira | PASS |
 | PGlite: execução somente `service_role` | PASS |
