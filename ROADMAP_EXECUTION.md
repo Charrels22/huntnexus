@@ -20,7 +20,7 @@
 | 2 | Registrar definição oficial do produto | **PASS** | ADR, contexto, arquitetura, instruções e roadmap usam os mesmos conceitos e critérios |
 | 3 | Auditar o Brain completo | **PASS** | cada fonte tem estado mensurável de cadastro, acesso, coletor, ingestão, normalização, proveniência, atualização, termos, cobertura e lacunas |
 | 4 | Corrigir modelo de conta e personagens | **PASS** | uma conta gerencia vários personagens sem mistura, com migração aditiva dos dados existentes |
-| 5 | Reconstruir autenticação e recuperação | **Próximo** | entrada forte, MFA/recuperação/sessões e isolamento A/B comprovados na API e RLS |
+| 5 | Reconstruir autenticação e recuperação | **Em execução — gate real pendente** | entrada forte, MFA/recuperação/sessões e isolamento A/B comprovados na API e RLS |
 | 6 | Fechar segurança do Supabase e API | Pendente | matriz de acesso, funções/grants/RLS auditados, testes negativos/positivos, backup e restauração comprovados |
 | 7 | Completar fontes Tier A e B | Pendente | fatos usados em cálculos têm fonte, URL, data, versão, validade e confiança |
 | 8 | Reconciliar overlay RubinOT | Pendente | cada valor efetivo distingue base Tibia, alteração RubinOT, versão e evidência |

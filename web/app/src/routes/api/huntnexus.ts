@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { evaluateAuthGate, extractRequestAccessToken, jwtSessionId, type AuthGateState } from "@/lib/auth-security";
 
 const Vocation = z.enum(["EK", "RP", "ED", "MS", "EM"]);
 const Level = z.coerce.number().int().min(1).max(5000);
@@ -28,16 +29,16 @@ const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("health") }),
   z.object({
     action: z.literal("account_resolve"),
-    access_token: z.string().min(20).max(8192),
+    access_token: z.string().min(20).max(8192).optional(),
     local_client_id: z.string().uuid(),
   }),
   z.object({
     action: z.literal("account_status"),
-    access_token: z.string().min(20).max(8192),
+    access_token: z.string().min(20).max(8192).optional(),
   }),
   z.object({
     action: z.literal("account_unbind"),
-    access_token: z.string().min(20).max(8192),
+    access_token: z.string().min(20).max(8192).optional(),
   }),
   z.object({
     action: z.literal("player_profile_get"),
@@ -396,9 +397,17 @@ export const Route = createFileRoute("/api/huntnexus")({
           return json({ error: "invalid_json" }, 400);
         }
         const rawRecord = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
-        const requestAccessToken = typeof rawRecord["access_token"] === "string"
-          ? rawRecord["access_token"]
-          : null;
+        const requestAuth = extractRequestAccessToken(
+          request.headers.get("authorization"),
+          rawRecord["access_token"],
+        );
+        if (requestAuth.error) {
+          return json(
+            { error: requestAuth.error },
+            requestAuth.error === "conflicting_auth_tokens" ? 400 : 401,
+          );
+        }
+        const requestAccessToken = requestAuth.token;
 
         const parsed = Body.safeParse(raw);
         if (!parsed.success) {
@@ -415,10 +424,41 @@ export const Route = createFileRoute("/api/huntnexus")({
           }
           return data;
         };
-        const authUserId = async (accessToken: string) => {
+        const strongAuthContext = async (accessToken: string) => {
           const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
           if (error || !data?.user?.id) return null;
-          return data.user.id;
+          const sessionId = jwtSessionId(accessToken);
+          if (!sessionId) return null;
+
+          const [{ data: assurance, error: assuranceError }, sessionGate] = await Promise.all([
+            supabaseAdmin.auth.mfa.getAuthenticatorAssuranceLevel(accessToken),
+            rpc("huntnexus_auth_session_gate", {
+              p_auth_user_id: data.user.id,
+              p_session_id: sessionId,
+            }),
+          ]);
+          if (assuranceError || !assurance) return null;
+
+          const state = evaluateAuthGate({
+            currentLevel: assurance.currentLevel,
+            nextLevel: assurance.nextLevel,
+            verifiedFactorCount: Number(sessionGate?.verified_factor_count ?? 0),
+            activeSession: sessionGate?.active_session === true,
+          });
+          return {
+            userId: data.user.id,
+            sessionId,
+            state,
+          };
+        };
+        const authGateError = (state: AuthGateState) => {
+          if (state === "invalid_session") {
+            return json({ error: "auth_session_inactive" }, 401);
+          }
+          if (state === "mfa_enrollment_required") {
+            return json({ error: "mfa_enrollment_required" }, 403);
+          }
+          return json({ error: "mfa_challenge_required" }, 403);
         };
 
         const withAdvancedOptimizerSlot = async (perform: () => Promise<Response>): Promise<Response> => {
@@ -482,14 +522,15 @@ export const Route = createFileRoute("/api/huntnexus")({
               return json({ error: "authentication_required_for_bound_client" }, 401);
             }
 
-            const userId = await authUserId(requestAccessToken);
-            if (!userId) {
+            const auth = await strongAuthContext(requestAccessToken);
+            if (!auth) {
               return json({ error: "invalid_auth_token" }, 401);
             }
 
-            if (userId !== binding.auth_user_id) {
+            if (auth.userId !== binding.auth_user_id) {
               return json({ error: "forbidden_client_scope" }, 403);
             }
+            if (auth.state !== "ready") return authGateError(auth.state);
           }
         }
 
@@ -498,29 +539,35 @@ export const Route = createFileRoute("/api/huntnexus")({
             case "health":
               return json({ data: await rpc("huntnexus_api_health") });
             case "account_resolve": {
-              const userId = await authUserId(b.access_token);
-              if (!userId) return json({ error: "invalid_auth_token" }, 401);
+              if (!requestAccessToken) return json({ error: "authentication_required" }, 401);
+              const auth = await strongAuthContext(requestAccessToken);
+              if (!auth) return json({ error: "invalid_auth_token" }, 401);
+              if (auth.state !== "ready") return authGateError(auth.state);
               return json({
                 data: await rpc("huntnexus_account_resolve", {
-                  p_auth_user_id: userId,
+                  p_auth_user_id: auth.userId,
                   p_local_client_id: b.local_client_id,
                 }),
               });
             }
             case "account_status": {
-              const userId = await authUserId(b.access_token);
-              if (!userId) return json({ error: "invalid_auth_token" }, 401);
+              if (!requestAccessToken) return json({ error: "authentication_required" }, 401);
+              const auth = await strongAuthContext(requestAccessToken);
+              if (!auth) return json({ error: "invalid_auth_token" }, 401);
+              if (auth.state !== "ready") return authGateError(auth.state);
               return json({
                 data: await rpc("huntnexus_account_binding_status", {
-                  p_auth_user_id: userId,
+                  p_auth_user_id: auth.userId,
                 }),
               });
             }
             case "account_unbind": {
-              const userId = await authUserId(b.access_token);
-              if (!userId) return json({ error: "invalid_auth_token" }, 401);
+              if (!requestAccessToken) return json({ error: "authentication_required" }, 401);
+              const auth = await strongAuthContext(requestAccessToken);
+              if (!auth) return json({ error: "invalid_auth_token" }, 401);
+              if (auth.state !== "ready") return authGateError(auth.state);
               const result = await rpc("huntnexus_account_unbind", {
-                p_auth_user_id: userId,
+                p_auth_user_id: auth.userId,
               });
               // An account containing Profile, Main/BP, builds or sessions must
               // not turn into an unprotected guest UUID after unlinking.

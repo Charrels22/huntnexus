@@ -18,7 +18,7 @@
 - [Tópico 2 — definição oficial do produto](CHECKPOINT_2026-10-13_TOPIC02_PRODUCT_CONTRACT.md)
 - [Tópico 3 — auditoria completa do Brain](CHECKPOINT_2026-10-14_TOPIC03_BRAIN_AUDIT.md)
 - [Tópico 4 — conta 1:N personagens](CHECKPOINT_2026-10-14_TOPIC04_ACCOUNT_CHARACTERS.md) — PASS; migrations `0162`/`0163`, backfill, ownership, permissões e regressão `SYNTHETIC` verificados no Supabase.
-- Próximo: Tópico 5 — autenticação e recuperação; mudanças reais no Auth exigem autorização explícita.
+- [Tópico 5 — autenticação e recuperação](CHECKPOINT_2026-10-14_TOPIC05_AUTH_RECOVERY.md) — [PR Draft #8](https://github.com/Charrels22/huntnexus/pull/8); implementação e QA sintética PASS, aplicação de `0164`, configuração Auth, teste A/B real e deploy pendentes de autorização.
 
 ## Primeiras fases: base e infraestrutura
 

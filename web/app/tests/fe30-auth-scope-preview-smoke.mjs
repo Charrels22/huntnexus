@@ -41,6 +41,11 @@ try {
   assert.ok(response?.ok(),"/profile preview should return successful HTML");
   await page.waitForURL(/\/account\/?$/,{timeout:20000});
   await page.getByRole("heading",{name:/Sincronize seu personagem entre dispositivos/i}).waitFor();
+  await page.getByRole("button",{name:"Entrar",exact:true}).waitFor();
+  assert.equal(await page.getByPlaceholder(/Senha \(12\+ caracteres\)/i).count(),1,
+    "Signed-out account page must request a password");
+  assert.equal(await page.getByRole("button",{name:/Enviar link/i}).count(),0,
+    "Magic Link action must not remain in the interface");
   const isolated=await page.evaluate(({scopeKey,markerKey,draftKey,openKey})=>({
     current:localStorage.getItem(scopeKey),
     bound:localStorage.getItem(markerKey),
@@ -82,7 +87,7 @@ try {
   await guestContext.close();
   console.log(JSON.stringify({
     status:"ok",stage:"fe30_preview_browser_auth_scope",
-    real_supabase_auth_tested:false,real_magic_link_sent:false,real_two_device_tested:false,
+    real_supabase_auth_tested:false,real_email_sent:false,real_two_device_tested:false,
     results,
   },null,2));
 }finally{

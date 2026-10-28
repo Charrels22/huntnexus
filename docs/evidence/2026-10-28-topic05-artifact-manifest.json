@@ -1,0 +1,23 @@
+{
+  "topic": 5,
+  "algorithm": "sha256",
+  "generated_at": "2026-10-28",
+  "artifacts": [
+    {
+      "path": "db/migrations/0164_topic05_auth_session_gate.sql",
+      "sha256": "829b33132b0e9b10893a0ab9a28583a4ad7fba91d1dde602f2ec99f307090b16"
+    },
+    {
+      "path": "db/rollback/0164_topic05_auth_session_gate_rollback.sql",
+      "sha256": "9f20d94fa3424b5435e796c6d5f75fc5d1cd001d2589a945496808310e447b8b"
+    },
+    {
+      "path": "docs/evidence/2026-10-14-topic05-post-migration-verification.sql",
+      "sha256": "da8bc44ee5f862885b79f134ede66df77382dd09c80bd43cf7fe84fae813ed68"
+    },
+    {
+      "path": "docs/evidence/2026-10-28-topic05-post-rollback-verification.sql",
+      "sha256": "e0c58cee92b256c4c4356029c75f09ef0166836fafd51524abafadfbf86bb70d"
+    }
+  ]
+}

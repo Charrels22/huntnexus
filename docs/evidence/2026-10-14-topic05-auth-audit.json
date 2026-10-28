@@ -1,0 +1,129 @@
+{
+  "captured_at": "2026-10-14",
+  "project_id": "urbncbjapasnjqjqicjv",
+  "production": {
+    "project_status": "ACTIVE_HEALTHY",
+    "region": "sa-east-1",
+    "auth_public_settings": {
+      "email_provider": true,
+      "signup_disabled": false,
+      "email_autoconfirm": false,
+      "phone_provider": false,
+      "saml_enabled": false,
+      "passkeys_enabled": false,
+      "oauth_providers_enabled": []
+    },
+    "auth_dashboard_read_only_audit": {
+      "plan": "FREE",
+      "email_provider_enabled": true,
+      "secure_email_change": true,
+      "secure_password_change": false,
+      "require_current_password_when_updating": false,
+      "prevent_leaked_passwords": false,
+      "prevent_leaked_passwords_availability": "PRO_PLAN_OR_ABOVE",
+      "minimum_password_length": 6,
+      "password_required_characters": "NO_REQUIRED_CHARS",
+      "email_otp_expiration_seconds": 3600,
+      "email_otp_length_digits": 8,
+      "email_rate_limit_per_hour": 2,
+      "totp": "ENABLED",
+      "maximum_mfa_factors_per_user": 10,
+      "sms_mfa": "DISABLED_PRO_ONLY",
+      "limit_aal1_session_to_15_minutes": true,
+      "single_session_per_user": false,
+      "time_box_user_sessions_hours": 0,
+      "inactivity_timeout_hours": 0,
+      "configurable_user_session_limits": "PRO_PLAN_OR_ABOVE",
+      "access_token_expiry_seconds": 3600,
+      "detect_and_revoke_compromised_refresh_tokens": true,
+      "captcha": false,
+      "url_configuration": {
+        "site_url": "https://huntnexus.charr3ls22.workers.dev",
+        "redirect_urls": [
+          "https://huntnexus.charr3ls22.workers.dev/account"
+        ],
+        "localhost_redirect_allowed": false
+      },
+      "email_delivery": {
+        "custom_smtp": false,
+        "templates": "SUPABASE_DEFAULT_READ_ONLY",
+        "reset_password_subject": "Reset your password",
+        "reset_password_action": "{{ .ConfirmationURL }}",
+        "organization_team_member_count": 1,
+        "pilot_addresses_are_organization_team_members": false,
+        "official_default_smtp_suitability": "NON_PRODUCTION_BEST_EFFORT_NO_SLA",
+        "official_default_smtp_recipient_policy": "PRE_AUTHORIZED_ORGANIZATION_TEAM_ADDRESSES_ONLY",
+        "official_reference": "https://supabase.com/docs/guides/auth/auth-smtp"
+      },
+      "security_notifications": {
+        "password_changed": false,
+        "email_address_changed": false,
+        "phone_number_changed": false,
+        "sign_in_method_linked": false,
+        "sign_in_method_removed": false,
+        "mfa_method_added": false,
+        "mfa_method_removed": false
+      }
+    },
+    "topic05_gate_exists": false,
+    "migration_0164_applied": false,
+    "topic05_gate_preflight": {
+      "auth_sessions_table": true,
+      "auth_sessions_not_after_column": true,
+      "auth_mfa_factors_table": true,
+      "auth_mfa_factors_status_column": true,
+      "auth_mfa_factors_factor_type_column": true
+    },
+    "accounts_rls": true,
+    "characters_rls": true,
+    "anon_binding_select": false,
+    "authenticated_binding_select": false,
+    "anon_accounts_select": false,
+    "authenticated_accounts_select": false,
+    "web_deployed": false,
+    "auth_configuration_changed": false
+  },
+  "prepared_change": {
+    "implementation_commit": "51d0cbd",
+    "migration_0164_sha256": "829b33132b0e9b10893a0ab9a28583a4ad7fba91d1dde602f2ec99f307090b16",
+    "migration_0164_search_path": "EMPTY_WITH_QUALIFIED_REFERENCES",
+    "entry": "email_password",
+    "second_factor": "totp_required_for_private_data",
+    "minimum_password_length_client": 12,
+    "recovery": "email_resets_first_factor_only; verified TOTP remains required",
+    "password_change": "aal2_session; current_password; provider_reauthentication_nonce_when_required",
+    "backup": "second verified TOTP recommended",
+    "session_controls": ["local", "others", "global"],
+    "api_checks": ["validated_user", "jwt_session_id", "live_auth_session", "verified_factor", "aal2", "binding_owner"],
+    "magic_link_in_ui": false,
+    "auth_rows_mutated_by_migration": false
+  },
+  "verification": {
+    "web_build_and_typecheck": "PASS",
+    "auth_assurance_regression": "PASS",
+    "auth_contract": "PASS",
+    "pglite_migration_twice": "PASS",
+    "pglite_active_expired_foreign_sessions": "PASS",
+    "pglite_service_role_only": "PASS",
+    "fe28_guest_identity_regression": "PASS",
+    "fe30_scope_isolation_regression": "PASS",
+    "browser_fixture": "SYNTHETIC",
+    "browser_desktop_states": ["empty", "loading", "error", "authenticated_password_reauthentication"],
+    "browser_mobile_states": ["recovery", "authenticated_password_change"],
+    "real_auth_attempted": false,
+    "real_email_sent": false,
+    "real_two_account_tested": false,
+    "real_two_device_tested": false
+  },
+  "pending_authorization": [
+    "apply_migration_0164",
+    "set_minimum_password_length_12_and_strongest_character_policy",
+    "enable_secure_password_change_and_require_current_password",
+    "enable_security_notifications_for_password_email_sign_in_and_mfa_changes",
+    "decide_custom_smtp_before_release",
+    "run_real_auth_and_recovery_tests_with_consented_accounts",
+    "deploy_web_worker"
+  ],
+  "authorization_note": "The authorization received on 2026-10-14 named migration 0162, which was already applied. It does not authorize the pending migration 0164.",
+  "activation_runbook": "docs/evidence/2026-10-14-topic05-production-activation-runbook.md"
+}

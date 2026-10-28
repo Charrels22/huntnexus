@@ -14,6 +14,9 @@ on:
       - "tests/fe34-reparse-review-regressions.mjs"
       - "tests/fe28-client-id-regression.mjs"
       - "tests/fe30-auth-isolation-regression.mjs"
+      - "tests/topic05-auth-assurance-regression.mjs"
+      - "tests/topic05-auth-contract.mjs"
+      - "web/app/src/lib/auth-security.ts"
       - "tests/fe22-online-original-analyzer-excerpts.mjs"
       - "tests/fixtures/fe22-online-original-analyzer-excerpts.json"
       - "tests/five-vocation-real-source-reconstruction.mjs"
@@ -51,6 +54,11 @@ jobs:
 
       - name: FE-30 account-bound scope isolation regression
         run: node --experimental-strip-types ../../tests/fe30-auth-isolation-regression.mjs
+
+      - name: Topic 5 strong-auth assurance and session contract
+        run: |
+          node --experimental-strip-types ../../tests/topic05-auth-assurance-regression.mjs
+          node ../../tests/topic05-auth-contract.mjs
 
       - name: Session Parser synthetic regression
         run: node --experimental-strip-types ../../tests/session-parser-contract.mjs

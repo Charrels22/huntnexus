@@ -1,6 +1,6 @@
 // FE-27: all account control operations must reject bogus Auth credentials.
 // The tokens below are deliberately fabricated; this does not exercise real
-// Magic Link delivery or a legitimate signed-in Supabase Auth session.
+// password delivery, MFA or a legitimate signed-in Supabase Auth session.
 const endpoint = process.env.HUNTNEXUS_ENDPOINT ??
   "https://huntnexus.charr3ls22.workers.dev/api/huntnexus";
 const tokens = [
@@ -37,6 +37,6 @@ console.log(JSON.stringify({
   stage: "account_negative_auth_public_smoke_v2",
   fake_auth_attempts_denied: denied,
   account_status_unbind_resolve_protected: true,
-  canonical_merge_with_valid_magic_link_tested: false,
+  canonical_merge_with_valid_strong_auth_tested: false,
   real_cross_device_auth_tested: false,
 }, null, 2));

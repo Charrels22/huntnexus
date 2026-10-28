@@ -14,3 +14,4 @@ raw/
 cache/
 __pycache__/
 *.pyc
+web/app/*-browser-qa/

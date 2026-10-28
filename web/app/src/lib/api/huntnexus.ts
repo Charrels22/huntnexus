@@ -1,21 +1,26 @@
 export async function callHuntNexusApi<T = unknown>(body: Record<string, unknown>): Promise<T> {
-  let payload: Record<string, unknown> = body;
+  let accessToken = typeof body["access_token"] === "string" ? body["access_token"] : null;
+  const payload: Record<string, unknown> = accessToken
+    ? Object.fromEntries(Object.entries(body).filter(([key]) => key !== "access_token"))
+    : body;
 
-  if (typeof window !== "undefined" && typeof body["access_token"] !== "string") {
+  if (typeof window !== "undefined" && !accessToken) {
     try {
       const { getSupabaseBrowserClient } = await import("@/integrations/supabase/client.browser");
       const supabase = getSupabaseBrowserClient();
       const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-      const accessToken = data.session?.access_token;
-      if (accessToken) payload = { ...body, access_token: accessToken };
+      accessToken = data.session?.access_token ?? null;
     } catch {
       // Guest mode remains valid when no authenticated browser session exists.
     }
   }
 
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (accessToken) headers.authorization = `Bearer ${accessToken}`;
+
   const response = await fetch("/api/huntnexus", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers,
     body: JSON.stringify(payload),
   });
 

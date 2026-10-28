@@ -1,0 +1,131 @@
+# Modelo de autenticação e recuperação do HuntNexus
+
+**Tópico:** 5 do realinhamento. **Estado:** implementação e regressões locais concluídas; ativação real pendente de autorização específica. Este documento não afirma que o fluxo novo já está publicado.
+
+## Decisão
+
+O acesso privado usa dois fatores independentes:
+
+1. e-mail e senha como primeiro fator;
+2. TOTP em aplicativo autenticador como segundo fator obrigatório.
+
+Magic Link deixa de ser a entrada da interface. Um link antigo ou emitido diretamente pelo provedor produz, no máximo, uma sessão `aal1`; a API do HuntNexus recusa essa sessão para Profile, personagens, inventário, builds e sessões até que um fator verificado eleve a sessão a `aal2`.
+
+A conta representa o jogador. Personagens pertencem à conta e nunca são usados como credencial. Uma conta pode manter vários personagens conforme o modelo do Tópico 4.
+
+## Por que o e-mail sozinho não basta
+
+Recuperação por e-mail pode redefinir a senha, mas não remove o segundo fator. Assim, controlar a caixa de entrada não é suficiente para abrir os dados privados já vinculados. O usuário deve manter dois autenticadores TOTP verificados, preferencialmente em dispositivos distintos, para reduzir o risco de perda do aparelho principal.
+
+O Supabase documenta TOTP e phone MFA, níveis `aal1`/`aal2` e enforcement na aplicação. A documentação oficial ainda informa que recovery codes não são suportados como fluxo estável. Por isso, o HuntNexus não apresenta códigos de recuperação como capacidade disponível e usa um segundo TOTP como fator reserva.
+
+Referências oficiais:
+
+- [Multi-Factor Authentication](https://supabase.com/docs/guides/auth/auth-mfa)
+- [JavaScript MFA API](https://supabase.com/docs/reference/javascript/auth-mfa)
+- [Password security](https://supabase.com/docs/guides/auth/password-security)
+- [Password-based authentication](https://supabase.com/docs/guides/auth/passwords)
+- [Sign out and scopes](https://supabase.com/docs/guides/auth/signout)
+- [Sessions](https://supabase.com/docs/guides/auth/sessions)
+
+## Controles implementados
+
+### Navegador
+
+- criar conta com e-mail e senha;
+- entrar com senha;
+- solicitar recuperação sem revelar se a conta existe;
+- definir nova senha a partir do evento `PASSWORD_RECOVERY`;
+- cadastrar e confirmar TOTP por QR code ou chave manual;
+- bloquear sincronização enquanto a sessão estiver em `aal1`;
+- desafiar um TOTP já verificado para elevar a sessão a `aal2`;
+- cadastrar um segundo TOTP de reserva;
+- impedir pela interface a remoção do último fator verificado e exigir código atual de outro fator que permanecerá cadastrado;
+- trocar a senha somente em sessão `aal2`, informando a senha atual e, quando a sessão tiver mais de 24 horas, o nonce de reautenticação enviado pelo provedor;
+- encerrar a sessão local, outras sessões ou todas as sessões;
+- preservar o isolamento do perfil convidado anterior.
+
+A política do cliente exige pelo menos 12 caracteres. A mesma exigência precisa ser ativada no Supabase Auth antes da publicação para impedir contorno por chamada direta à API do provedor. A configuração preparada usa a opção mais forte oferecida pelo provedor — minúscula, maiúscula, dígito e símbolo — e deve ser refletida no cliente antes da publicação.
+
+### Linha de base real do Auth em 2026-10-14
+
+A inspeção somente leitura do Dashboard confirmou:
+
+- plano `FREE`, provedor de e-mail habilitado e confirmação de e-mail mantida;
+- senha mínima de 6 caracteres, sem composição obrigatória;
+- `Secure password change` desabilitado e senha atual não exigida na troca;
+- bloqueio de senhas vazadas indisponível no plano atual (`Pro` ou superior);
+- TOTP habilitado, limite de 10 fatores e sessão `aal1` limitada a 15 minutos;
+- refresh tokens comprometidos são detectados/revogados e o access token expira em 3600 segundos;
+- limite de 2 e-mails de autenticação por hora;
+- `Site URL` configurada em `https://huntnexus.charr3ls22.workers.dev` e única URL permitida de retorno em `https://huntnexus.charr3ls22.workers.dev/account`, sem `localhost` na allow list;
+- modelo padrão de recuperação usa `{{ .ConfirmationURL }}` e o assunto `Reset your password`;
+- SMTP personalizado desabilitado, portanto os modelos permanecem os padrões não editáveis do Supabase;
+- notificações de troca de senha/e-mail/telefone, vínculo/remoção de método de login e inclusão/remoção de MFA estão todas desabilitadas;
+- time-box, inatividade e sessão única indisponíveis no plano `FREE` e atualmente definidos como ilimitados/desabilitados.
+
+O endurecimento preparado para ativação é: mínimo de 12 caracteres, composição forte, `Secure password change`, exigência da senha atual e notificações de segurança para senha, e-mail, métodos de login e MFA. O Auth oficial isenta sessões de recuperação da exigência da senha atual, portanto o fluxo `PASSWORD_RECOVERY` continua apto a definir uma nova senha. A proteção contra senhas vazadas e os limites avançados de sessão permanecem pendentes de decisão de plano/custo e não fazem parte desta ativação.
+
+O SMTP padrão não é um transporte de produção: a documentação oficial o classifica como best-effort sem SLA e afirma que destinatários fora da equipe podem ser recusados. A organização possui um membro e as duas contas piloto não são membros. Embora o piloto anterior tenha registrado entrega, isso é evidência daquele envio, não garantia operacional. SMTP personalizado, domínio/remetente e limites devem ser decididos antes do release; credenciais nunca entram no repositório. O roteiro completo está em [`2026-10-14-topic05-production-activation-runbook.md`](evidence/2026-10-14-topic05-production-activation-runbook.md).
+
+### API
+
+Para cada operação privada de um `client_id` vinculado e para as ações de conta, a API:
+
+1. valida o access token com `auth.getUser`;
+2. extrai `session_id` apenas depois da validação do token;
+3. consulta o AAL do token;
+4. chama `huntnexus_auth_session_gate` como `service_role`;
+5. exige sessão ainda presente e não expirada em `auth.sessions`;
+6. exige ao menos um fator verificado e `aal2`;
+7. confirma que o usuário autenticado é o dono do binding.
+
+Os erros são distintos: token inválido ou sessão inativa retorna 401; MFA não cadastrada ou desafio pendente retorna 403.
+
+O navegador envia o access token em `Authorization: Bearer`, não no corpo JSON. A API aceita temporariamente o campo legado `access_token` para compatibilidade, mas rejeita cabeçalho malformado e tokens conflitantes antes de resolver qualquer escopo privado.
+
+### Banco e RLS
+
+`0164_topic05_auth_session_gate.sql` cria uma função `security definer` de leitura sobre `auth.sessions` e `auth.mfa_factors`. A função usa `search_path = ''` e qualifica tabelas e funções para evitar resolução por schemas controláveis. Apenas `service_role` pode executá-la. `anon` e `authenticated` não recebem acesso direto.
+
+As tabelas `huntnexus_accounts` e `player_characters` continuam com RLS habilitada. `anon` e `authenticated` não possuem `SELECT` direto em contas ou bindings. O Worker é a fronteira de autorização e não confia em um `client_id` apresentado isoladamente quando esse escopo já está vinculado.
+
+## Recuperação e incidentes
+
+| Situação | Resultado esperado |
+| --- | --- |
+| E-mail comprometido, senha redefinida, sem TOTP | dados privados bloqueados em `aal1` |
+| Senha vazada, sem TOTP | dados privados bloqueados em `aal1` |
+| Perda de um autenticador, segundo TOTP disponível | entrar pelo fator reserva; ele também autoriza remover o fator perdido |
+| Perda de todos os fatores | recuperação assistida futura; nenhuma remoção automática por e-mail |
+| Token revogado com JWT ainda dentro do `exp` | API recusa porque `auth.sessions` não contém sessão ativa |
+| UUID de outro jogador com token A | API recusa por ownership do binding |
+
+Uma recuperação assistida deverá ter política de verificação, trilha de auditoria, espera e notificação antes de existir em produção. Não há bypass administrativo implementado neste tópico.
+
+## Migração das contas existentes
+
+As duas contas usadas anteriormente por Magic Link preservam binding, conta e personagens. Depois da publicação do novo fluxo, cada titular deverá:
+
+1. usar `Esqueci a senha` para definir a primeira senha;
+2. entrar com e-mail e senha;
+3. cadastrar e verificar o TOTP principal;
+4. cadastrar um segundo TOTP de reserva;
+5. testar uma segunda sessão/dispositivo e isolamento A/B.
+
+Nenhuma migration altera linhas de `auth.users`, senhas ou fatores. Não existe merge automático de contas ou personagens.
+
+## Ativação e rollback
+
+A ativação real é uma operação conjunta e controlada:
+
+1. aplicar `0164_topic05_auth_session_gate`;
+2. configurar comprimento mínimo de senha de 12, composição forte, `Secure password change` e exigência da senha atual no Auth;
+3. habilitar notificações de segurança para troca de senha/e-mail, métodos de login e MFA;
+4. confirmar TOTP habilitado, manter confirmação de e-mail e revalidar `Site URL`/allow list;
+5. decidir e configurar um SMTP operacional antes do release, sem incorporar credenciais ao repositório;
+6. testar localmente contra produção com as duas contas consentidas;
+7. publicar o Worker apenas após autorização de deploy e verificar a versão;
+8. executar novamente os casos A/B, dois dispositivos, recuperação, sessão revogada e logout por escopo.
+
+Rollback antes do deploy: remover a função pela migration de rollback. Rollback depois do deploy: restaurar a versão anterior do Worker antes de remover a função. Desabilitar MFA ou apagar fatores de usuários não faz parte do rollback. A proteção contra senhas vazadas e limites avançados de sessão não podem ser ativados no plano `FREE`; qualquer upgrade tem custo e exige decisão separada.
