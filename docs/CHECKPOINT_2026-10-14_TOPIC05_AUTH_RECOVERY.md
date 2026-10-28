@@ -98,5 +98,6 @@ Screenshots locais são gerados em `web/app/topic05-browser-qa/` e ficam fora do
 - hash de `0164` confirmado e rollback presente;
 - `npm run build`, assurance, transport, contract, PGlite e regressões FE-28/30: PASS;
 - preflight Supabase read-only confirmou tabelas/colunas esperadas e a role `service_role`;
+- o corpo lógico de `0164` foi executado como consulta read-only no PostgreSQL de produção, sem criar função, e retornou `active_session=false`, `verified_factor_count=0` e `requires_aal2=true` para entradas nulas;
 - baseline anterior à migration: 4 usuários Auth, 2 sessões, 0 fatores MFA, 2 contas HuntNexus e 2 personagens;
 - `huntnexus_auth_session_gate(uuid,uuid)` ausente; nenhuma migration, configuração Auth, conta, e-mail ou deployment foi alterado.

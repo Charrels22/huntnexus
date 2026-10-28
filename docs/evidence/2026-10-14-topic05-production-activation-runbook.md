@@ -37,6 +37,8 @@ Baseline read-only capturada em 2026-10-28, antes de qualquer aplicação de `01
 
 Essas contagens são apenas invariantes de verificação da migration read-only; não autorizam listar ou registrar identidades privadas.
 
+O corpo SQL da função também foi executado em 2026-10-28 como consulta read-only com duas entradas `uuid` nulas, sem criar objeto. O PostgreSQL de produção aceitou tabelas, colunas, casts e funções usados por `0164` e devolveu `{"active_session":false,"verified_factor_count":0,"requires_aal2":true}`.
+
 ## Fase 1 — banco
 
 1. Aplicar somente `0164_topic05_auth_session_gate.sql`.
