@@ -1,6 +1,6 @@
 # Arquitetura atual e domínio alvo
 
-[ADR-0001](ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) define o contrato de produto. A infraestrutura abaixo é atual. O domínio privado `account → characters` está implementado na migration aditiva `0162_account_character_domain.sql`, ainda não aplicada em produção enquanto o release permanece congelado.
+[ADR-0001](ADR_0001_PRODUCT_DOMAIN_AND_BRAIN.md) define o contrato de produto. A infraestrutura abaixo é atual. O domínio privado `account → characters` está implementado em produção pelas migrations aditivas `0162_account_character_domain.sql` e `0163_topic04_scope_fk_indexes.sql`. A migration `0164_topic05_auth_session_gate.sql` permanece preparada, mas não aplicada, enquanto o gate de autenticação e o release continuam congelados.
 
 ```text
                          ┌────────────────────────┐
