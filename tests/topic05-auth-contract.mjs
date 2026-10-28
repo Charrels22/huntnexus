@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 const account = readFileSync(resolve(root, "web/app/src/routes/account.tsx"), "utf8");
 const api = readFileSync(resolve(root, "web/app/src/routes/api/huntnexus.ts"), "utf8");
+const apiClient = readFileSync(resolve(root, "web/app/src/lib/api/huntnexus.ts"), "utf8");
 const migration = readFileSync(resolve(root, "db/migrations/0164_topic05_auth_session_gate.sql"), "utf8");
 
 for (const required of [
@@ -35,6 +36,10 @@ assert.match(api, /auth\.getUser\(accessToken\)/);
 assert.match(api, /getAuthenticatorAssuranceLevel\(accessToken\)/);
 assert.match(api, /huntnexus_auth_session_gate/);
 assert.match(api, /auth\.state !== "ready"/);
+assert.match(api, /request\.headers\.get\("authorization"\)/);
+assert.match(api, /conflicting_auth_tokens/);
+assert.match(apiClient, /headers\.authorization = `Bearer \$\{accessToken\}`/);
+assert.match(apiClient, /key !== "access_token"/);
 
 assert.match(migration, /from auth\.sessions/);
 assert.match(migration, /from auth\.mfa_factors/);

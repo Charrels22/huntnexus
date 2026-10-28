@@ -82,6 +82,8 @@ Para cada operação privada de um `client_id` vinculado e para as ações de co
 
 Os erros são distintos: token inválido ou sessão inativa retorna 401; MFA não cadastrada ou desafio pendente retorna 403.
 
+O navegador envia o access token em `Authorization: Bearer`, não no corpo JSON. A API aceita temporariamente o campo legado `access_token` para compatibilidade, mas rejeita cabeçalho malformado e tokens conflitantes antes de resolver qualquer escopo privado.
+
 ### Banco e RLS
 
 `0164_topic05_auth_session_gate.sql` cria uma função `security definer` de leitura sobre `auth.sessions` e `auth.mfa_factors`. A função usa `search_path = ''` e qualifica tabelas e funções para evitar resolução por schemas controláveis. Apenas `service_role` pode executá-la. `anon` e `authenticated` não recebem acesso direto.

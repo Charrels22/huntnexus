@@ -31,6 +31,8 @@ Verificação pós-migration preparada: [`2026-10-14-topic05-post-migration-veri
 
 Revisão de segurança em 2026-10-27: a migration ainda não aplicada foi endurecida conforme o Advisor oficial do Supabase. A função `security definer` passou de um `search_path` fixo contendo `public` para `search_path = ''`, com funções e tabelas qualificadas. Contrato e PGlite agora verificam essa propriedade; o hash acima substitui o anterior.
 
+Revisão de transporte em 2026-10-28: novos clientes passaram a enviar o JWT no cabeçalho `Authorization: Bearer`, removendo-o do corpo JSON. A API preserva compatibilidade temporária com o campo legado, rejeita cabeçalho malformado ou tokens divergentes e valida `session_id` com formato UUID estrito.
+
 ## Implementação preparada
 
 - entrada por e-mail + senha e cadastro com confirmação de e-mail;

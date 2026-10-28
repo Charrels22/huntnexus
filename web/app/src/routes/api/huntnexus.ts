@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { evaluateAuthGate, jwtSessionId, type AuthGateState } from "@/lib/auth-security";
+import { evaluateAuthGate, extractRequestAccessToken, jwtSessionId, type AuthGateState } from "@/lib/auth-security";
 
 const Vocation = z.enum(["EK", "RP", "ED", "MS", "EM"]);
 const Level = z.coerce.number().int().min(1).max(5000);
@@ -29,16 +29,16 @@ const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("health") }),
   z.object({
     action: z.literal("account_resolve"),
-    access_token: z.string().min(20).max(8192),
+    access_token: z.string().min(20).max(8192).optional(),
     local_client_id: z.string().uuid(),
   }),
   z.object({
     action: z.literal("account_status"),
-    access_token: z.string().min(20).max(8192),
+    access_token: z.string().min(20).max(8192).optional(),
   }),
   z.object({
     action: z.literal("account_unbind"),
-    access_token: z.string().min(20).max(8192),
+    access_token: z.string().min(20).max(8192).optional(),
   }),
   z.object({
     action: z.literal("player_profile_get"),
@@ -397,9 +397,17 @@ export const Route = createFileRoute("/api/huntnexus")({
           return json({ error: "invalid_json" }, 400);
         }
         const rawRecord = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
-        const requestAccessToken = typeof rawRecord["access_token"] === "string"
-          ? rawRecord["access_token"]
-          : null;
+        const requestAuth = extractRequestAccessToken(
+          request.headers.get("authorization"),
+          rawRecord["access_token"],
+        );
+        if (requestAuth.error) {
+          return json(
+            { error: requestAuth.error },
+            requestAuth.error === "conflicting_auth_tokens" ? 400 : 401,
+          );
+        }
+        const requestAccessToken = requestAuth.token;
 
         const parsed = Body.safeParse(raw);
         if (!parsed.success) {
@@ -531,7 +539,8 @@ export const Route = createFileRoute("/api/huntnexus")({
             case "health":
               return json({ data: await rpc("huntnexus_api_health") });
             case "account_resolve": {
-              const auth = await strongAuthContext(b.access_token);
+              if (!requestAccessToken) return json({ error: "authentication_required" }, 401);
+              const auth = await strongAuthContext(requestAccessToken);
               if (!auth) return json({ error: "invalid_auth_token" }, 401);
               if (auth.state !== "ready") return authGateError(auth.state);
               return json({
@@ -542,7 +551,8 @@ export const Route = createFileRoute("/api/huntnexus")({
               });
             }
             case "account_status": {
-              const auth = await strongAuthContext(b.access_token);
+              if (!requestAccessToken) return json({ error: "authentication_required" }, 401);
+              const auth = await strongAuthContext(requestAccessToken);
               if (!auth) return json({ error: "invalid_auth_token" }, 401);
               if (auth.state !== "ready") return authGateError(auth.state);
               return json({
@@ -552,7 +562,8 @@ export const Route = createFileRoute("/api/huntnexus")({
               });
             }
             case "account_unbind": {
-              const auth = await strongAuthContext(b.access_token);
+              if (!requestAccessToken) return json({ error: "authentication_required" }, 401);
+              const auth = await strongAuthContext(requestAccessToken);
               if (!auth) return json({ error: "invalid_auth_token" }, 401);
               if (auth.state !== "ready") return authGateError(auth.state);
               const result = await rpc("huntnexus_account_unbind", {
