@@ -40,6 +40,52 @@ const Body = z.discriminatedUnion("action", [
     access_token: z.string().min(20).max(8192),
   }),
   z.object({
+    action: z.literal("player_characters_get"),
+    client_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("player_character_save"),
+    client_id: z.string().uuid(),
+    character_id: z.string().uuid().nullable().optional(),
+    character: z.object({
+      character_name: z.string().trim().min(1).max(120),
+      vocation: Vocation,
+      level: Level,
+      manual_stats: z.record(z.string(), z.union([z.string().max(80), z.number().finite(), z.null()])).default({}),
+      proficiency_selections: ProficiencySelections.default({}),
+      defaults: z.record(z.string(), z.unknown()).default({}),
+    }),
+  }),
+  z.object({
+    action: z.literal("player_character_set_default"),
+    client_id: z.string().uuid(),
+    character_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("player_character_delete"),
+    client_id: z.string().uuid(),
+    character_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("player_character_inventory_get"),
+    client_id: z.string().uuid(),
+    character_id: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("player_character_inventory_put"),
+    client_id: z.string().uuid(),
+    character_id: z.string().uuid(),
+    storage_kind: z.enum(["main", "backpack"]),
+    item_key: z.string().max(200),
+    quantity: z.coerce.number().int().min(1).max(9999).default(1),
+  }),
+  z.object({
+    action: z.literal("player_character_inventory_remove"),
+    client_id: z.string().uuid(),
+    character_id: z.string().uuid(),
+    inventory_id: z.string().uuid(),
+  }),
+  z.object({
     action: z.literal("player_profile_get"),
     client_id: z.string().uuid(),
   }),
@@ -477,6 +523,20 @@ export const Route = createFileRoute("/api/huntnexus")({
             return json({ error: "account_scope_lookup_failed" }, 500);
           }
 
+          const characterLibraryAction = [
+            "player_characters_get",
+            "player_character_save",
+            "player_character_set_default",
+            "player_character_delete",
+            "player_character_inventory_get",
+            "player_character_inventory_put",
+            "player_character_inventory_remove",
+          ].includes(b.action);
+
+          if (characterLibraryAction && !binding?.auth_user_id) {
+            return json({ error: "character_library_requires_bound_account" }, 409);
+          }
+
           if (binding?.auth_user_id) {
             if (!requestAccessToken) {
               return json({ error: "authentication_required_for_bound_client" }, 401);
@@ -497,6 +557,63 @@ export const Route = createFileRoute("/api/huntnexus")({
           switch (b.action) {
             case "health":
               return json({ data: await rpc("huntnexus_api_health") });
+            case "player_characters_get":
+              return json({ data: await rpc("huntnexus_player_characters_get", {
+                p_client_id: b.client_id,
+              }) });
+            case "player_character_save": {
+              const result = await rpc("huntnexus_player_character_save", {
+                p_client_id: b.client_id,
+                p_character_id: b.character_id ?? null,
+                p_character: b.character,
+              });
+              if (result?.error) return json({ error: String(result.error) }, 409);
+              return json({ data: result });
+            }
+            case "player_character_set_default": {
+              const result = await rpc("huntnexus_player_character_set_default", {
+                p_client_id: b.client_id,
+                p_character_id: b.character_id,
+              });
+              if (result?.error) return json({ error: String(result.error) }, 404);
+              return json({ data: result });
+            }
+            case "player_character_delete": {
+              const result = await rpc("huntnexus_player_character_delete", {
+                p_client_id: b.client_id,
+                p_character_id: b.character_id,
+              });
+              if (result?.error) return json({ error: String(result.error) }, 404);
+              return json({ data: result });
+            }
+            case "player_character_inventory_get": {
+              const result = await rpc("huntnexus_player_character_inventory_get", {
+                p_client_id: b.client_id,
+                p_character_id: b.character_id,
+              });
+              if (result?.error) return json({ error: String(result.error) }, 404);
+              return json({ data: result });
+            }
+            case "player_character_inventory_put": {
+              const result = await rpc("huntnexus_player_character_inventory_put", {
+                p_client_id: b.client_id,
+                p_character_id: b.character_id,
+                p_storage_kind: b.storage_kind,
+                p_item_key: b.item_key,
+                p_quantity: b.quantity,
+              });
+              if (result?.error) return json({ error: String(result.error) }, 409);
+              return json({ data: result });
+            }
+            case "player_character_inventory_remove": {
+              const result = await rpc("huntnexus_player_character_inventory_remove", {
+                p_client_id: b.client_id,
+                p_character_id: b.character_id,
+                p_inventory_id: b.inventory_id,
+              });
+              if (result?.error) return json({ error: String(result.error) }, 404);
+              return json({ data: result });
+            }
             case "account_resolve": {
               const userId = await authUserId(b.access_token);
               if (!userId) return json({ error: "invalid_auth_token" }, 401);

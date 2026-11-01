@@ -51,6 +51,10 @@
 - [FE-38 Planner observational evidence](CHECKPOINT_2026-10-13_FE38_PLANNER_OBSERVATIONAL_EVIDENCE.md)
 - [FE-39 Hunt factual provenance](CHECKPOINT_2026-10-13_FE39_HUNT_FACTUAL_PROVENANCE.md)
 
+## Iteração solicitada pelo usuário — 2026-11-01
+
+- [Workspace principal independente em `/`](CHECKPOINT_2026-11-01_ROOT_WORKSPACE.md): página nova na raiz, personagens/inventário e contexto de hunt; build local passou, QA visual desta revisão e integrações reais pendentes.
+
 **Observação:** a numeração inicial `PHASE` e os nomes de arquivos FE-15–22 não necessariamente representam cobertura homogênea de todas as tarefas; não inventar checkpoints ausentes nem interpretar qualquer PASS sintético como aceitação de sessões reais.
 
 ## O que o Codex deverá fazer

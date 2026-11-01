@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Cloud, Loader2, LogOut, Mail, RefreshCw, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Cloud, Gamepad2, Loader2, LogOut, Mail, RefreshCw, ShieldCheck } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId, setClientId } from "@/lib/client-id";
@@ -11,11 +11,13 @@ export const Route = createFileRoute("/account")({ component: AccountPage });
 
 const unmergedGuestKey = "huntnexus.unmerged-guest-client-id.v1";
 const clientUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const twitchLoginEnabled = import.meta.env.VITE_HUNTNEXUS_TWITCH_LOGIN_ENABLED === "true";
 
 function AccountPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -178,6 +180,24 @@ function AccountPage() {
     }
   }
 
+  async function signInWithTwitch() {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase || sending || oauthLoading || !twitchLoginEnabled) return;
+    setOauthLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: "twitch",
+        options: { redirectTo: window.location.origin + "/account" },
+      });
+      if (authError) throw authError;
+    } catch {
+      setError("Não foi possível iniciar o acesso pela Twitch. Tente novamente ou entre por e-mail.");
+      setOauthLoading(false);
+    }
+  }
+
   function restorePreviousGuest() {
     if (session || !recoverableGuestId || !clientUuidPattern.test(recoverableGuestId)) return;
     setClientId(recoverableGuestId);
@@ -232,13 +252,33 @@ function AccountPage() {
 
       {!session ? (
         <section className="rounded-3xl border border-white/8 bg-slate-950/45 p-5 md:p-6">
-          <div className="flex items-start gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300"><Mail className="size-4" /></div>
-            <div><div className="font-bold text-white">Entrar por e-mail</div><div className="mt-1 text-xs text-slate-500">Sem senha. Você recebe um link de acesso no e-mail.</div></div>
+          <div className="space-y-3">
+            <button
+              type="button"
+              className="hn-twitch-login"
+              disabled={!twitchLoginEnabled || sending || oauthLoading}
+              onClick={() => void signInWithTwitch()}
+            >
+              {oauthLoading ? <Loader2 className="size-4 animate-spin" /> : <Gamepad2 className="size-4" />}
+              {oauthLoading ? "Abrindo a Twitch…" : "Entrar com Twitch"}
+            </button>
+            <p className="text-xs leading-5 text-slate-500">
+              {twitchLoginEnabled
+                ? "A Twitch precisa retornar o mesmo e-mail confirmado para associar o perfil HuntNexus existente."
+                : "Ativação pendente da configuração OAuth da Twitch no Supabase."}
+            </p>
           </div>
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <input type="email" className="hn-control flex-1" placeholder="seu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMagicLink(); }} />
-            <button className="hn-primary-button" disabled={sending || !email.trim()} onClick={() => void sendMagicLink()}>
+          <div className="my-5 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+            <span className="h-px flex-1 bg-white/8" />
+            <span>Alternativa por e-mail</span>
+            <span className="h-px flex-1 bg-white/8" />
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="flex-1">
+              <span className="sr-only">Seu e-mail</span>
+              <input type="email" className="hn-control w-full" placeholder="seu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMagicLink(); }} />
+            </label>
+            <button className="hn-secondary-button justify-center" disabled={sending || oauthLoading || !email.trim()} onClick={() => void sendMagicLink()}>
               {sending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
               Enviar link
             </button>

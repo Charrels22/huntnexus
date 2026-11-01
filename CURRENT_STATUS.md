@@ -25,6 +25,14 @@ As etapas FE-32–39 estão nos respectivos `docs/CHECKPOINT_*`; **não reimplem
 - Confirmado em FE-39: Cobra Bastion com 11/11 criaturas cobertas nas quatro dimensões, Forest of Life com 3/3, ambas com proveniência fonte B. O link da fonte é geral e a data é a registrada na coleta.
 - O último teste verde não garante que futuras alterações de infraestrutura/deploy continuarão iguais. Testar novamente ao alterar funcionalidades.
 
+## Solicitação recente — workspace principal independente
+
+- A experiência nova está na raiz `/`, em página própria, sem a navegação lateral antiga. `/guia` redireciona para `/` e `/characters` para `/#personagens`.
+- A página reúne personagens/inventário, contexto da hunt e entrada privada dos analisadores. O Main é uma grade clicável; a Backpack é uma lista.
+- O checkpoint [workspace principal em `/`](docs/CHECKPOINT_2026-11-01_ROOT_WORKSPACE.md) registra decisões, arquivos, limites e próximos passos para retomada.
+- Build local e `git diff --check` passaram. QA visual desta revisão não foi concluído; motor de recomendação e fluxo de contribuição não estão ligados.
+- A migration `0162_player_character_library.sql` **não foi aplicada** no Supabase; OAuth Twitch depende de configuração. Não houve escrita remota nem deploy. Esta iteração não substitui nem declara concluída a FE-40 do roadmap oficial.
+
 ## Pendências reais — registradas, mas não bloquear FE-40
 
 - [Issue #1](https://github.com/Charrels22/huntnexus/issues/1): aceite com exports originais e consentidos de sessão de jogador, incluindo MS/The Void (Zao), Damage Input, Misc, Combat Stats, localização, sprites e setup. Já foram corrigidas várias falhas técnicas; **não** usar o issue como motivo para interromper outras frentes a cada sprint. Não reprocessar dados do usuário sem aprovação.
@@ -51,4 +59,4 @@ Não incrementar automaticamente por ter criado documentação, fixtures ou test
 
 ## Próxima ação sem intervenção manual obrigatória
 
-**Executar [FE-40 — Issue #2](https://github.com/Charrels22/huntnexus/issues/2), segundo [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md)**: inspecionar fluxo existente de `search_hunts`, home, shell, Planner e Hunt Detail; implementar avanço tangível de navegação e descoberta do catálogo; testar CI e browser; documentar. A homologação manual das sessões fica para a fase final.
+**Retomar primeiro a revisão da página raiz**, conforme `docs/CHECKPOINT_2026-11-01_ROOT_WORKSPACE.md`; depois, seguir [FE-40 — Issue #2](https://github.com/Charrels22/huntnexus/issues/2) segundo [ROADMAP_EXECUTION.md](ROADMAP_EXECUTION.md). Não marcar a etapa visual como homologada até obter QA visual desktop/mobile; não aplicar `0162` nem configurar OAuth sem verificar a operação e autorização específicas.

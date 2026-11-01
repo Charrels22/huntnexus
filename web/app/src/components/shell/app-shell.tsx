@@ -17,7 +17,7 @@ import {
   UserRoundCog,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { callHuntNexusApi } from "@/lib/api/huntnexus";
 import { getOrCreateClientId } from "@/lib/client-id";
 import { isolateClientAfterAuthLoss } from "@/lib/account-session-guard";
@@ -56,8 +56,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [recentSessions, setRecentSessions] = useState<any[]>([]);
+  const didLoadRecentSessions = useRef(false);
 
   useEffect(() => {
+    if (pathname === "/" || pathname === "/guia" || didLoadRecentSessions.current) return;
+    didLoadRecentSessions.current = true;
+
     let active = true;
 
     const loadRecent = () => {
@@ -79,9 +83,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       active = false;
       window.removeEventListener("huntnexus:player-sessions-changed", loadRecent);
     };
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
+    if (pathname === "/" || pathname === "/guia") return;
+
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
     let hadAuthenticatedSession = false;
@@ -100,6 +106,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     });
     return () => subscription.unsubscribe();
   }, [pathname]);
+
+  if (pathname === "/" || pathname === "/guia") {
+    return <div className="hn-app min-h-screen bg-background text-foreground">{children}</div>;
+  }
 
   return (
     <div className="hn-app min-h-screen bg-background text-foreground">
